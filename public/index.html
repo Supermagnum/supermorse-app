@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supermorse - Morse Code Training</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Supermorse</h1>
+            <p>Progressive Morse Code Training</p>
+        </header>
+
+        <main>
+            <!-- Authentication Section (initially visible) -->
+            <section id="auth-section">
+                <div id="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Login</button>
+                    <button class="auth-tab" data-tab="register">Register</button>
+                </div>
+                
+                <div id="login-form" class="auth-form active">
+                    <h2>Login</h2>
+                    <div class="form-group">
+                        <label for="login-username">Username:</label>
+                        <input type="text" id="login-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password:</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button id="login-button" class="primary-button">Login</button>
+                    <div id="login-message" class="auth-message"></div>
+                </div>
+                
+                <div id="register-form" class="auth-form">
+                    <h2>Register</h2>
+                    <div class="form-group">
+                        <label for="register-username">Username:</label>
+                        <input type="text" id="register-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email:</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password:</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-confirm-password">Confirm Password:</label>
+                        <input type="password" id="register-confirm-password" required>
+                    </div>
+                    <button id="register-button" class="primary-button">Register</button>
+                    <div id="register-message" class="auth-message"></div>
+                </div>
+            </section>
+
+            <!-- App Content (initially hidden) -->
+            <div id="app-content" class="hidden">
+                <!-- User Profile Bar -->
+                <section id="user-profile">
+                    <div class="user-info">
+                        <span id="username-display"></span>
+                        <div class="user-actions">
+                            <button id="profile-button">Profile</button>
+                            <button id="logout-button">Logout</button>
+                        </div>
+                    </div>
+                    <div class="feature-status">
+                        <div class="feature" id="feature-international">
+                            <span class="feature-icon">🔤</span>
+                            <span class="feature-name">International Morse</span>
+                            <span class="feature-status-indicator" data-status="locked"></span>
+                        </div>
+                        <div class="feature" id="feature-prosigns">
+                            <span class="feature-icon">📡</span>
+                            <span class="feature-name">Prosigns</span>
+                            <span class="feature-status-indicator" data-status="locked"></span>
+                        </div>
+                        <div class="feature" id="feature-special">
+                            <span class="feature-icon">🔣</span>
+                            <span class="feature-name">Special Characters</span>
+                            <span class="feature-status-indicator" data-status="locked"></span>
+                        </div>
+                        <div class="feature" id="feature-voice">
+                            <span class="feature-icon">🎙️</span>
+                            <span class="feature-name">Voice Chat</span>
+                            <span class="feature-status-indicator" data-status="locked"></span>
+                        </div>
+                        <div class="feature" id="feature-hf">
+                            <span class="feature-icon">📻</span>
+                            <span class="feature-name">HF Simulation</span>
+                            <span class="feature-status-indicator" data-status="locked"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Connection Status -->
+                <section id="connection-status">
+                    <h2>Hardware Connection</h2>
+                    <div class="status-indicator">
+                        <span id="connection-indicator" class="disconnected">Disconnected</span>
+                        <button id="connect-button">Connect Morse Key</button>
+                    </div>
+                </section>
+
+                <!-- Settings -->
+                <section id="settings">
+                    <h2>Settings</h2>
+                    <div class="setting-group">
+                        <label for="country-select">Country:</label>
+                        <select id="country-select">
+                            <option value="international">International</option>
+                            
+                            <!-- Nordic Countries -->
+                            <optgroup label="Nordic Countries">
+                                <option value="norway">Norway</option>
+                                <option value="sweden">Sweden</option>
+                                <option value="denmark">Denmark</option>
+                                <option value="finland">Finland</option>
+                                <option value="iceland">Iceland</option>
+                                <option value="faroe">Faroe Islands</option>
+                            </optgroup>
+                            
+                            <!-- Sámi Languages -->
+                            <optgroup label="Sámi Languages">
+                                <option value="sami-northern">Northern Sámi</option>
+                                <option value="sami-southern">Southern Sámi</option>
+                            </optgroup>
+                            
+                            <!-- Övdalian -->
+                            <optgroup label="Minority Languages">
+                                <option value="ovdalian">Övdalian (Elfdalian)</option>
+                            </optgroup>
+                            
+                            <!-- European Languages -->
+                            <optgroup label="European Languages">
+                                <option value="germany">Germany</option>
+                                <option value="france">France</option>
+                                <option value="spain">Spain</option>
+                                <option value="italy">Italy</option>
+                                <option value="poland">Poland</option>
+                                <option value="czech">Czech Republic</option>
+                            </optgroup>
+                            
+                            <!-- Asian Languages -->
+                            <optgroup label="Asian Languages">
+                                <option value="japanese-romaji">Japanese (Romaji)</option>
+                                <option value="japanese-wabun">Japanese (Wabun Code)</option>
+                                <option value="chinese-pinyin">Chinese (Pinyin)</option>
+                                <option value="chinese-telegraph">Chinese (Telegraph Code)</option>
+                                <option value="russian">Russian (Cyrillic)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label for="speed-select">Character Speed:</label>
+                        <select id="speed-select">
+                            <option value="15">15 WPM</option>
+                            <option value="20" disabled>20 WPM (Unlock at 100% mastery)</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label for="farnsworth-toggle">Farnsworth Spacing:</label>
+                        <input type="checkbox" id="farnsworth-toggle" checked>
+                    </div>
+                    <div class="setting-group">
+                        <label for="key-type-select">Key Type:</label>
+                        <select id="key-type-select">
+                            <option value="straight">Straight Key</option>
+                            <option value="paddle-single">Paddle (Single Lever)</option>
+                            <option value="paddle-iambic-a">Paddle (Iambic Mode A)</option>
+                            <option value="paddle-iambic-b">Paddle (Iambic Mode B)</option>
+                        </select>
+                    </div>
+                </section>
+
+                <!-- Current Lesson -->
+                <section id="current-lesson">
+                    <h2>Current Lesson</h2>
+                    <div id="character-display">
+                        <div id="current-character"></div>
+                        <div id="current-morse"></div>
+                    </div>
+                    <div id="character-set">
+                        <h3>Current Character Set:</h3>
+                        <div id="known-characters"></div>
+                    </div>
+                    <div class="button-group">
+                        <button id="start-lesson">Start Lesson</button>
+                        <button id="play-character" disabled>Play Current Character</button>
+                    </div>
+                </section>
+
+                <!-- Practice Area -->
+                <section id="practice-area">
+                    <h2>Practice</h2>
+                    <div id="expected-sequence"></div>
+                    <div id="user-input"></div>
+                    <div class="accuracy">
+                        <span>Accuracy: </span>
+                        <span id="accuracy-value">0%</span>
+                    </div>
+                    <button id="start-practice" disabled>Start Practice</button>
+                </section>
+
+                <!-- Progress -->
+                <section id="progress">
+                    <h2>Progress</h2>
+                    <div id="progress-bars"></div>
+                </section>
+
+                <!-- Session Info -->
+                <section id="session-info">
+                    <h2>Session Information</h2>
+                    <div class="timer">
+                        <span>Session Time: </span>
+                        <span id="session-timer">00:00:00</span>
+                    </div>
+                    <div id="break-timer" class="hidden">
+                        <span>Next session recommended in: </span>
+                        <span id="cooldown-timer">01:00:00</span>
+                    </div>
+                    <div id="session-message"></div>
+                </section>
+
+                <!-- Mumble/Murmur Integration (initially locked) -->
+                <section id="mumble-section" class="locked-feature">
+                    <h2>Voice Chat <span class="lock-indicator">🔒</span></h2>
+                    <div class="feature-locked-message">
+                        <p>Voice chat will be unlocked after mastering:</p>
+                        <ul>
+                            <li>International Morse</li>
+                            <li>Prosigns</li>
+                            <li>Special Characters</li>
+                        </ul>
+                    </div>
+                    <div id="mumble-content" class="hidden">
+                        <div class="mumble-status">
+                            <span>Server Status: </span>
+                            <span id="mumble-server-status">Offline</span>
+                            <button id="mumble-connect-button" disabled>Connect to Voice</button>
+                        </div>
+                        
+                        <div class="mumble-settings">
+                            <h3>Amateur Radio Settings</h3>
+                            <div class="form-group">
+                                <label for="maidenhead-grid">Maidenhead Grid:</label>
+                                <input type="text" id="maidenhead-grid" placeholder="e.g., JO59lx">
+                                <button id="save-maidenhead">Save</button>
+                            </div>
+                            <div class="form-group">
+                                <label for="hf-band-select">Preferred HF Band:</label>
+                                <select id="hf-band-select">
+                                    <option value="">Auto (Recommended)</option>
+                                    <option value="160">160m (1.8-2.0 MHz)</option>
+                                    <option value="80">80m (3.5-4.0 MHz)</option>
+                                    <option value="60">60m (5.3-5.4 MHz)</option>
+                                    <option value="40">40m (7.0-7.3 MHz)</option>
+                                    <option value="30">30m (10.1-10.15 MHz)</option>
+                                    <option value="20">20m (14.0-14.35 MHz)</option>
+                                    <option value="17">17m (18.068-18.168 MHz)</option>
+                                    <option value="15">15m (21.0-21.45 MHz)</option>
+                                    <option value="10">10m (28.0-29.7 MHz)</option>
+                                    <option value="6">6m (50-54 MHz)</option>
+                                </select>
+                                <button id="save-hf-band">Save</button>
+                            </div>
+                        </div>
+                        
+                        <div class="hf-propagation">
+                            <h3>HF Propagation</h3>
+                            <div id="propagation-map" class="map-placeholder">
+                                <p>HF propagation map will appear here when HF Simulation is unlocked</p>
+                            </div>
+                            <div id="active-channels">
+                                <h4>Active Channels</h4>
+                                <ul id="channel-list">
+                                    <!-- Channels will be populated dynamically -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- User Profile Modal (initially hidden) -->
+            <div id="profile-modal" class="modal hidden">
+                <div class="modal-content">
+                    <span class="close-modal">&times;</span>
+                    <h2>User Profile</h2>
+                    <div class="form-group">
+                        <label for="profile-email">Email:</label>
+                        <input type="email" id="profile-email">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-maidenhead">Maidenhead Grid:</label>
+                        <input type="text" id="profile-maidenhead" placeholder="e.g., JO59lx">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-hf-band">Preferred HF Band:</label>
+                        <select id="profile-hf-band">
+                            <option value="">Auto (Recommended)</option>
+                            <option value="160">160m (1.8-2.0 MHz)</option>
+                            <option value="80">80m (3.5-4.0 MHz)</option>
+                            <option value="60">60m (5.3-5.4 MHz)</option>
+                            <option value="40">40m (7.0-7.3 MHz)</option>
+                            <option value="30">30m (10.1-10.15 MHz)</option>
+                            <option value="20">20m (14.0-14.35 MHz)</option>
+                            <option value="17">17m (18.068-18.168 MHz)</option>
+                            <option value="15">15m (21.0-21.45 MHz)</option>
+                            <option value="10">10m (28.0-29.7 MHz)</option>
+                            <option value="6">6m (50-54 MHz)</option>
+                        </select>
+                    </div>
+                    <h3>Change Password</h3>
+                    <div class="form-group">
+                        <label for="current-password">Current Password:</label>
+                        <input type="password" id="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password:</label>
+                        <input type="password" id="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-new-password">Confirm New Password:</label>
+                        <input type="password" id="confirm-new-password">
+                    </div>
+                    <button id="update-profile" class="primary-button">Update Profile</button>
+                    <div id="profile-message" class="auth-message"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Supermorse - Learn Morse Code with Progressive Training</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/alphabets.js"></script>
+    <script src="js/morseAudio.js"></script>
+    <script src="js/serialReader.js"></script>
+    <script src="js/inputChecker.js"></script>
+    <script src="js/lessonManager.js"></script>
+    <script src="js/mumbleClient.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
