@@ -2,6 +2,12 @@
 
 Supermorse is a desktop application for learning Morse code progressively using sound output and a real physical Morse key connected through an Arduino. The application implements the Koch method, a scientifically-backed learning approach that has proven to be one of the most effective ways to learn Morse code.
 
+## The programming:
+I have a neurological condition that makes it impossible for me to understand programming.
+I had to use a AI,Claude.
+
+## It's untested and needs testing and debugging
+
 ## Features
 
 - **Progressive Learning**: Start with just two characters and expand as you master them
