@@ -456,6 +456,19 @@ public:
 	float calculateSignalStrength(const QString &grid1, const QString &grid2);
 	int recommendBand(float distance);
 	
+	// HF Band Simulation Signal Handlers
+	void onPropagationUpdated();
+	void onSignalStrengthChanged(const QString &grid1, const QString &grid2, float strength);
+	void onMUFChanged(float muf);
+	void onExternalDataUpdated(const QString &source, bool success);
+	
+	// HF Band Simulation Helpers
+	void updateAudioRouting(ServerUser *u1, ServerUser *u2);
+	void updateChannelLinks();
+	void sendBandRecommendations(ServerUser *u, const QString &grid);
+	void sendMessage(ServerUser *u, const QString &message);
+	void userStateChanged(ServerUser *u);
+	
 signals:
 	void registerUserSig(int &, const QMap< int, QString > &);
 	void unregisterUserSig(int &, int);
