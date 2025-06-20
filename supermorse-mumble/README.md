@@ -45,8 +45,8 @@ I had to use a AI,Claude.
 - CMake 3.15 or higher
 - Qt 5.12 or higher
 - C++ compiler with C++14 support (GCC, Clang, MSVC)
-- SQLite development libraries
-
+- MariaDB libraries 
+ 
 ### Building on Linux/macOS
 
 ```bash
