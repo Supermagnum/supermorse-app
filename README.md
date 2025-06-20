@@ -19,7 +19,8 @@ Supermorse is a desktop application for learning Morse code progressively using 
 
 ## The programming:
 I have a neurological condition that makes it impossible for me to understand programming.
-I had to use a AI.
+I had to use Claude,a AI.
+
 ## Electron Implementation
 
 Supermorse is built using Electron, which allows it to run as a native desktop application on Windows, macOS, and Linux. The Electron implementation provides several advantages over a web application:
