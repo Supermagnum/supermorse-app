@@ -21,7 +21,8 @@ I had to use a AI,Claude.
 - **Session Management**: Recommended 30-minute sessions with breaks
 - **Adjustable Speed**: Supports Farnsworth timing and different WPM settings
 - **User Accounts**: Track your progress across sessions
-- **Mumble Integration**: Connect with other Morse code enthusiasts
+- **Mumble Integration**: Connect with other Morse code enthusiasts.
+- Please read this to understand what the modified Mumble server can do: https://github.com/Supermagnum/supermorse-app/blob/main/supermorse-mumble/README.md
 
 ## Electron Implementation
 
