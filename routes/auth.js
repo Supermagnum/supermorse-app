@@ -11,7 +11,12 @@ router.post('/register', async (req, res) => {
     
     // Check if username or email already exists
     const existingUser = await User.findOne({
-      $or: [{ username }, { email }]
+      where: {
+        [User.sequelize.Op.or]: [
+          { username },
+          { email }
+        ]
+      }
     });
     
     if (existingUser) {
@@ -22,13 +27,11 @@ router.post('/register', async (req, res) => {
     }
     
     // Create new user
-    const newUser = new User({
+    const newUser = await User.create({
       username,
-      password, // Will be hashed in the pre-save hook
+      password, // Will be hashed in the beforeSave hook
       email
     });
-    
-    await newUser.save();
     
     // Log in the user after registration
     req.login(newUser, (err) => {
@@ -44,10 +47,16 @@ router.post('/register', async (req, res) => {
         success: true,
         message: 'User registered successfully',
         user: {
-          id: newUser._id,
+          id: newUser.id,
           username: newUser.username,
           email: newUser.email,
-          featuresUnlocked: newUser.featuresUnlocked
+          featuresUnlocked: {
+            internationalMorse: newUser.featuresUnlockedInternationalMorse,
+            prosigns: newUser.featuresUnlockedProsigns,
+            specialCharacters: newUser.featuresUnlockedSpecialCharacters,
+            voiceChat: newUser.featuresUnlockedVoiceChat,
+            hfSimulation: newUser.featuresUnlockedHfSimulation
+          }
         }
       });
     });
@@ -95,10 +104,16 @@ router.post('/login', (req, res, next) => {
         success: true,
         message: 'Login successful',
         user: {
-          id: user._id,
+          id: user.id,
           username: user.username,
           email: user.email,
-          featuresUnlocked: user.featuresUnlocked,
+          featuresUnlocked: {
+            internationalMorse: user.featuresUnlockedInternationalMorse,
+            prosigns: user.featuresUnlockedProsigns,
+            specialCharacters: user.featuresUnlockedSpecialCharacters,
+            voiceChat: user.featuresUnlockedVoiceChat,
+            hfSimulation: user.featuresUnlockedHfSimulation
+          },
           maidenheadGrid: user.maidenheadGrid,
           preferredHfBand: user.preferredHfBand
         }
@@ -137,10 +152,16 @@ router.get('/user', (req, res) => {
   return res.status(200).json({
     success: true,
     user: {
-      id: req.user._id,
+      id: req.user.id,
       username: req.user.username,
       email: req.user.email,
-      featuresUnlocked: req.user.featuresUnlocked,
+      featuresUnlocked: {
+        internationalMorse: req.user.featuresUnlockedInternationalMorse,
+        prosigns: req.user.featuresUnlockedProsigns,
+        specialCharacters: req.user.featuresUnlockedSpecialCharacters,
+        voiceChat: req.user.featuresUnlockedVoiceChat,
+        hfSimulation: req.user.featuresUnlockedHfSimulation
+      },
       maidenheadGrid: req.user.maidenheadGrid,
       preferredHfBand: req.user.preferredHfBand
     }
@@ -158,7 +179,7 @@ router.put('/user', async (req, res) => {
   
   try {
     const { email, maidenheadGrid, preferredHfBand, currentPassword, newPassword } = req.body;
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id);
     
     // Update email if provided
     if (email) {
@@ -177,7 +198,7 @@ router.put('/user', async (req, res) => {
     
     // Update password if provided
     if (currentPassword && newPassword) {
-      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      const isValidPassword = await user.isValidPassword(currentPassword);
       if (!isValidPassword) {
         return res.status(400).json({
           success: false,
@@ -185,7 +206,7 @@ router.put('/user', async (req, res) => {
         });
       }
       
-      user.password = newPassword; // Will be hashed in the pre-save hook
+      user.password = newPassword; // Will be hashed in the beforeSave hook
     }
     
     await user.save();
@@ -194,10 +215,16 @@ router.put('/user', async (req, res) => {
       success: true,
       message: 'User profile updated successfully',
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
         email: user.email,
-        featuresUnlocked: user.featuresUnlocked,
+        featuresUnlocked: {
+          internationalMorse: user.featuresUnlockedInternationalMorse,
+          prosigns: user.featuresUnlockedProsigns,
+          specialCharacters: user.featuresUnlockedSpecialCharacters,
+          voiceChat: user.featuresUnlockedVoiceChat,
+          hfSimulation: user.featuresUnlockedHfSimulation
+        },
         maidenheadGrid: user.maidenheadGrid,
         preferredHfBand: user.preferredHfBand
       }

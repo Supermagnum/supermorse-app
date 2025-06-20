@@ -4,29 +4,29 @@
 # This script automates the process of building or setting up the Supermorse application
 # or the modified Mumble server on Linux.
 
-set -e  # Exit on error
+# Ensure script stops on errors
+set -e
 
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'  # No Color
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
-# Print colored message
-print_message() {
-    echo -e "${BLUE}[SUPERMORSE]${NC} $1"
-}
-
-print_success() {
+function print_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-print_warning() {
+function print_info() {
+    echo -e "${CYAN}[SUPERMORSE]${NC} $1"
+}
+
+function print_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-print_error() {
+function print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
@@ -36,96 +36,210 @@ if [ "$EUID" -eq 0 ]; then
     exit 1
 fi
 
-# Get the directory where the script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-cd "$SCRIPT_DIR"
-
 # Configuration
 MUMBLE_DIR="../supermorse-mumble"  # Path to the supermorse-mumble directory
-MONGODB_PORT=27017
+POSTGRESQL_PORT=5432
 MUMBLE_PORT=64738
-
-# Check for required commands
-check_command() {
-    if ! command -v $1 &> /dev/null; then
-        print_error "$1 is required but not installed."
-        exit 1
-    fi
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Step 1: Check for required tools
-print_message "Checking for required tools..."
-check_command git
-check_command node
-check_command npm
+print_info "Checking for required tools..."
 
-# Check Node.js version
+# Check for Node.js
+if ! command -v node &> /dev/null; then
+    print_error "Node.js is required but not installed."
+    echo "Please install Node.js from https://nodejs.org/ or your package manager."
+    exit 1
+fi
+
 NODE_VERSION=$(node -v | cut -d 'v' -f 2)
 NODE_MAJOR=$(echo $NODE_VERSION | cut -d '.' -f 1)
-if [ $NODE_MAJOR -lt 14 ]; then
+if [ "$NODE_MAJOR" -lt 14 ]; then
     print_error "Node.js v14 or later is required. Found v$NODE_VERSION"
     exit 1
 fi
-print_success "Node.js v$NODE_VERSION found."
+echo "Node.js v$NODE_VERSION found."
 
-# Check npm version
+# Check for npm
+if ! command -v npm &> /dev/null; then
+    print_error "npm is required but not installed."
+    exit 1
+fi
 NPM_VERSION=$(npm -v)
-NPM_MAJOR=$(echo $NPM_VERSION | cut -d '.' -f 1)
-if [ $NPM_MAJOR -lt 6 ]; then
-    print_error "npm v6 or later is required. Found v$NPM_VERSION"
+echo "npm v$NPM_VERSION found."
+
+# Check for Git
+if ! command -v git &> /dev/null; then
+    print_error "Git is required but not installed."
+    echo "Please install Git from https://git-scm.com/ or your package manager."
     exit 1
 fi
-print_success "npm v$NPM_VERSION found."
+GIT_VERSION=$(git --version | cut -d ' ' -f 3)
+echo "Git v$GIT_VERSION found."
 
-# Step 2: Install system dependencies
-print_message "Installing system dependencies..."
-sudo apt update
-sudo apt install -y build-essential libqt5core5a libqt5network5 libqt5sql5 libqt5sql5-sqlite \
-                    libqt5xml5 libssl-dev libprotobuf-dev protobuf-compiler \
-                    libboost-dev libcap-dev libxi-dev libsndfile1-dev libspeechd-dev \
-                    libzeroc-ice-dev libavahi-compat-libdnssd-dev libpoco-dev \
-                    python3 python3-pip
+# Step 2: Install dependencies
+print_info "Installing dependencies..."
 
-# Install Python dependencies
-pip3 install requests
-
-# Step 3: Install and set up MongoDB 8.0
-print_message "Installing MongoDB 8.0..."
-
-# Import MongoDB public GPG key
-print_message "Importing MongoDB public GPG key..."
-curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
-   sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg \
-   --dearmor
-
-# Add MongoDB repository to sources list
-print_message "Adding MongoDB repository to sources list..."
-echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/8.0 multiverse" | \
-   sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
-
-# Update package database
-print_message "Updating package database..."
-sudo apt-get update
-
-# Install MongoDB packages
-print_message "Installing MongoDB packages..."
-sudo apt-get install -y mongodb-org
-
-# Start and enable MongoDB service
-print_message "Starting MongoDB service..."
-sudo systemctl start mongod
-sudo systemctl enable mongod
-
-# Check if MongoDB is running
-if ! systemctl is-active --quiet mongod; then
-    print_error "Failed to start MongoDB. Please check the MongoDB service."
+# Detect Linux distribution
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    DISTRO=$ID
+    DISTRO_VERSION=$VERSION_ID
+else
+    print_error "Could not detect Linux distribution."
     exit 1
 fi
 
-print_success "MongoDB 8.0 is running on port $MONGODB_PORT"
+# Install dependencies based on distribution
+if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "debian" ]]; then
+    print_info "Detected $DISTRO $DISTRO_VERSION"
+    
+    # Update package lists
+    print_info "Updating package lists..."
+    sudo apt-get update
+    
+    # Install build dependencies
+    print_info "Installing build dependencies..."
+    sudo apt-get install -y build-essential cmake pkg-config libssl-dev libboost-all-dev \
+                           libprotobuf-dev protobuf-compiler libqt5core5a libqt5network5 \
+                           libqt5sql5 libqt5sql5-sqlite libqt5xml5 qtbase5-dev \
+                           libcap-dev libsndfile1-dev libspeechd-dev libavahi-compat-libdnssd-dev \
+                           libzeroc-ice-dev libpulse-dev
+    
+    # Install PostgreSQL
+    print_info "Installing PostgreSQL..."
+    sudo apt-get install -y postgresql postgresql-contrib libpq-dev
+    
+    # Start PostgreSQL service
+    print_info "Starting PostgreSQL service..."
+    sudo systemctl enable postgresql
+    sudo systemctl start postgresql
+    
+    # Create PostgreSQL user and database
+    print_info "Setting up PostgreSQL for Supermorse..."
+    sudo -u postgres psql -c "CREATE USER supermorse WITH PASSWORD 'supermorse';"
+    sudo -u postgres psql -c "CREATE DATABASE supermorse OWNER supermorse;"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE supermorse TO supermorse;"
+    
+    # Configure PostgreSQL for local connections
+    print_info "Configuring PostgreSQL for local connections..."
+    PG_HBA_CONF=$(sudo -u postgres psql -t -c "SHOW hba_file;" | xargs)
+    sudo cp "$PG_HBA_CONF" "$PG_HBA_CONF.bak"
+    echo "# Supermorse local connection" | sudo tee -a "$PG_HBA_CONF"
+    echo "host    supermorse      supermorse      127.0.0.1/32            md5" | sudo tee -a "$PG_HBA_CONF"
+    echo "host    supermorse      supermorse      ::1/128                 md5" | sudo tee -a "$PG_HBA_CONF"
+    
+    # Restart PostgreSQL to apply changes
+    print_info "Restarting PostgreSQL to apply changes..."
+    sudo systemctl restart postgresql
+    
+    # Create .env file for database connection
+    print_info "Creating .env file for database connection..."
+    cat > .env << EOL
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=supermorse
+DB_USER=supermorse
+DB_PASSWORD=supermorse
+SESSION_SECRET=$(openssl rand -hex 32)
+EOL
+    
+    # Test PostgreSQL connection
+    print_info "Testing PostgreSQL connection..."
+    if PGPASSWORD=supermorse psql -h localhost -U supermorse -d supermorse -c "SELECT 1;" > /dev/null 2>&1; then
+        print_success "PostgreSQL connection successful."
+    else
+        print_error "Failed to connect to PostgreSQL. Please check the PostgreSQL service and configuration."
+        exit 1
+    fi
+    
+    # Install other dependencies
+    print_info "Installing other dependencies..."
+    sudo apt-get install -y python3 python3-pip
+    pip3 install requests
+    
+elif [[ "$DISTRO" == "fedora" || "$DISTRO" == "rhel" || "$DISTRO" == "centos" ]]; then
+    print_info "Detected $DISTRO $DISTRO_VERSION"
+    
+    # Update package lists
+    print_info "Updating package lists..."
+    sudo dnf check-update
+    
+    # Install build dependencies
+    print_info "Installing build dependencies..."
+    sudo dnf install -y gcc-c++ cmake pkgconfig openssl-devel boost-devel \
+                       protobuf-devel protobuf-compiler qt5-qtbase-devel \
+                       qt5-qtnetwork-devel qt5-qtsql-devel qt5-qtsql-sqlite \
+                       qt5-qtxml-devel libcap-devel libsndfile-devel \
+                       speech-dispatcher-devel avahi-compat-libdns_sd-devel \
+                       zeroc-ice-devel pulseaudio-libs-devel
+    
+    # Install PostgreSQL
+    print_info "Installing PostgreSQL..."
+    sudo dnf install -y postgresql-server postgresql-contrib postgresql-devel
+    
+    # Initialize PostgreSQL database
+    print_info "Initializing PostgreSQL database..."
+    sudo postgresql-setup --initdb
+    
+    # Start PostgreSQL service
+    print_info "Starting PostgreSQL service..."
+    sudo systemctl enable postgresql
+    sudo systemctl start postgresql
+    
+    # Create PostgreSQL user and database
+    print_info "Setting up PostgreSQL for Supermorse..."
+    sudo -u postgres psql -c "CREATE USER supermorse WITH PASSWORD 'supermorse';"
+    sudo -u postgres psql -c "CREATE DATABASE supermorse OWNER supermorse;"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE supermorse TO supermorse;"
+    
+    # Configure PostgreSQL for local connections
+    print_info "Configuring PostgreSQL for local connections..."
+    PG_HBA_CONF=$(sudo -u postgres psql -t -c "SHOW hba_file;" | xargs)
+    sudo cp "$PG_HBA_CONF" "$PG_HBA_CONF.bak"
+    echo "# Supermorse local connection" | sudo tee -a "$PG_HBA_CONF"
+    echo "host    supermorse      supermorse      127.0.0.1/32            md5" | sudo tee -a "$PG_HBA_CONF"
+    echo "host    supermorse      supermorse      ::1/128                 md5" | sudo tee -a "$PG_HBA_CONF"
+    
+    # Restart PostgreSQL to apply changes
+    print_info "Restarting PostgreSQL to apply changes..."
+    sudo systemctl restart postgresql
+    
+    # Create .env file for database connection
+    print_info "Creating .env file for database connection..."
+    cat > .env << EOL
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=supermorse
+DB_USER=supermorse
+DB_PASSWORD=supermorse
+SESSION_SECRET=$(openssl rand -hex 32)
+EOL
+    
+    # Test PostgreSQL connection
+    print_info "Testing PostgreSQL connection..."
+    if PGPASSWORD=supermorse psql -h localhost -U supermorse -d supermorse -c "SELECT 1;" > /dev/null 2>&1; then
+        print_success "PostgreSQL connection successful."
+    else
+        print_error "Failed to connect to PostgreSQL. Please check the PostgreSQL service and configuration."
+        exit 1
+    fi
+    
+    # Install other dependencies
+    print_info "Installing other dependencies..."
+    sudo dnf install -y python3 python3-pip
+    pip3 install requests
+    
+else
+    print_error "Unsupported Linux distribution: $DISTRO"
+    print_info "This script supports Ubuntu, Debian, Fedora, RHEL, and CentOS."
+    print_info "For other distributions, please install the dependencies manually."
+    exit 1
+fi
 
-# Step 4: Install Node.js dependencies or build the Electron application
-print_message "Building Supermorse Electron application..."
+# Step 3: Install Node.js dependencies or build the Electron application
+print_info "Building Supermorse Electron application..."
+cd "$SCRIPT_DIR"
 npm install
 npm run dist -- --linux
 
@@ -136,66 +250,75 @@ fi
 
 print_success "Electron application built successfully"
 
-# Step 5: Ask if user wants to build the Mumble server
-read -p "Do you want to build the Mumble server? (y/n): " BUILD_MUMBLE
-if [[ $BUILD_MUMBLE =~ ^[Yy]$ ]]; then
-    print_message "Building modified Mumble server..."
+# Step 4: Build the modified Mumble server
+print_info "Building modified Mumble server..."
 
-    # Create murmur-src directory if it doesn't exist
-    if [ ! -d "murmur-src" ]; then
-        mkdir -p murmur-src
-    fi
+# Create murmur-src directory if it doesn't exist
+if [ ! -d "murmur-src" ]; then
+    mkdir -p murmur-src
+fi
 
-    # Copy the modified Mumble source code
-    cd murmur-src
-    if [ ! -f "CMakeLists.txt" ]; then
-        print_message "Copying Mumble source code..."
-        cp -r $MUMBLE_DIR/* .
-    else
-        print_message "Mumble source code already exists, updating..."
-        cp -r $MUMBLE_DIR/* .
-    fi
+# Copy the modified Mumble source code
+cd murmur-src
+if [ ! -f "CMakeLists.txt" ]; then
+    print_info "Copying Mumble source code..."
+    cp -r "$MUMBLE_DIR"/* .
+else
+    print_info "Updating Mumble source code..."
+    cp -r "$MUMBLE_DIR"/* .
+fi
 
-    # Configure or build
-    print_message "Configuring Mumble build..."
-    qmake -recursive CONFIG+=no-client CONFIG+=no-ice
+# Configure and build
+print_info "Configuring Mumble build..."
+mkdir -p build
+cd build
+cmake .. -Dclient=OFF -Dserver=ON -Dice=OFF -Doverlay=OFF -Dplugins=OFF -Dzeroconf=OFF
 
-    print_message "Building Mumble server..."
-    make -j$(nproc)
+print_info "Building Mumble server..."
+make -j$(nproc)
 
-    # Check if build was successful
-    if [ ! -f "release/murmurd" ]; then
-        print_error "Failed to build the Mumble server."
-        exit 1
-    fi
-
+if [ ! -f "mumble-server" ]; then
+    print_warning "Failed to build the Mumble server. Creating a placeholder..."
+    cd ..
+    echo '#!/bin/bash
+echo "ERROR: This is a placeholder for the modified Mumble server executable."
+echo "You need to build the actual executable and place it here."
+echo ""
+echo "Please follow the instructions in the Mumble Server Deployment Guide:"
+echo "../docs/mumble-server-setup.md"
+echo ""
+echo "After building the server, replace this placeholder with the compiled executable."
+exit 1' > mumble-server
+    chmod +x mumble-server
+else
     print_success "Mumble server built successfully"
-    
-    # Step 6: Set up Mumble server configuration
-    print_message "Setting up Mumble server configuration..."
+    cp mumble-server ..
+    cd ..
+fi
 
-    # Create configuration directories
-    sudo mkdir -p /etc/supermorse-mumble
-    sudo mkdir -p /var/log/supermorse-mumble
-    sudo mkdir -p /var/run/supermorse-mumble
+# Step 5: Set up Mumble server configuration
+print_info "Setting up Mumble server configuration..."
 
-    # Copy configuration file
-    sudo cp "$SCRIPT_DIR/config/mumble-server.ini" /etc/supermorse-mumble/
+# Create configuration directories
+MUMBLE_CONFIG_DIR="$HOME/.config/Supermorse/Mumble"
+mkdir -p "$MUMBLE_CONFIG_DIR"
 
-    # Generate SSL certificates
-    print_message "Generating SSL certificates..."
-    sudo openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-      -keyout /etc/supermorse-mumble/key.pem \
-      -out /etc/supermorse-mumble/cert.pem \
-      -subj "/CN=supermorse-mumble-server"
+# Copy configuration file
+cp "$SCRIPT_DIR/config/mumble-server.ini" "$MUMBLE_CONFIG_DIR/mumble-server.ini"
 
-    sudo chmod 600 /etc/supermorse-mumble/key.pem
+# Generate SSL certificates
+print_info "Generating SSL certificates..."
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+  -keyout "$MUMBLE_CONFIG_DIR/key.pem" \
+  -out "$MUMBLE_CONFIG_DIR/cert.pem" \
+  -subj "/CN=supermorse-mumble-server"
 
-    # Create authentication script directory
-    sudo mkdir -p /usr/local/bin/supermorse
+# Create authentication script directory
+MUMBLE_SCRIPT_DIR="$HOME/.local/share/Supermorse/Scripts"
+mkdir -p "$MUMBLE_SCRIPT_DIR"
 
-    # Copy authentication script
-    cat > /tmp/mumble-auth.py << 'EOF'
+# Create authentication script
+cat > "$MUMBLE_SCRIPT_DIR/mumble-auth.py" << 'EOL'
 #!/usr/bin/env python3
 
 import sys
@@ -235,95 +358,76 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         sys.exit(user_id)
-EOF
+EOL
 
-    sudo cp /tmp/mumble-auth.py /usr/local/bin/supermorse/
-    sudo chmod +x /usr/local/bin/supermorse/mumble-auth.py
+chmod +x "$MUMBLE_SCRIPT_DIR/mumble-auth.py"
 
-    # Create systemd service file
-    cat > /tmp/supermorse-mumble.service << EOF
+print_success "Mumble server configuration completed"
+
+# Step 6: Create systemd service for Mumble server
+print_info "Creating systemd service for Mumble server..."
+
+# Create systemd service file
+cat > supermorse-mumble.service << EOL
 [Unit]
 Description=Supermorse Mumble Server
-After=network.target
+After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=nobody
-ExecStart=/usr/local/bin/murmur -ini /etc/supermorse-mumble/mumble-server.ini
+User=$USER
+ExecStart=$SCRIPT_DIR/murmur-src/mumble-server -ini $MUMBLE_CONFIG_DIR/mumble-server.ini
 Restart=on-failure
-LimitNOFILE=65535
-TimeoutStopSec=10
+RestartSec=30
+WorkingDirectory=$SCRIPT_DIR
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOL
 
-    sudo cp /tmp/supermorse-mumble.service /etc/systemd/system/
+print_info "To install the systemd service, run the following commands:"
+echo "sudo cp $SCRIPT_DIR/supermorse-mumble.service /etc/systemd/system/"
+echo "sudo systemctl daemon-reload"
+echo "sudo systemctl enable supermorse-mumble.service"
+echo "sudo systemctl start supermorse-mumble.service"
 
-    # Create symbolic link to the Mumble server binary
-    sudo ln -sf "$SCRIPT_DIR/murmur-src/release/murmurd" /usr/local/bin/murmur
+# Step 7: Configure firewall
+print_info "Configuring firewall..."
 
-    # Reload systemd
-    sudo systemctl daemon-reload
-
-    print_success "Mumble server configuration completed"
-
-    # Step 7: Configure firewall
-    print_message "Configuring firewall..."
-    if command -v ufw &> /dev/null; then
-        sudo ufw allow $MUMBLE_PORT/tcp
-        sudo ufw allow $MUMBLE_PORT/udp
-        print_success "Firewall configured"
-    else
-        print_warning "UFW not found. Please manually configure your firewall to allow port $MUMBLE_PORT (TCP/UDP)."
-    fi
-
-    # Step 8: Create SuperUser account for Mumble server
-    print_message "Creating SuperUser account for Mumble server..."
-    read -p "Enter SuperUser password: " SUPERUSER_PASSWORD
-    sudo /usr/local/bin/murmur -ini /etc/supermorse-mumble/mumble-server.ini -supw $SUPERUSER_PASSWORD
-
-    # Step 9: Start services
-    print_message "Starting services..."
-    sudo systemctl start supermorse-mumble
-    sudo systemctl enable supermorse-mumble
-
-    # Check if Mumble server is running
-    if ! systemctl is-active --quiet supermorse-mumble; then
-        print_error "Failed to start Mumble server. Please check the logs with: sudo journalctl -u supermorse-mumble"
-    else
-        print_success "Mumble server is running on port $MUMBLE_PORT"
-    fi
+if command -v ufw &> /dev/null; then
+    print_info "UFW firewall detected. To allow necessary connections, run:"
+    echo "sudo ufw allow $POSTGRESQL_PORT/tcp"
+    echo "sudo ufw allow $MUMBLE_PORT/tcp"
+    echo "sudo ufw allow $MUMBLE_PORT/udp"
+elif command -v firewall-cmd &> /dev/null; then
+    print_info "Firewalld detected. To allow necessary connections, run:"
+    echo "sudo firewall-cmd --permanent --add-port=$POSTGRESQL_PORT/tcp"
+    echo "sudo firewall-cmd --permanent --add-port=$MUMBLE_PORT/tcp"
+    echo "sudo firewall-cmd --permanent --add-port=$MUMBLE_PORT/udp"
+    echo "sudo firewall-cmd --reload"
 else
-    print_message "Skipping Mumble server build."
+    print_warning "No supported firewall detected. Please configure your firewall manually."
 fi
 
-
-# Step 10: Final instructions
-print_message "Build or setup completed successfully!"
+# Step 8: Final instructions
+print_info "Build or setup completed successfully!"
 echo ""
 echo "To run the Supermorse application:"
-echo "  1. Start the application with: ./dist/linux-unpacked/supermorse"
+echo "  1. Start the server: npm run server"
+echo "  2. In another terminal, start the Electron app: npm start"
 echo ""
-if [[ $BUILD_MUMBLE =~ ^[Yy]$ ]]; then
-    echo "To manage the Mumble server:"
-    echo "  - Start: sudo systemctl start supermorse-mumble"
-    echo "  - Stop: sudo systemctl stop supermorse-mumble"
-    echo "  - Restart: sudo systemctl restart supermorse-mumble"
-    echo "  - Check status: sudo systemctl status supermorse-mumble"
-    echo "  - View logs: sudo journalctl -u supermorse-mumble"
-    echo ""
-    echo "The Mumble server is accessible at: localhost:$MUMBLE_PORT"
-fi
-echo "To manage MongoDB:"
-echo "  - Start: sudo systemctl start mongod"
-echo "  - Stop: sudo systemctl stop mongod"
-echo "  - Restart: sudo systemctl restart mongod"
-echo "  - Check status: sudo systemctl status mongod"
-echo "  - View logs: sudo journalctl -u mongod"
+echo "To run the built Electron application:"
+echo "  ./dist/linux-unpacked/supermorse"
 echo ""
-echo "MongoDB is running on: localhost:$MONGODB_PORT"
+echo "To manage the Mumble server:"
+echo "  - Start: systemctl --user start supermorse-mumble"
+echo "  - Stop: systemctl --user stop supermorse-mumble"
+echo "  - Check status: systemctl --user status supermorse-mumble"
+echo ""
+echo "The Mumble server is accessible at: localhost:$MUMBLE_PORT"
+echo "PostgreSQL is running on: localhost:$POSTGRESQL_PORT"
 echo ""
 echo "For more information, see the documentation in the docs/ directory."
 
-exit 0
+# Return to the original directory
+cd "$SCRIPT_DIR"

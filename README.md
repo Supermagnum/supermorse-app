@@ -2,8 +2,6 @@
 
 Supermorse is a desktop application for learning Morse code progressively using sound output and a real physical Morse key connected through an Arduino. The application implements the Koch method, a scientifically-backed learning approach that has proven to be one of the most effective ways to learn Morse code.
 
-## It's untested and needs testing and debugging! 
-
 ## Features
 
 - **Progressive Learning**: Start with just two characters and expand as you master them
@@ -17,11 +15,6 @@ Supermorse is a desktop application for learning Morse code progressively using 
 - **Adjustable Speed**: Supports Farnsworth timing and different WPM settings
 - **User Accounts**: Track your progress across sessions
 - **Mumble Integration**: Connect with other Morse code enthusiasts
-
-
-## The programming:
-I have a neurological condition that makes it impossible for me to understand programming.
-I had to use Claude,a AI.
 
 ## Electron Implementation
 
@@ -38,14 +31,14 @@ Supermorse is built using Electron, which allows it to run as a native desktop a
 
 - Node.js (v14 or later)
 - npm (v6 or later)
-- MongoDB (for user accounts and progress tracking)
+- PostgreSQL (for user accounts and progress tracking)
 - Arduino IDE (for flashing the Arduino firmware)
 
 ### Setup
 
 1. Clone the repository:
    ```
-   git clone https://github.com/Supermagnum/supermorse-app.git
+   git clone https://github.com/yourusername/supermorse-app.git
    cd supermorse-app
    ```
 
@@ -64,7 +57,8 @@ Supermorse is built using Electron, which allows it to run as a native desktop a
 - `main.js` - Electron main process
 - `preload.js` - Preload script for Electron
 - `server.js` - Express server for API endpoints
-- `models/` - MongoDB models
+- `models/` - Sequelize models for PostgreSQL
+- `config/` - Configuration files including database.js for Sequelize
 - `routes/` - API routes
 - `public/` - Web application files
   - `js/` - JavaScript modules
@@ -102,7 +96,7 @@ We provide automated build scripts for all major platforms that handle the entir
 For Linux users, we provide an automated build script that handles the entire setup process, including:
 
 1. Installing all required dependencies
-2. Setting up MongoDB
+2. Setting up PostgreSQL
 3. Building the Electron application
 4. Building the modified Mumble server
 5. Configuring the Mumble server
@@ -131,8 +125,8 @@ The script will guide you through the entire setup process and provide instructi
 - At least 4GB of free disk space
 
 **What the Linux Script Does:**
-1. Installs system dependencies (build tools, Qt libraries, MongoDB, etc.)
-2. Sets up MongoDB for user data storage
+1. Installs system dependencies (build tools, Qt libraries, PostgreSQL, etc.)
+2. Sets up PostgreSQL for user data storage
 3. Builds the Electron application
 4. Clones and builds the modified Mumble server
 5. Configures the Mumble server with HF band channels
@@ -163,7 +157,7 @@ For Windows users, we provide a PowerShell script that automates the setup proce
 
 **What the Windows Script Does:**
 1. Installs Chocolatey package manager if not already installed
-2. Uses Chocolatey to install MongoDB, Qt, and other dependencies
+2. Uses Chocolatey to install PostgreSQL, Qt, and other dependencies
 3. Builds the Electron application
 4. Provides guidance for building the modified Mumble server
 5. Configures the Mumble server
@@ -195,7 +189,7 @@ For macOS users, we provide a shell script that automates the setup process:
 
 **What the macOS Script Does:**
 1. Installs Homebrew if not already installed
-2. Uses Homebrew to install MongoDB, Qt, and other dependencies
+2. Uses Homebrew to install PostgreSQL, Qt, and other dependencies
 3. Builds the Electron application
 4. Provides guidance for building the modified Mumble server
 5. Configures the Mumble server
@@ -208,7 +202,7 @@ These scripts significantly simplify the setup process across all platforms, esp
 
 1. Connect your Arduino board to your computer
 2. Open the Arduino IDE
-3. Load the `arduino/morse_decoder.ino` file. That file is in /public/arduino
+3. Load the `arduino/morse_decoder.ino` file
 4. Upload the firmware to your Arduino
 
 ## Key Types
@@ -245,7 +239,7 @@ The application uses a hybrid architecture:
 2. **Express Server** (`server.js`):
    - Runs within Electron
    - Provides API endpoints for authentication and progress tracking
-   - Manages MongoDB connection
+   - Manages PostgreSQL connection using Sequelize
 
 3. **Web Application** (`public/`):
    - Provides the user interface

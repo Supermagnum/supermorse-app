@@ -43,7 +43,7 @@ if ($isAdmin) {
 
 # Configuration
 $MumbleDir = "..\supermorse-mumble"  # Path to the supermorse-mumble directory
-$MongoDBPort = 27017
+$PostgreSQLPort = 5432
 $MumblePort = 64738
 $ScriptDir = $PSScriptRoot
 
@@ -107,9 +107,9 @@ if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 }
 
-# Install MongoDB
-Write-InfoMessage "Installing MongoDB..."
-choco install mongodb -y
+# Install PostgreSQL
+Write-InfoMessage "Installing PostgreSQL..."
+choco install postgresql -y
 
 # Install Qt (needed for Mumble)
 Write-InfoMessage "Installing Qt..."
@@ -123,19 +123,58 @@ choco install python -y
 Write-InfoMessage "Installing Python dependencies..."
 pip install requests
 
-# Step 3: Set up MongoDB
-Write-InfoMessage "Setting up MongoDB..."
+# Step 3: Set up PostgreSQL
+Write-InfoMessage "Setting up PostgreSQL..."
 
-# Start MongoDB service
-Start-Service MongoDB
+# Start PostgreSQL service
+Start-Service postgresql
 
-# Check if MongoDB is running
-if ((Get-Service MongoDB).Status -ne "Running") {
-    Write-ErrorMessage "Failed to start MongoDB. Please check the MongoDB service."
+# Check if PostgreSQL is running
+if ((Get-Service postgresql).Status -ne "Running") {
+    Write-ErrorMessage "Failed to start PostgreSQL. Please check the PostgreSQL service."
     exit 1
 }
 
-Write-SuccessMessage "MongoDB is running on port $MongoDBPort"
+# Create PostgreSQL user and database
+Write-InfoMessage "Setting up PostgreSQL for Supermorse..."
+$env:PGPASSWORD = "postgres"
+$createUserCmd = "createuser -U postgres -P -s supermorse"
+$createDbCmd = "createdb -U postgres -O supermorse supermorse"
+
+# Execute PostgreSQL commands
+try {
+    # Create user
+    $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $createUserCmd" -NoNewWindow -PassThru -Wait
+    if ($process.ExitCode -ne 0) {
+        Write-WarningMessage "User 'supermorse' might already exist. Continuing..."
+    } else {
+        Write-Host "User 'supermorse' created successfully."
+    }
+    
+    # Create database
+    $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $createDbCmd" -NoNewWindow -PassThru -Wait
+    if ($process.ExitCode -ne 0) {
+        Write-WarningMessage "Database 'supermorse' might already exist. Continuing..."
+    } else {
+        Write-Host "Database 'supermorse' created successfully."
+    }
+} catch {
+    Write-ErrorMessage "Failed to set up PostgreSQL. Error: $_"
+    exit 1
+}
+
+# Create .env file for database connection
+Write-InfoMessage "Creating .env file for database connection..."
+@"
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=supermorse
+DB_USER=supermorse
+DB_PASSWORD=supermorse
+SESSION_SECRET=$(New-Guid)
+"@ | Out-File -FilePath ".env" -Encoding ASCII
+
+Write-SuccessMessage "PostgreSQL is running on port $PostgreSQLPort"
 
 # Step 4: Install Node.js dependencies or build the Electron application
 Write-InfoMessage "Building Supermorse Electron application..."
@@ -290,7 +329,7 @@ Write-Host "  - Stop: sc.exe stop SupermorseMumble"
 Write-Host "  - Check status: sc.exe query SupermorseMumble"
 Write-Host ""
 Write-Host "The Mumble server is accessible at: localhost:$MumblePort"
-Write-Host "MongoDB is running on: localhost:$MongoDBPort"
+Write-Host "PostgreSQL is running on: localhost:$PostgreSQLPort"
 Write-Host ""
 Write-Host "For more information, see the documentation in the docs\ directory."
 Write-Host ""

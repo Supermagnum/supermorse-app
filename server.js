@@ -1,6 +1,5 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
@@ -8,6 +7,13 @@ const bcrypt = require('bcrypt');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
+const dotenv = require('dotenv');
+
+// Load environment variables
+dotenv.config();
+
+// Import database configuration
+const { sequelize, testConnection, initDatabase } = require('./config/database');
 
 // Import models
 const User = require('./models/User');
@@ -23,34 +29,47 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
-  secret: 'supermorse-secret-key',
+  secret: process.env.SESSION_SECRET || 'supermorse-secret-key',
   resave: false,
   saveUninitialized: false
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/supermorse', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('Connected to MongoDB');
-}).catch(err => {
-  console.error('MongoDB connection error:', err);
-});
+// Connect to PostgreSQL
+(async () => {
+  try {
+    // Test database connection
+    const connected = await testConnection();
+    if (!connected) {
+      console.error('Failed to connect to PostgreSQL. Please check your configuration.');
+      return;
+    }
+    
+    // Initialize database (sync models)
+    const initialized = await initDatabase();
+    if (!initialized) {
+      console.error('Failed to initialize database. Please check your models.');
+      return;
+    }
+    
+    console.log('Connected to PostgreSQL and initialized database successfully');
+  } catch (err) {
+    console.error('Database initialization error:', err);
+  }
+})();
 
 // Passport configuration
 passport.use(new LocalStrategy(
   { usernameField: 'username' },
   async (username, password, done) => {
     try {
-      const user = await User.findOne({ username });
+      const user = await User.findOne({ where: { username } });
       if (!user) {
         return done(null, false, { message: 'Incorrect username' });
       }
       
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      const isValidPassword = await user.isValidPassword(password);
       if (!isValidPassword) {
         return done(null, false, { message: 'Incorrect password' });
       }
@@ -68,7 +87,7 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id);
+    const user = await User.findByPk(id);
     done(null, user);
   } catch (err) {
     done(err);
@@ -103,7 +122,7 @@ io.on('connection', (socket) => {
     // Save practice results to database
     if (socket.request.user) {
       try {
-        await Progress.updateProgress(socket.request.user._id, data);
+        await Progress.updateProgress(socket.request.user.id, data);
       } catch (err) {
         console.error('Error saving progress:', err);
       }
@@ -121,7 +140,7 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3030;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
