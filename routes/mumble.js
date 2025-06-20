@@ -22,8 +22,8 @@ const isAuthenticated = (req, res, next) => {
 // Middleware to check if voice chat is unlocked
 const isVoiceChatUnlocked = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
-    if (user && user.featuresUnlocked.voiceChat) {
+    const user = await User.findByPk(req.user.id);
+    if (user && user.featuresUnlockedVoiceChat) {
       return next();
     }
     return res.status(403).json({
@@ -132,7 +132,7 @@ router.post('/stop', isAuthenticated, async (req, res) => {
 router.put('/metadata', isAuthenticated, isVoiceChatUnlocked, async (req, res) => {
   try {
     const { maidenheadGrid, preferredHfBand } = req.body;
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id);
     
     // Update Maidenhead grid if provided
     if (maidenheadGrid !== undefined) {
@@ -150,7 +150,7 @@ router.put('/metadata', isAuthenticated, isVoiceChatUnlocked, async (req, res) =
       success: true,
       message: 'Mumble metadata updated successfully',
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
         maidenheadGrid: user.maidenheadGrid,
         preferredHfBand: user.preferredHfBand
@@ -168,10 +168,10 @@ router.put('/metadata', isAuthenticated, isVoiceChatUnlocked, async (req, res) =
 // Get recommended HF band based on propagation conditions
 router.get('/hf-recommendation', isAuthenticated, isVoiceChatUnlocked, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id);
     
     // Check if HF simulation is unlocked
-    if (!user.featuresUnlocked.hfSimulation) {
+    if (!user.featuresUnlockedHfSimulation) {
       return res.status(403).json({
         success: false,
         message: 'HF simulation feature is locked'

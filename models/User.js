@@ -1,117 +1,128 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
 const bcrypt = require('bcrypt');
+const { sequelize } = require('../config/database');
 
-const UserSchema = new mongoose.Schema({
+class User extends Model {
+  // Method to check if password is valid
+  async isValidPassword(password) {
+    try {
+      return await bcrypt.compare(password, this.password);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  // Method to check if all required features are unlocked for voice chat
+  canUseVoiceChat() {
+    return (
+      this.featuresUnlockedInternationalMorse &&
+      this.featuresUnlockedProsigns &&
+      this.featuresUnlockedSpecialCharacters
+    );
+  }
+
+  // Method to unlock a feature
+  async unlockFeature(feature) {
+    const featureMap = {
+      'internationalMorse': 'featuresUnlockedInternationalMorse',
+      'prosigns': 'featuresUnlockedProsigns',
+      'specialCharacters': 'featuresUnlockedSpecialCharacters',
+      'voiceChat': 'featuresUnlockedVoiceChat',
+      'hfSimulation': 'featuresUnlockedHfSimulation'
+    };
+
+    const sequelizeField = featureMap[feature];
+    
+    if (sequelizeField) {
+      this[sequelizeField] = true;
+      
+      // If all prerequisites are unlocked, also unlock voice chat
+      if (
+        feature !== 'voiceChat' &&
+        feature !== 'hfSimulation' &&
+        this.canUseVoiceChat()
+      ) {
+        this.featuresUnlockedVoiceChat = true;
+      }
+      
+      await this.save();
+      return true;
+    }
+    return false;
+  }
+}
+
+User.init({
   username: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
-    trim: true
+    validate: {
+      notEmpty: true
+    }
   },
   password: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   email: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
-    trim: true
+    validate: {
+      isEmail: true
+    }
   },
   createdAt: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   },
   lastLogin: {
-    type: Date,
-    default: null
+    type: DataTypes.DATE,
+    allowNull: true
   },
   // Mumble/Murmur integration
   maidenheadGrid: {
-    type: String,
-    default: ''
+    type: DataTypes.STRING,
+    defaultValue: ''
   },
   preferredHfBand: {
-    type: String,
-    enum: ['', '160', '80', '60', '40', '30', '20', '17', '15', '10', '6'],
-    default: ''
+    type: DataTypes.ENUM('', '160', '80', '60', '40', '30', '20', '17', '15', '10', '6'),
+    defaultValue: ''
   },
-  // Feature unlocking
-  featuresUnlocked: {
-    internationalMorse: {
-      type: Boolean,
-      default: false
-    },
-    prosigns: {
-      type: Boolean,
-      default: false
-    },
-    specialCharacters: {
-      type: Boolean,
-      default: false
-    },
-    voiceChat: {
-      type: Boolean,
-      default: false
-    },
-    hfSimulation: {
-      type: Boolean,
-      default: false
+  // Feature unlocking (flattened from nested object in MongoDB)
+  featuresUnlockedInternationalMorse: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  featuresUnlockedProsigns: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  featuresUnlockedSpecialCharacters: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  featuresUnlockedVoiceChat: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  featuresUnlockedHfSimulation: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  }
+}, {
+  sequelize,
+  modelName: 'User',
+  hooks: {
+    // Hash password before saving
+    beforeSave: async (user) => {
+      if (user.changed('password')) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(user.password, salt);
+      }
     }
   }
 });
 
-// Hash password before saving
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-  
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Method to check if password is valid
-UserSchema.methods.isValidPassword = async function(password) {
-  try {
-    return await bcrypt.compare(password, this.password);
-  } catch (err) {
-    throw err;
-  }
-};
-
-// Method to check if all required features are unlocked for voice chat
-UserSchema.methods.canUseVoiceChat = function() {
-  return (
-    this.featuresUnlocked.internationalMorse &&
-    this.featuresUnlocked.prosigns &&
-    this.featuresUnlocked.specialCharacters
-  );
-};
-
-// Method to unlock a feature
-UserSchema.methods.unlockFeature = async function(feature) {
-  if (this.featuresUnlocked.hasOwnProperty(feature)) {
-    this.featuresUnlocked[feature] = true;
-    
-    // If all prerequisites are unlocked, also unlock voice chat
-    if (
-      feature !== 'voiceChat' &&
-      feature !== 'hfSimulation' &&
-      this.canUseVoiceChat()
-    ) {
-      this.featuresUnlocked.voiceChat = true;
-    }
-    
-    await this.save();
-    return true;
-  }
-  return false;
-};
-
-module.exports = mongoose.model('User', UserSchema);
+module.exports = User;

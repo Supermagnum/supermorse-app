@@ -14,57 +14,76 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Functions for colored output
-function success_message() {
-    echo -e "${GREEN}[SUCCESS] $1${NC}"
+function print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-function info_message() {
-    echo -e "${CYAN}[SUPERMORSE] $1${NC}"
+function print_info() {
+    echo -e "${CYAN}[SUPERMORSE]${NC} $1"
 }
 
-function warning_message() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
+function print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-function error_message() {
-    echo -e "${RED}[ERROR] $1${NC}"
+function print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
 }
+
+# Check if running as root
+if [ "$(id -u)" -eq 0 ]; then
+    print_error "Please do not run this script as root or with sudo."
+    exit 1
+fi
 
 # Configuration
 MUMBLE_DIR="../supermorse-mumble"  # Path to the supermorse-mumble directory
-MONGODB_PORT=27017
+POSTGRESQL_PORT=5432
 MUMBLE_PORT=64738
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Step 1: Check for required tools
-info_message "Checking for required tools..."
+print_info "Checking for required tools..."
 
 # Check for Homebrew
 if ! command -v brew &> /dev/null; then
-    error_message "Homebrew is required but not installed."
-    echo "Please install Homebrew from https://brew.sh/"
-    exit 1
+    print_info "Homebrew not found. Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    
+    # Add Homebrew to PATH
+    if [[ $(uname -m) == 'arm64' ]]; then
+        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    else
+        echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zprofile
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
 fi
-echo "Homebrew found."
 
 # Check for Node.js
 if ! command -v node &> /dev/null; then
-    error_message "Node.js is required but not installed."
-    echo "Please install Node.js using Homebrew: brew install node"
-    exit 1
+    print_info "Node.js not found. Installing Node.js..."
+    brew install node
 fi
-NODE_VERSION=$(node -v | cut -c2-)
-NODE_MAJOR=$(echo $NODE_VERSION | cut -d. -f1)
+
+NODE_VERSION=$(node -v | cut -d 'v' -f 2)
+NODE_MAJOR=$(echo $NODE_VERSION | cut -d '.' -f 1)
 if [ "$NODE_MAJOR" -lt 14 ]; then
-    error_message "Node.js v14 or later is required. Found v$NODE_VERSION"
-    exit 1
+    print_error "Node.js v14 or later is required. Found v$NODE_VERSION"
+    print_info "Upgrading Node.js..."
+    brew upgrade node
+    NODE_VERSION=$(node -v | cut -d 'v' -f 2)
+    NODE_MAJOR=$(echo $NODE_VERSION | cut -d '.' -f 1)
+    if [ "$NODE_MAJOR" -lt 14 ]; then
+        print_error "Failed to upgrade Node.js to v14 or later."
+        exit 1
+    fi
 fi
 echo "Node.js v$NODE_VERSION found."
 
 # Check for npm
 if ! command -v npm &> /dev/null; then
-    error_message "npm is required but not installed."
+    print_error "npm is required but not installed."
     exit 1
 fi
 NPM_VERSION=$(npm -v)
@@ -72,68 +91,80 @@ echo "npm v$NPM_VERSION found."
 
 # Check for Git
 if ! command -v git &> /dev/null; then
-    error_message "Git is required but not installed."
-    echo "Please install Git using Homebrew: brew install git"
-    exit 1
+    print_info "Git not found. Installing Git..."
+    brew install git
 fi
-GIT_VERSION=$(git --version | cut -d' ' -f3)
+GIT_VERSION=$(git --version | cut -d ' ' -f 3)
 echo "Git v$GIT_VERSION found."
 
 # Step 2: Install dependencies
-info_message "Installing dependencies..."
+print_info "Installing dependencies..."
 
-# Install MongoDB
-info_message "Installing MongoDB..."
-brew tap mongodb/brew
-brew install mongodb-community
+# Install PostgreSQL
+print_info "Installing PostgreSQL..."
+brew install postgresql
 
-# Install Qt (needed for Mumble)
-info_message "Installing Qt..."
-brew install qt@5
+# Start PostgreSQL service
+print_info "Starting PostgreSQL service..."
+brew services start postgresql
 
-# Install Python (needed for Mumble)
-info_message "Installing Python..."
-brew install python
+# Wait for PostgreSQL to start
+sleep 5
 
-# Install Python dependencies
-info_message "Installing Python dependencies..."
-pip3 install requests
+# Create PostgreSQL user and database
+print_info "Setting up PostgreSQL for Supermorse..."
+createuser -s postgres 2>/dev/null || true
+psql -U postgres -c "CREATE USER supermorse WITH PASSWORD 'supermorse';" 2>/dev/null || true
+psql -U postgres -c "CREATE DATABASE supermorse OWNER supermorse;" 2>/dev/null || true
+psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE supermorse TO supermorse;" 2>/dev/null || true
 
-# Install build tools
-info_message "Installing build tools..."
-brew install cmake
-brew install boost
-brew install openssl
+# Create .env file for database connection
+print_info "Creating .env file for database connection..."
+cat > .env << EOL
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=supermorse
+DB_USER=supermorse
+DB_PASSWORD=supermorse
+SESSION_SECRET=$(openssl rand -hex 32)
+EOL
 
-# Step 3: Set up MongoDB
-info_message "Setting up MongoDB..."
-
-# Start MongoDB service
-brew services start mongodb-community
-
-# Check if MongoDB is running
-if ! pgrep -x "mongod" > /dev/null; then
-    error_message "Failed to start MongoDB. Please check the MongoDB service."
+# Test PostgreSQL connection
+print_info "Testing PostgreSQL connection..."
+if PGPASSWORD=supermorse psql -h localhost -U supermorse -d supermorse -c "SELECT 1;" > /dev/null 2>&1; then
+    print_success "PostgreSQL connection successful."
+else
+    print_error "Failed to connect to PostgreSQL. Please check the PostgreSQL service and configuration."
     exit 1
 fi
 
-success_message "MongoDB is running on port $MONGODB_PORT"
+# Install Qt (needed for Mumble)
+print_info "Installing Qt..."
+brew install qt@5
 
-# Step 4: Install Node.js dependencies or build the Electron application
-info_message "Building Supermorse Electron application..."
+# Install other dependencies
+print_info "Installing other dependencies..."
+brew install cmake pkg-config openssl boost protobuf libsndfile
+
+# Install Python dependencies
+print_info "Installing Python dependencies..."
+pip3 install requests
+
+# Step 3: Install Node.js dependencies or build the Electron application
+print_info "Building Supermorse Electron application..."
 cd "$SCRIPT_DIR"
 npm install
 npm run dist -- --mac
 
 if [ ! -d "dist" ]; then
-    error_message "Failed to build the Electron application."
+    print_error "Failed to build the Electron application."
     exit 1
 fi
 
-success_message "Electron application built successfully"
+print_success "Electron application built successfully"
 
-# Step 5: Build the modified Mumble server
-info_message "Building modified Mumble server..."
+# Step 4: Build the modified Mumble server
+print_info "Building modified Mumble server..."
 
 # Create murmur-src directory if it doesn't exist
 if [ ! -d "murmur-src" ]; then
@@ -143,40 +174,38 @@ fi
 # Copy the modified Mumble source code
 cd murmur-src
 if [ ! -f "CMakeLists.txt" ]; then
-    info_message "Copying Mumble source code..."
-    cp -r $MUMBLE_DIR/* .
+    print_info "Copying Mumble source code..."
+    cp -r "$MUMBLE_DIR"/* .
 else
-    info_message "Updating Mumble source code..."
-    cp -r $MUMBLE_DIR/* .
+    print_info "Updating Mumble source code..."
+    cp -r "$MUMBLE_DIR"/* .
 fi
 
-# Configure or build
-info_message "Building Mumble server..."
-warning_message "Building Mumble on macOS can be complex."
-warning_message "Please follow the detailed instructions in the Mumble documentation."
-warning_message "This script will create a placeholder for the Mumble server executable."
+# Create a placeholder for the Mumble server executable
+print_warning "Building Mumble on macOS requires Xcode and can be complex."
+print_warning "Please follow the detailed instructions in the Mumble documentation."
+print_warning "This script will create a placeholder for the Mumble server executable."
 
-# Create a placeholder script for the Mumble server
-cat > murmur << 'EOF'
+# Create a placeholder shell script for the Mumble server
+cat > murmur << 'EOL'
 #!/bin/bash
-
 echo "ERROR: This is a placeholder for the modified Mumble server executable."
 echo "You need to build the actual executable and place it here."
-echo
+echo ""
 echo "Please follow the instructions in the Mumble Server Deployment Guide:"
 echo "../docs/mumble-server-setup.md"
-echo
+echo ""
 echo "After building the server, replace this placeholder with the compiled executable."
 exit 1
-EOF
+EOL
 
 chmod +x murmur
 
-info_message "Created placeholder for Mumble server executable."
-info_message "To build the actual Mumble server, please follow the instructions in the documentation."
+print_info "Created placeholder for Mumble server executable."
+print_info "To build the actual Mumble server, please follow the instructions in the documentation."
 
-# Step 6: Set up Mumble server configuration
-info_message "Setting up Mumble server configuration..."
+# Step 5: Set up Mumble server configuration
+print_info "Setting up Mumble server configuration..."
 
 # Create configuration directories
 MUMBLE_CONFIG_DIR="$HOME/Library/Application Support/Supermorse/Mumble"
@@ -186,7 +215,7 @@ mkdir -p "$MUMBLE_CONFIG_DIR"
 cp "$SCRIPT_DIR/config/mumble-server.ini" "$MUMBLE_CONFIG_DIR/mumble-server.ini"
 
 # Generate SSL certificates
-info_message "Generating SSL certificates..."
+print_info "Generating SSL certificates..."
 openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
   -keyout "$MUMBLE_CONFIG_DIR/key.pem" \
   -out "$MUMBLE_CONFIG_DIR/cert.pem" \
@@ -197,7 +226,7 @@ MUMBLE_SCRIPT_DIR="$HOME/Library/Application Support/Supermorse/Scripts"
 mkdir -p "$MUMBLE_SCRIPT_DIR"
 
 # Create authentication script
-cat > "$MUMBLE_SCRIPT_DIR/mumble-auth.py" << 'EOF'
+cat > "$MUMBLE_SCRIPT_DIR/mumble-auth.py" << 'EOL'
 #!/usr/bin/env python3
 
 import sys
@@ -237,19 +266,21 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         sys.exit(user_id)
-EOF
+EOL
 
 chmod +x "$MUMBLE_SCRIPT_DIR/mumble-auth.py"
 
-success_message "Mumble server configuration completed"
+print_success "Mumble server configuration completed"
 
-# Step 7: Create LaunchAgent for Mumble server
-info_message "Creating LaunchAgent for Mumble server..."
+# Step 6: Create LaunchAgent for Mumble server
+print_info "Creating LaunchAgent for Mumble server..."
 
+# Create LaunchAgent directory if it doesn't exist
 LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
 mkdir -p "$LAUNCH_AGENT_DIR"
 
-cat > "$LAUNCH_AGENT_DIR/com.supermorse.mumble.plist" << EOF
+# Create LaunchAgent plist file
+cat > "$LAUNCH_AGENT_DIR/com.supermorse.mumble.plist" << EOL
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -258,48 +289,50 @@ cat > "$LAUNCH_AGENT_DIR/com.supermorse.mumble.plist" << EOF
     <string>com.supermorse.mumble</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$SCRIPT_DIR/murmur-src/murmur</string>
+        <string>${SCRIPT_DIR}/murmur-src/murmur</string>
         <string>-ini</string>
-        <string>$MUMBLE_CONFIG_DIR/mumble-server.ini</string>
+        <string>${MUMBLE_CONFIG_DIR}/mumble-server.ini</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
-    <key>StandardErrorPath</key>
-    <string>$HOME/Library/Logs/Supermorse/mumble-error.log</string>
-    <key>StandardOutPath</key>
-    <string>$HOME/Library/Logs/Supermorse/mumble-output.log</string>
     <key>WorkingDirectory</key>
-    <string>$SCRIPT_DIR/murmur-src</string>
+    <string>${SCRIPT_DIR}</string>
+    <key>StandardErrorPath</key>
+    <string>${HOME}/Library/Logs/supermorse-mumble.log</string>
+    <key>StandardOutPath</key>
+    <string>${HOME}/Library/Logs/supermorse-mumble.log</string>
 </dict>
 </plist>
-EOF
+EOL
 
-# Create log directory
-mkdir -p "$HOME/Library/Logs/Supermorse"
-
-info_message "LaunchAgent created. To load it, run:"
+print_info "To load the LaunchAgent, run:"
 echo "launchctl load $LAUNCH_AGENT_DIR/com.supermorse.mumble.plist"
 
-# Step 8: Final instructions
-info_message "Build or setup completed successfully!"
-echo
+# Step 7: Final instructions
+print_info "Build or setup completed successfully!"
+echo ""
 echo "To run the Supermorse application:"
-echo "  1. Open the application from: $SCRIPT_DIR/dist/mac/Supermorse.app"
-echo
+echo "  1. Start the server: npm run server"
+echo "  2. In another terminal, start the Electron app: npm start"
+echo ""
+echo "To run the built Electron application:"
+echo "  open ./dist/mac/Supermorse.app"
+echo ""
 echo "To manage the Mumble server:"
-echo "  - Start: launchctl load $LAUNCH_AGENT_DIR/com.supermorse.mumble.plist"
-echo "  - Stop: launchctl unload $LAUNCH_AGENT_DIR/com.supermorse.mumble.plist"
-echo "  - Check logs: cat $HOME/Library/Logs/Supermorse/mumble-output.log"
-echo
+echo "  - Start: launchctl start com.supermorse.mumble"
+echo "  - Stop: launchctl stop com.supermorse.mumble"
+echo "  - Load at login: launchctl load $LAUNCH_AGENT_DIR/com.supermorse.mumble.plist"
+echo "  - Unload: launchctl unload $LAUNCH_AGENT_DIR/com.supermorse.mumble.plist"
+echo ""
 echo "The Mumble server is accessible at: localhost:$MUMBLE_PORT"
-echo "MongoDB is running on: localhost:$MONGODB_PORT"
-echo
+echo "PostgreSQL is running on: localhost:$POSTGRESQL_PORT"
+echo ""
 echo "For more information, see the documentation in the docs/ directory."
-echo
-warning_message "Important: You need to build the actual Mumble server executable."
-warning_message "The script has created a placeholder. Please follow the instructions in the documentation."
+echo ""
+print_warning "Important: You need to build the actual Mumble server executable."
+print_warning "The script has created a placeholder. Please follow the instructions in the documentation."
 
 # Return to the original directory
 cd "$SCRIPT_DIR"
