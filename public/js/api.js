@@ -157,22 +157,6 @@ const API = (function() {
         },
         
         /**
-         * Start Mumble server
-         * @returns {Promise} - Promise resolving to start result
-         */
-        startServer: async function() {
-            return makeRequest('/mumble/start', 'POST');
-        },
-        
-        /**
-         * Stop Mumble server
-         * @returns {Promise} - Promise resolving to stop result
-         */
-        stopServer: async function() {
-            return makeRequest('/mumble/stop', 'POST');
-        },
-        
-        /**
          * Update Mumble metadata
          * @param {Object} metadata - Mumble metadata
          * @returns {Promise} - Promise resolving to update result
