@@ -42,7 +42,7 @@ if ($isAdmin) {
 }
 
 # Configuration
-$MumbleRepoUrl = "https://github.com/Supermagnum/supermorse-mumble.git"
+$MumbleDir = "..\supermorse-mumble"  # Path to the supermorse-mumble directory
 $MongoDBPort = 27017
 $MumblePort = 64738
 $ScriptDir = $PSScriptRoot
@@ -158,14 +158,14 @@ if (-not (Test-Path "murmur-src")) {
     New-Item -ItemType Directory -Path "murmur-src" | Out-Null
 }
 
-# Clone the modified Mumble repository
+# Copy the modified Mumble source code
 Set-Location "murmur-src"
-if (-not (Test-Path ".git")) {
-    Write-InfoMessage "Cloning Mumble repository..."
-    git clone $MumbleRepoUrl .
+if (-not (Test-Path "CMakeLists.txt")) {
+    Write-InfoMessage "Copying Mumble source code..."
+    Copy-Item -Path "$MumbleDir\*" -Destination "." -Recurse -Force
 } else {
-    Write-InfoMessage "Updating Mumble repository..."
-    git pull
+    Write-InfoMessage "Updating Mumble source code..."
+    Copy-Item -Path "$MumbleDir\*" -Destination "." -Recurse -Force
 }
 
 # Configure or build
