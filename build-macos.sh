@@ -32,7 +32,7 @@ function error_message() {
 }
 
 # Configuration
-MUMBLE_REPO_URL="https://github.com/Supermagnum/supermorse-mumble.git"
+MUMBLE_DIR="../supermorse-mumble"  # Path to the supermorse-mumble directory
 MONGODB_PORT=27017
 MUMBLE_PORT=64738
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -140,14 +140,14 @@ if [ ! -d "murmur-src" ]; then
     mkdir -p murmur-src
 fi
 
-# Clone the modified Mumble repository
+# Copy the modified Mumble source code
 cd murmur-src
-if [ ! -d ".git" ]; then
-    info_message "Cloning Mumble repository..."
-    git clone $MUMBLE_REPO_URL .
+if [ ! -f "CMakeLists.txt" ]; then
+    info_message "Copying Mumble source code..."
+    cp -r $MUMBLE_DIR/* .
 else
-    info_message "Updating Mumble repository..."
-    git pull
+    info_message "Updating Mumble source code..."
+    cp -r $MUMBLE_DIR/* .
 fi
 
 # Configure or build

@@ -41,7 +41,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
 
 # Configuration
-MUMBLE_REPO_URL="https://github.com/Supermagnum/supermorse-mumble.git"
+MUMBLE_DIR="../supermorse-mumble"  # Path to the supermorse-mumble directory
 MONGODB_PORT=27017
 MUMBLE_PORT=64738
 
@@ -112,14 +112,14 @@ if [ ! -d "murmur-src" ]; then
     mkdir -p murmur-src
 fi
 
-# Clone the modified Mumble repository
+# Copy the modified Mumble source code
 cd murmur-src
-if [ ! -d ".git" ]; then
-    print_message "Cloning Mumble repository..."
-    git clone $MUMBLE_REPO_URL .
+if [ ! -f "CMakeLists.txt" ]; then
+    print_message "Copying Mumble source code..."
+    cp -r $MUMBLE_DIR/* .
 else
-    print_message "Updating Mumble repository..."
-    git pull
+    print_message "Mumble source code already exists, updating..."
+    cp -r $MUMBLE_DIR/* .
 fi
 
 # Configure or build
