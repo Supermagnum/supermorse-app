@@ -16,6 +16,10 @@ Supermorse is a desktop application for learning Morse code progressively using 
 - **User Accounts**: Track your progress across sessions
 - **Mumble Integration**: Connect with other Morse code enthusiasts
 
+
+## The programming:
+I have a neurological condition that makes it impossible for me to understand programming.
+I had to use a AI.
 ## Electron Implementation
 
 Supermorse is built using Electron, which allows it to run as a native desktop application on Windows, macOS, and Linux. The Electron implementation provides several advantages over a web application:
@@ -38,7 +42,7 @@ Supermorse is built using Electron, which allows it to run as a native desktop a
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/supermorse-app.git
+   git clone https://github.com/Supermagnum/supermorse-app.git
    cd supermorse-app
    ```
 
