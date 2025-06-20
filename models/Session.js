@@ -17,7 +17,7 @@ Session.init({
     defaultValue: 0
   },
   charactersStudied: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+    type: DataTypes.JSON,
     defaultValue: []
   },
   overallAccuracy: {

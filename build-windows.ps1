@@ -43,7 +43,7 @@ if ($isAdmin) {
 
 # Configuration
 $MumbleDir = "..\supermorse-mumble"  # Path to the supermorse-mumble directory
-$PostgreSQLPort = 5432
+$MariaDBPort = 3306
 $MumblePort = 64738
 $ScriptDir = $PSScriptRoot
 
@@ -107,9 +107,48 @@ if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 }
 
-# Install PostgreSQL
-Write-InfoMessage "Installing PostgreSQL..."
-choco install postgresql -y
+# Check if MariaDB is already installed
+$mariadbInstalled = $false
+try {
+    $mariadbService = Get-Service -Name mariadb -ErrorAction SilentlyContinue
+    if ($mariadbService) {
+        $mariadbInstalled = $true
+        Write-InfoMessage "MariaDB is already installed"
+        
+        # Check MariaDB version
+        try {
+            $mariadbVersion = (mysql --version) -replace '.*Distrib ([0-9]+\.[0-9]+\.[0-9]+).*', '$1'
+            Write-InfoMessage "Detected MariaDB version: $mariadbVersion"
+            
+            # Check if version is compatible (MariaDB 10.2 or higher recommended for JSON support)
+            $versionParts = $mariadbVersion -split '\.'
+            $majorVersion = [int]$versionParts[0]
+            $minorVersion = [int]$versionParts[1]
+            
+            if ($majorVersion -lt 10 -or ($majorVersion -eq 10 -and $minorVersion -lt 2)) {
+                Write-WarningMessage "Your MariaDB version ($mariadbVersion) may not fully support JSON features"
+                Write-WarningMessage "MariaDB 10.2 or higher is recommended for optimal compatibility"
+                $continue = Read-Host "Do you want to continue anyway? (y/n)"
+                if ($continue -ne "y") {
+                    Write-InfoMessage "Please upgrade MariaDB to version 10.2 or higher and run this script again"
+                    exit 1
+                }
+            } else {
+                Write-SuccessMessage "Your MariaDB version is compatible with Supermorse"
+            }
+        } catch {
+            Write-WarningMessage "Could not determine MariaDB version. Continuing anyway..."
+        }
+    } else {
+        # Install MariaDB
+        Write-InfoMessage "Installing MariaDB..."
+        choco install mariadb -y
+    }
+} catch {
+    Write-WarningMessage "Error checking for MariaDB: $_"
+    Write-InfoMessage "Installing MariaDB..."
+    choco install mariadb -y
+}
 
 # Install Qt (needed for Mumble)
 Write-InfoMessage "Installing Qt..."
@@ -123,58 +162,190 @@ choco install python -y
 Write-InfoMessage "Installing Python dependencies..."
 pip install requests
 
-# Step 3: Set up PostgreSQL
-Write-InfoMessage "Setting up PostgreSQL..."
+# Step 3: Set up MariaDB
+Write-InfoMessage "Setting up MariaDB..."
 
-# Start PostgreSQL service
-Start-Service postgresql
+# Start MariaDB service if not running
+if ((Get-Service mariadb).Status -ne "Running") {
+    Write-InfoMessage "Starting MariaDB service..."
+    Start-Service mariadb
+}
 
-# Check if PostgreSQL is running
-if ((Get-Service postgresql).Status -ne "Running") {
-    Write-ErrorMessage "Failed to start PostgreSQL. Please check the PostgreSQL service."
+# Check if MariaDB is running
+if ((Get-Service mariadb).Status -ne "Running") {
+    Write-ErrorMessage "Failed to start MariaDB. Please check the MariaDB service."
     exit 1
 }
 
-# Create PostgreSQL user and database
-Write-InfoMessage "Setting up PostgreSQL for Supermorse..."
-$env:PGPASSWORD = "postgres"
-$createUserCmd = "createuser -U postgres -P -s supermorse"
-$createDbCmd = "createdb -U postgres -O supermorse supermorse"
+# Database settings
+$DB_NAME = "supermorse"
+$DB_USER = "supermorse"
+$DB_PASSWORD = "supermorse"
+$DB_SAFE_MODE = "false"
 
-# Execute PostgreSQL commands
-try {
-    # Create user
-    $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $createUserCmd" -NoNewWindow -PassThru -Wait
-    if ($process.ExitCode -ne 0) {
-        Write-WarningMessage "User 'supermorse' might already exist. Continuing..."
-    } else {
-        Write-Host "User 'supermorse' created successfully."
-    }
+# Check if database exists
+$checkDbCmd = "mysql -u root -e ""SHOW DATABASES LIKE '$DB_NAME';"""
+$process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $checkDbCmd" -NoNewWindow -PassThru -Wait -RedirectStandardOutput "db_check.txt"
+$dbExists = Get-Content "db_check.txt" -ErrorAction SilentlyContinue | Select-String -Pattern $DB_NAME
+Remove-Item "db_check.txt" -ErrorAction SilentlyContinue
+
+if ($dbExists) {
+    Write-InfoMessage "Database $DB_NAME already exists"
     
+    # Ask if user wants to use the existing database
+    $useExisting = Read-Host "Do you want to use the existing database? (y/n)"
+    if ($useExisting -eq "y") {
+        Write-InfoMessage "Using existing database $DB_NAME"
+        $DB_SAFE_MODE = "true"
+    } else {
+        Write-WarningMessage "Creating a new database will drop the existing one"
+        $confirm = Read-Host "Are you sure you want to proceed? (y/n)"
+        if ($confirm -eq "y") {
+            Write-InfoMessage "Dropping existing database $DB_NAME..."
+            $dropDbCmd = "mysql -u root -e ""DROP DATABASE $DB_NAME;"""
+            Start-Process -FilePath "cmd.exe" -ArgumentList "/c $dropDbCmd" -NoNewWindow -PassThru -Wait
+            
+            Write-InfoMessage "Creating database $DB_NAME..."
+            $createDbCmd = "mysql -u root -e ""CREATE DATABASE $DB_NAME;"""
+            Start-Process -FilePath "cmd.exe" -ArgumentList "/c $createDbCmd" -NoNewWindow -PassThru -Wait
+        } else {
+            Write-InfoMessage "Keeping existing database $DB_NAME"
+            $DB_SAFE_MODE = "true"
+        }
+    }
+} else {
     # Create database
+    Write-InfoMessage "Creating database $DB_NAME..."
+    $createDbCmd = "mysql -u root -e ""CREATE DATABASE IF NOT EXISTS $DB_NAME;"""
     $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $createDbCmd" -NoNewWindow -PassThru -Wait
     if ($process.ExitCode -ne 0) {
-        Write-WarningMessage "Database 'supermorse' might already exist. Continuing..."
+        Write-WarningMessage "Failed to create database '$DB_NAME'. It might already exist. Continuing..."
     } else {
-        Write-Host "Database 'supermorse' created successfully."
+        Write-Host "Database '$DB_NAME' created successfully."
     }
-} catch {
-    Write-ErrorMessage "Failed to set up PostgreSQL. Error: $_"
-    exit 1
+}
+
+# Check if user exists
+$checkUserCmd = "mysql -u root -e ""SELECT User FROM mysql.user WHERE User='$DB_USER';"""
+$process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $checkUserCmd" -NoNewWindow -PassThru -Wait -RedirectStandardOutput "user_check.txt"
+$userExists = Get-Content "user_check.txt" -ErrorAction SilentlyContinue | Select-String -Pattern $DB_USER
+Remove-Item "user_check.txt" -ErrorAction SilentlyContinue
+
+if ($userExists) {
+    Write-InfoMessage "User $DB_USER already exists"
+    
+    # Update privileges for the existing user
+    $grantPrivilegesCmd = "mysql -u root -e ""GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';"""
+    $flushPrivilegesCmd = "mysql -u root -e ""FLUSH PRIVILEGES;"""
+    
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c $grantPrivilegesCmd" -NoNewWindow -PassThru -Wait
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c $flushPrivilegesCmd" -NoNewWindow -PassThru -Wait
+} else {
+    # Create user
+    Write-InfoMessage "Creating user $DB_USER..."
+    $createUserCmd = "mysql -u root -e ""CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';"""
+    $grantPrivilegesCmd = "mysql -u root -e ""GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';"""
+    $flushPrivilegesCmd = "mysql -u root -e ""FLUSH PRIVILEGES;"""
+    
+    # Execute MariaDB commands
+    try {
+        # Create user
+        $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $createUserCmd" -NoNewWindow -PassThru -Wait
+        if ($process.ExitCode -ne 0) {
+            Write-WarningMessage "Failed to create user '$DB_USER'. It might already exist. Continuing..."
+        } else {
+            Write-Host "User '$DB_USER' created successfully."
+        }
+        
+        # Grant privileges
+        $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $grantPrivilegesCmd" -NoNewWindow -PassThru -Wait
+        if ($process.ExitCode -ne 0) {
+            Write-WarningMessage "Failed to grant privileges. Continuing..."
+        } else {
+            Write-Host "Privileges granted successfully."
+        }
+        
+        # Flush privileges
+        $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $flushPrivilegesCmd" -NoNewWindow -PassThru -Wait
+        if ($process.ExitCode -ne 0) {
+            Write-WarningMessage "Failed to flush privileges. Continuing..."
+        } else {
+            Write-Host "Privileges flushed successfully."
+        }
+    } catch {
+        Write-ErrorMessage "Failed to set up MariaDB. Error: $_"
+        exit 1
+    }
 }
 
 # Create .env file for database connection
 Write-InfoMessage "Creating .env file for database connection..."
 @"
 DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=supermorse
-DB_USER=supermorse
-DB_PASSWORD=supermorse
+DB_PORT=3306
+DB_NAME=$DB_NAME
+DB_USER=$DB_USER
+DB_PASSWORD=$DB_PASSWORD
+DB_SAFE_MODE=$DB_SAFE_MODE
 SESSION_SECRET=$(New-Guid)
 "@ | Out-File -FilePath ".env" -Encoding ASCII
 
-Write-SuccessMessage "PostgreSQL is running on port $PostgreSQLPort"
+# Test MariaDB connection
+Write-InfoMessage "Testing MariaDB connection..."
+$testConnectionCmd = "mysql -u $DB_USER -p$DB_PASSWORD -e ""SELECT 1;"" $DB_NAME"
+$process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $testConnectionCmd" -NoNewWindow -PassThru -Wait
+if ($process.ExitCode -eq 0) {
+    Write-SuccessMessage "MariaDB connection successful"
+} else {
+    Write-ErrorMessage "Failed to connect to MariaDB"
+    Write-InfoMessage "Troubleshooting..."
+    
+    # Check if MariaDB is running
+    if ((Get-Service mariadb).Status -ne "Running") {
+        Write-ErrorMessage "MariaDB service is not running"
+        Write-InfoMessage "Restarting MariaDB service..."
+        Restart-Service mariadb
+        Start-Sleep -Seconds 5
+    }
+    
+    # Check if password authentication is correct
+    Write-InfoMessage "Checking password authentication..."
+    $resetPasswordCmd = "mysql -u root -e ""ALTER USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';"""
+    $flushPrivilegesCmd = "mysql -u root -e ""FLUSH PRIVILEGES;"""
+    
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c $resetPasswordCmd" -NoNewWindow -PassThru -Wait
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/c $flushPrivilegesCmd" -NoNewWindow -PassThru -Wait
+    
+    # Try connection again
+    Write-InfoMessage "Trying connection again..."
+    $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $testConnectionCmd" -NoNewWindow -PassThru -Wait
+    if ($process.ExitCode -eq 0) {
+        Write-SuccessMessage "MariaDB connection successful after troubleshooting"
+    } else {
+        Write-ErrorMessage "Connection to MariaDB still failing"
+        Write-InfoMessage "Please check your MariaDB configuration manually"
+    }
+}
+
+Write-SuccessMessage "MariaDB is running on port $MariaDBPort"
+
+# Check for cqrlog compatibility
+$cqrlogInstalled = Get-Command cqrlog -ErrorAction SilentlyContinue
+if ($cqrlogInstalled) {
+    Write-InfoMessage "cqrlog detected on the system"
+    Write-InfoMessage "Checking for cqrlog database..."
+    
+    $checkCqrlogDbCmd = "mysql -u root -e ""SHOW DATABASES LIKE 'cqrlog';"""
+    $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $checkCqrlogDbCmd" -NoNewWindow -PassThru -Wait -RedirectStandardOutput "cqrlog_check.txt"
+    $cqrlogDbExists = Get-Content "cqrlog_check.txt" -ErrorAction SilentlyContinue | Select-String -Pattern "cqrlog"
+    Remove-Item "cqrlog_check.txt" -ErrorAction SilentlyContinue
+    
+    if ($cqrlogDbExists) {
+        Write-InfoMessage "cqrlog database found"
+        Write-WarningMessage "Both cqrlog and Supermorse use MariaDB"
+        Write-InfoMessage "They can coexist without issues as they use separate databases"
+    }
+}
 
 # Step 4: Install Node.js dependencies or build the Electron application
 Write-InfoMessage "Building Supermorse Electron application..."
@@ -329,7 +500,7 @@ Write-Host "  - Stop: sc.exe stop SupermorseMumble"
 Write-Host "  - Check status: sc.exe query SupermorseMumble"
 Write-Host ""
 Write-Host "The Mumble server is accessible at: localhost:$MumblePort"
-Write-Host "PostgreSQL is running on: localhost:$PostgreSQLPort"
+Write-Host "MariaDB is running on: localhost:$MariaDBPort"
 Write-Host ""
 Write-Host "For more information, see the documentation in the docs\ directory."
 Write-Host ""

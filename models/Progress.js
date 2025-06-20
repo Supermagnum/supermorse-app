@@ -130,15 +130,15 @@ Progress.init({
   },
   // Character sets that have been introduced to the user
   knownCharactersInternationalMorse: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+    type: DataTypes.JSON,
     defaultValue: []
   },
   knownCharactersProsigns: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+    type: DataTypes.JSON,
     defaultValue: []
   },
   knownCharactersSpecialCharacters: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+    type: DataTypes.JSON,
     defaultValue: []
   },
   // Current learning stage

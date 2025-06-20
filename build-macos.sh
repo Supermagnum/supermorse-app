@@ -38,7 +38,7 @@ fi
 
 # Configuration
 MUMBLE_DIR="../supermorse-mumble"  # Path to the supermorse-mumble directory
-POSTGRESQL_PORT=5432
+MARIADB_PORT=3306
 MUMBLE_PORT=64738
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -100,42 +100,160 @@ echo "Git v$GIT_VERSION found."
 # Step 2: Install dependencies
 print_info "Installing dependencies..."
 
-# Install PostgreSQL
-print_info "Installing PostgreSQL..."
-brew install postgresql
+# Check if MariaDB is already installed
+if brew list mariadb &>/dev/null; then
+    print_info "MariaDB is already installed"
+    
+    # Check MariaDB version
+    MARIADB_VERSION=$(mysql --version | grep -oP 'Distrib \K[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+    print_info "Detected MariaDB version: $MARIADB_VERSION"
+    
+    # Check if version is compatible (MariaDB 10.2 or higher recommended for JSON support)
+    MAJOR_VERSION=$(echo $MARIADB_VERSION | cut -d. -f1)
+    MINOR_VERSION=$(echo $MARIADB_VERSION | cut -d. -f2)
+    
+    if [ "$MAJOR_VERSION" -lt 10 ] || ([ "$MAJOR_VERSION" -eq 10 ] && [ "$MINOR_VERSION" -lt 2 ]); then
+        print_warning "Your MariaDB version ($MARIADB_VERSION) may not fully support JSON features"
+        print_warning "MariaDB 10.2 or higher is recommended for optimal compatibility"
+        echo "Do you want to continue anyway? (y/n)"
+        read -r response
+        if [[ "$response" != "y" ]]; then
+            print_info "Please upgrade MariaDB to version 10.2 or higher and run this script again"
+            print_info "You can upgrade with: brew upgrade mariadb"
+            exit 1
+        fi
+    else
+        print_success "Your MariaDB version is compatible with Supermorse"
+    fi
+else
+    # Install MariaDB
+    print_info "Installing MariaDB..."
+    brew install mariadb
+fi
 
-# Start PostgreSQL service
-print_info "Starting PostgreSQL service..."
-brew services start postgresql
+# Check if MariaDB service is running
+if ! brew services list | grep mariadb | grep started &>/dev/null; then
+    print_info "Starting MariaDB service..."
+    brew services start mariadb
+    
+    # Wait for MariaDB to start
+    print_info "Waiting for MariaDB to start..."
+    sleep 5
+    
+    # Check again if service started successfully
+    if ! brew services list | grep mariadb | grep started &>/dev/null; then
+        print_error "Failed to start MariaDB service"
+        print_info "Please check the MariaDB logs for errors"
+        exit 1
+    fi
+else
+    print_success "MariaDB service is already running"
+fi
 
-# Wait for PostgreSQL to start
-sleep 5
+# Check if database exists
+DB_NAME="supermorse"
+DB_USER="supermorse"
+DB_PASSWORD="supermorse"
+DB_SAFE_MODE="false"
 
-# Create PostgreSQL user and database
-print_info "Setting up PostgreSQL for Supermorse..."
-createuser -s postgres 2>/dev/null || true
-psql -U postgres -c "CREATE USER supermorse WITH PASSWORD 'supermorse';" 2>/dev/null || true
-psql -U postgres -c "CREATE DATABASE supermorse OWNER supermorse;" 2>/dev/null || true
-psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE supermorse TO supermorse;" 2>/dev/null || true
+if mysql -u root -e "SHOW DATABASES LIKE '$DB_NAME';" 2>/dev/null | grep -q "$DB_NAME"; then
+    print_info "Database $DB_NAME already exists"
+    
+    # Ask if user wants to use the existing database
+    echo "Do you want to use the existing database? (y/n)"
+    read -r response
+    if [[ "$response" == "y" ]]; then
+        print_info "Using existing database $DB_NAME"
+        DB_SAFE_MODE="true"
+    else
+        print_warning "Creating a new database will drop the existing one"
+        echo "Are you sure you want to proceed? (y/n)"
+        read -r confirm
+        if [[ "$confirm" == "y" ]]; then
+            print_info "Dropping existing database $DB_NAME..."
+            mysql -u root -e "DROP DATABASE $DB_NAME;" 2>/dev/null
+            print_info "Creating database $DB_NAME..."
+            mysql -u root -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;" 2>/dev/null
+        else
+            print_info "Keeping existing database $DB_NAME"
+            DB_SAFE_MODE="true"
+        fi
+    fi
+else
+    # Create database
+    print_info "Creating database $DB_NAME..."
+    mysql -u root -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;" 2>/dev/null || true
+fi
+
+# Check if user exists
+if mysql -u root -e "SELECT User FROM mysql.user WHERE User='$DB_USER';" 2>/dev/null | grep -q "$DB_USER"; then
+    print_info "User $DB_USER already exists"
+    
+    # Update privileges for the existing user
+    mysql -u root -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';" 2>/dev/null || true
+    mysql -u root -e "FLUSH PRIVILEGES;" 2>/dev/null || true
+else
+    # Create user
+    print_info "Creating user $DB_USER..."
+    mysql -u root -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';" 2>/dev/null || true
+    mysql -u root -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';" 2>/dev/null || true
+    mysql -u root -e "FLUSH PRIVILEGES;" 2>/dev/null || true
+fi
 
 # Create .env file for database connection
 print_info "Creating .env file for database connection..."
 cat > .env << EOL
 DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=supermorse
-DB_USER=supermorse
-DB_PASSWORD=supermorse
+DB_PORT=3306
+DB_NAME=$DB_NAME
+DB_USER=$DB_USER
+DB_PASSWORD=$DB_PASSWORD
+DB_SAFE_MODE=$DB_SAFE_MODE
 SESSION_SECRET=$(openssl rand -hex 32)
 EOL
 
-# Test PostgreSQL connection
-print_info "Testing PostgreSQL connection..."
-if PGPASSWORD=supermorse psql -h localhost -U supermorse -d supermorse -c "SELECT 1;" > /dev/null 2>&1; then
-    print_success "PostgreSQL connection successful."
+# Test MariaDB connection
+print_info "Testing MariaDB connection..."
+if mysql -h localhost -u $DB_USER -p$DB_PASSWORD -D $DB_NAME -e "SELECT 1;" > /dev/null 2>&1; then
+    print_success "MariaDB connection successful"
 else
-    print_error "Failed to connect to PostgreSQL. Please check the PostgreSQL service and configuration."
-    exit 1
+    print_error "Failed to connect to MariaDB"
+    print_info "Troubleshooting..."
+    
+    # Check if MariaDB is running
+    if ! brew services list | grep mariadb | grep started &>/dev/null; then
+        print_error "MariaDB service is not running"
+        print_info "Restarting MariaDB service..."
+        brew services restart mariadb
+        sleep 5
+    fi
+    
+    # Check if password authentication is correct
+    print_info "Checking password authentication..."
+    mysql -u root -e "ALTER USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';" 2>/dev/null || true
+    mysql -u root -e "FLUSH PRIVILEGES;" 2>/dev/null || true
+    
+    # Try connection again
+    print_info "Trying connection again..."
+    if mysql -h localhost -u $DB_USER -p$DB_PASSWORD -D $DB_NAME -e "SELECT 1;" > /dev/null 2>&1; then
+        print_success "MariaDB connection successful after troubleshooting"
+    else
+        print_error "Connection to MariaDB still failing"
+        print_info "Please check your MariaDB configuration manually"
+        exit 1
+    fi
+fi
+
+# Check for cqrlog compatibility
+if command -v cqrlog &> /dev/null; then
+    print_info "cqrlog detected on the system"
+    print_info "Checking for cqrlog database..."
+    
+    if mysql -u root -e "SHOW DATABASES LIKE 'cqrlog';" 2>/dev/null | grep -q "cqrlog"; then
+        print_info "cqrlog database found"
+        print_warning "Both cqrlog and Supermorse use MariaDB"
+        print_info "They can coexist without issues as they use separate databases"
+    fi
 fi
 
 # Install Qt (needed for Mumble)
@@ -327,7 +445,7 @@ echo "  - Load at login: launchctl load $LAUNCH_AGENT_DIR/com.supermorse.mumble.
 echo "  - Unload: launchctl unload $LAUNCH_AGENT_DIR/com.supermorse.mumble.plist"
 echo ""
 echo "The Mumble server is accessible at: localhost:$MUMBLE_PORT"
-echo "PostgreSQL is running on: localhost:$POSTGRESQL_PORT"
+echo "MariaDB is running on: localhost:$MARIADB_PORT"
 echo ""
 echo "For more information, see the documentation in the docs/ directory."
 echo ""
