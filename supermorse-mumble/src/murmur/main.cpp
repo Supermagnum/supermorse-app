@@ -5,7 +5,7 @@
 
 #include "Server.h"
 #include "ServerApplication.h"
-#include "database/SQLiteConnectionParameter.h"
+#include "database/MariaDBConnectionParameter.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QSettings>
@@ -78,9 +78,14 @@ int main(int argc, char **argv) {
     // Load configuration
     QSettings qs(configFile, QSettings::IniFormat);
     
-    // Create the database connection parameter
-    mumble::db::SQLiteConnectionParameter connectionParam;
-    connectionParam.setPath(dbFile);
+    // Create the database connection parameter for MariaDB
+    mumble::db::MariaDBConnectionParameter connectionParam("supermorse");
+    connectionParam.userName = "supermorse";
+    connectionParam.password = "supermorse";
+    connectionParam.host = "localhost";
+    connectionParam.port = "3306";
+    
+    qWarning() << "Using MariaDB database:" << QString::fromStdString(connectionParam.dbName);
     
     // Create and initialize the server
     // The server number is 1 (we only have one server instance)
