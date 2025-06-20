@@ -501,7 +501,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         elements.speedSelect.addEventListener('change', () => {
-            appState.currentSpeed = parseInt(elements.speedSelect.value);
+            // Ensure minimum speed of 12 WPM
+            const selectedSpeed = parseInt(elements.speedSelect.value);
+            appState.currentSpeed = Math.max(12, selectedSpeed);
+            
+            // If the selected speed was below minimum, update the select element
+            if (selectedSpeed < 12) {
+                elements.speedSelect.value = '12';
+            }
+            
             LESSON_MANAGER.updateSettings({ wpm: appState.currentSpeed });
         });
         

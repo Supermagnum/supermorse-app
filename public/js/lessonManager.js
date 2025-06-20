@@ -530,7 +530,7 @@ const LESSON_MANAGER = (function() {
             initialize({ country: settings.country });
         }
         
-        if (newSettings.wpm) settings.wpm = newSettings.wpm;
+       if (newSettings.wpm) settings.wpm = Math.max(12, newSettings.wpm); // Ensure minimum speed of 12 WPM
         if (newSettings.farnsworthSpacing !== undefined) settings.farnsworthSpacing = newSettings.farnsworthSpacing;
         if (newSettings.masteryThreshold) settings.masteryThreshold = newSettings.masteryThreshold;
         
