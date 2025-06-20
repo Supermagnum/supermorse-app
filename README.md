@@ -206,7 +206,7 @@ These scripts significantly simplify the setup process across all platforms, esp
 
 1. Connect your Arduino board to your computer
 2. Open the Arduino IDE
-3. Load the `arduino/morse_decoder.ino` file
+3. Load the `arduino/morse_decoder.ino` file. That file is in /public/arduino
 4. Upload the firmware to your Arduino
 
 ## Key Types
