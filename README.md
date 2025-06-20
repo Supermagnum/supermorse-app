@@ -7,7 +7,7 @@ Supermorse is a desktop application for learning Morse code progressively using 
 I have a neurological condition that makes it impossible for me to understand programming.
 I had to use a AI,Claude.
 
-## It's untested and needs testing and debugging
+## It needs testing and debugging
 
 ## Features
 
