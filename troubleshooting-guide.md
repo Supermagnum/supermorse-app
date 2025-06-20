@@ -14,41 +14,41 @@ If the app window opens but displays nothing, follow these steps in order:
 
 This script will check if port 3030 is in use and help you free it if needed.
 
-### Step 2: Fix PostgreSQL Connection
+### Step 2: Fix MariaDB Connection
 
 ```bash
-./fix-postgresql.sh
+./fix-mariadb.sh
 ```
 
-This script will check and fix PostgreSQL configuration issues.
+This script will check and fix MariaDB configuration issues.
 
-### Step 3: Check PostgreSQL Status Manually
+### Step 3: Check MariaDB Status Manually
 
 ```bash
-sudo systemctl status postgresql
+sudo systemctl status mariadb
 ```
 
-Make sure PostgreSQL is running. If not, start it:
+Make sure MariaDB is running. If not, start it:
 
 ```bash
-sudo systemctl start postgresql
+sudo systemctl start mariadb
 ```
 
-### Step 4: Check PostgreSQL Logs for Errors
+### Step 4: Check MariaDB Logs for Errors
 
 ```bash
-sudo journalctl -u postgresql --no-pager -n 50
+sudo journalctl -u mariadb --no-pager -n 50
 ```
 
 Look for any error messages that might indicate configuration problems.
 
-### Step 5: Test PostgreSQL Connection Manually
+### Step 5: Test MariaDB Connection Manually
 
 ```bash
-PGPASSWORD=supermorse_password psql -h localhost -U supermorse -d supermorse -c "SELECT 1"
+mysql -h localhost -u supermorse -psupermorse_password -e "SELECT 1" supermorse
 ```
 
-This should return `1` if PostgreSQL is accessible.
+This should return `1` if MariaDB is accessible.
 
 ### Step 6: Check Application Logs
 
@@ -89,82 +89,82 @@ sudo ufw status
 If needed, allow the ports:
 
 ```bash
-sudo ufw allow 5432/tcp   # PostgreSQL
+sudo ufw allow 3306/tcp   # MariaDB
 sudo ufw allow 3030/tcp   # Express server
 ```
 
-## Issue 2: PostgreSQL Connection Errors
+## Issue 2: MariaDB Connection Errors
 
-If you're seeing PostgreSQL connection errors:
+If you're seeing MariaDB connection errors:
 
-### Step 1: Verify PostgreSQL Installation
+### Step 1: Verify MariaDB Installation
 
 ```bash
-psql --version
+mysql --version
 ```
 
-If PostgreSQL is not installed or you're using an older version, run:
+If MariaDB is not installed or you're using an older version, run:
 
 ```bash
 sudo apt update
-sudo apt install postgresql postgresql-contrib
+sudo apt install mariadb-server
 ```
 
-### Step 2: Check PostgreSQL Configuration
+### Step 2: Check MariaDB Configuration
 
 ```bash
-sudo cat /etc/postgresql/$(ls /etc/postgresql)/main/pg_hba.conf
+sudo cat /etc/mysql/mariadb.conf.d/50-server.cnf
 ```
 
 Make sure it's configured to allow connections from localhost.
 
-### Step 3: Check PostgreSQL Data Directory
+### Step 3: Check MariaDB Data Directory
 
 ```bash
-ls -la /var/lib/postgresql
+ls -la /var/lib/mysql
 ```
 
 Make sure the directory exists and has the correct permissions:
 
 ```bash
-sudo chown -R postgres:postgres /var/lib/postgresql
+sudo chown -R mysql:mysql /var/lib/mysql
 ```
 
 ### Step 4: Check Environment Variables
 
-Make sure your `.env` file has the correct PostgreSQL connection settings:
+Make sure your `.env` file has the correct MariaDB connection settings:
 
 ```
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=3306
 DB_NAME=supermorse
 DB_USER=supermorse
 DB_PASSWORD=supermorse_password
 ```
 
-### Step 5: Check PostgreSQL User and Database
+### Step 5: Check MariaDB User and Database
 
 ```bash
-sudo -u postgres psql -c "SELECT rolname, rolsuper, rolcreaterole, rolcreatedb FROM pg_roles WHERE rolname='supermorse';"
-sudo -u postgres psql -c "\l" | grep supermorse
+sudo mysql -e "SELECT User, Host, plugin FROM mysql.user WHERE User='supermorse';"
+sudo mysql -e "SHOW DATABASES;" | grep supermorse
 ```
 
 If the user or database doesn't exist, run:
 
 ```bash
-./fix-postgresql.sh
+./fix-mariadb.sh
 ```
 
-### Step 6: Reinstall PostgreSQL (Last Resort)
+### Step 6: Reinstall MariaDB (Last Resort)
 
-If all else fails, you can completely reinstall PostgreSQL:
+If all else fails, you can completely reinstall MariaDB:
 
 ```bash
-sudo systemctl stop postgresql
-sudo apt purge postgresql*
-sudo rm -r /var/lib/postgresql
-sudo apt install postgresql postgresql-contrib
-./fix-postgresql.sh
+sudo systemctl stop mariadb
+sudo apt purge mariadb-server* mariadb-client*
+sudo rm -r /var/lib/mysql
+sudo apt install mariadb-server
+./fix-mariadb.sh
 ```
 
 ## Issue 3: Application Crashes or Errors
@@ -216,10 +216,10 @@ If you continue to experience issues, please provide the output of the following
 ```bash
 node -v
 npm -v
-psql --version
-sudo systemctl status postgresql
+mysql --version
+sudo systemctl status mariadb
 sudo lsof -i:3030
-sudo lsof -i:5432
+sudo lsof -i:3306
 ```
 
 This information will help diagnose the issue further.

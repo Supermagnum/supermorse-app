@@ -36,13 +36,13 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Connect to PostgreSQL
+// Connect to MariaDB
 (async () => {
   try {
     // Test database connection
     const connected = await testConnection();
     if (!connected) {
-      console.error('Failed to connect to PostgreSQL. Please check your configuration.');
+      console.error('Failed to connect to MariaDB. Please check your configuration.');
       return;
     }
     
@@ -53,7 +53,7 @@ app.use(passport.session());
       return;
     }
     
-    console.log('Connected to PostgreSQL and initialized database successfully');
+    console.log('Connected to MariaDB and initialized database successfully');
   } catch (err) {
     console.error('Database initialization error:', err);
   }

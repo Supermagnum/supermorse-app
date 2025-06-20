@@ -8,8 +8,8 @@ const sequelize = new Sequelize(
   process.env.DB_PASSWORD || 'supermorse_password',
   {
     host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    dialect: 'postgres',
+    port: process.env.DB_PORT || 3306,
+    dialect: 'mariadb',
     logging: console.log,
     pool: {
       max: 5,
@@ -24,13 +24,16 @@ const sequelize = new Sequelize(
 const testConnection = async () => {
   try {
     await sequelize.authenticate();
-    console.log('Connection to PostgreSQL has been established successfully.');
+    console.log('Connection to MariaDB has been established successfully.');
     return true;
   } catch (error) {
-    console.error('Unable to connect to the PostgreSQL database:', error);
+    console.error('Unable to connect to the MariaDB database:', error);
     return false;
   }
 };
+
+// Check if we should use safe mode for database operations
+const SAFE_MODE = process.env.DB_SAFE_MODE === 'true';
 
 // Initialize database
 const initDatabase = async () => {
@@ -52,7 +55,15 @@ const initDatabase = async () => {
     Session.belongsTo(Progress, { foreignKey: 'progressId' });
 
     // Sync all models with database
-    await sequelize.sync({ alter: true });
+    // Use a safer approach if DB_SAFE_MODE is enabled
+    if (SAFE_MODE) {
+      console.log('Running in safe mode - will not alter existing tables');
+      await sequelize.sync({ alter: false });
+    } else {
+      console.log('Running in standard mode - will alter tables as needed');
+      await sequelize.sync({ alter: true });
+    }
+    
     console.log('All models were synchronized successfully.');
     return true;
   } catch (error) {

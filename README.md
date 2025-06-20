@@ -2,6 +2,7 @@
 
 Supermorse is a desktop application for learning Morse code progressively using sound output and a real physical Morse key connected through an Arduino. The application implements the Koch method, a scientifically-backed learning approach that has proven to be one of the most effective ways to learn Morse code.
 
+
 ## The programming:
 I have a neurological condition that makes it impossible for me to understand programming.
 I had to use a AI,Claude.
@@ -37,7 +38,7 @@ Supermorse is built using Electron, which allows it to run as a native desktop a
 
 - Node.js (v14 or later)
 - npm (v6 or later)
-- PostgreSQL (for user accounts and progress tracking)
+- MariaDB (for user accounts and progress tracking) - also used by cqrlog, a popular ham radio logging program
 - Arduino IDE (for flashing the Arduino firmware)
 
 ### Setup
@@ -63,7 +64,7 @@ Supermorse is built using Electron, which allows it to run as a native desktop a
 - `main.js` - Electron main process
 - `preload.js` - Preload script for Electron
 - `server.js` - Express server for API endpoints
-- `models/` - Sequelize models for PostgreSQL
+- `models/` - Sequelize models for MariaDB
 - `config/` - Configuration files including database.js for Sequelize
 - `routes/` - API routes
 - `public/` - Web application files
@@ -102,7 +103,7 @@ We provide automated build scripts for all major platforms that handle the entir
 For Linux users, we provide an automated build script that handles the entire setup process, including:
 
 1. Installing all required dependencies
-2. Setting up PostgreSQL
+2. Setting up MariaDB
 3. Building the Electron application
 4. Building the modified Mumble server
 5. Configuring the Mumble server
@@ -131,8 +132,8 @@ The script will guide you through the entire setup process and provide instructi
 - At least 4GB of free disk space
 
 **What the Linux Script Does:**
-1. Installs system dependencies (build tools, Qt libraries, PostgreSQL, etc.)
-2. Sets up PostgreSQL for user data storage
+1. Installs system dependencies (build tools, Qt libraries, MariaDB, etc.)
+2. Sets up MariaDB for user data storage
 3. Builds the Electron application
 4. Clones and builds the modified Mumble server
 5. Configures the Mumble server with HF band channels
@@ -163,7 +164,7 @@ For Windows users, we provide a PowerShell script that automates the setup proce
 
 **What the Windows Script Does:**
 1. Installs Chocolatey package manager if not already installed
-2. Uses Chocolatey to install PostgreSQL, Qt, and other dependencies
+2. Uses Chocolatey to install MariaDB, Qt, and other dependencies
 3. Builds the Electron application
 4. Provides guidance for building the modified Mumble server
 5. Configures the Mumble server
@@ -195,7 +196,7 @@ For macOS users, we provide a shell script that automates the setup process:
 
 **What the macOS Script Does:**
 1. Installs Homebrew if not already installed
-2. Uses Homebrew to install PostgreSQL, Qt, and other dependencies
+2. Uses Homebrew to install MariaDB, Qt, and other dependencies
 3. Builds the Electron application
 4. Provides guidance for building the modified Mumble server
 5. Configures the Mumble server
@@ -245,7 +246,7 @@ The application uses a hybrid architecture:
 2. **Express Server** (`server.js`):
    - Runs within Electron
    - Provides API endpoints for authentication and progress tracking
-   - Manages PostgreSQL connection using Sequelize
+   - Manages MariaDB connection using Sequelize
 
 3. **Web Application** (`public/`):
    - Provides the user interface
