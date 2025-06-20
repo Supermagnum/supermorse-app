@@ -510,44 +510,8 @@ const MUMBLE_CLIENT = (function() {
         }, 3000);
     }
     
-    /**
-     * Start the Mumble server
-     */
-    async function startServer() {
-        try {
-            const response = await API.mumble.startServer();
-            
-            if (response.success) {
-                updateServerStatus(true);
-                showNotification('Mumble server started');
-            }
-        } catch (error) {
-            console.error('Error starting Mumble server:', error);
-            showNotification('Error starting Mumble server: ' + error.message, 'error');
-        }
-    }
-    
-    /**
-     * Stop the Mumble server
-     */
-    async function stopServer() {
-        try {
-            const response = await API.mumble.stopServer();
-            
-            if (response.success) {
-                updateServerStatus(false);
-                showNotification('Mumble server stopped');
-            }
-        } catch (error) {
-            console.error('Error stopping Mumble server:', error);
-            showNotification('Error stopping Mumble server: ' + error.message, 'error');
-        }
-    }
-    
     // Public API
     return {
-        initialize,
-        startServer,
-        stopServer
+        initialize
     };
 })();

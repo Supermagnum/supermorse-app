@@ -2,11 +2,6 @@ const express = require('express');
 const User = require('../models/User');
 const router = express.Router();
 const path = require('path');
-const { spawn } = require('child_process');
-
-// Path to Mumble/Murmur executable (to be configured)
-const MUMBLE_SERVER_PATH = path.join(__dirname, '../murmur-src/murmur');
-let mumbleServer = null;
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req, res, next) => {
@@ -42,12 +37,12 @@ const isVoiceChatUnlocked = async (req, res, next) => {
 // Get Mumble server status
 router.get('/status', isAuthenticated, async (req, res) => {
   try {
-    const isRunning = mumbleServer !== null && !mumbleServer.killed;
-    
+    // Server is now off-site, always return as running
     return res.status(200).json({
       success: true,
       status: {
-        running: isRunning,
+        running: true,
+        offsite: true,
         // Add more status information as needed
       }
     });
@@ -60,72 +55,22 @@ router.get('/status', isAuthenticated, async (req, res) => {
   }
 });
 
-// Start Mumble server
+// Start Mumble server - now returns info that server is off-site
 router.post('/start', isAuthenticated, async (req, res) => {
-  try {
-    // Check if server is already running
-    if (mumbleServer !== null && !mumbleServer.killed) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mumble server is already running'
-      });
-    }
-    
-    // Start Mumble server
-    mumbleServer = spawn(MUMBLE_SERVER_PATH, ['-ini', path.join(__dirname, '../config/mumble-server.ini')]);
-    
-    mumbleServer.stdout.on('data', (data) => {
-      console.log(`Mumble server output: ${data}`);
-    });
-    
-    mumbleServer.stderr.on('data', (data) => {
-      console.error(`Mumble server error: ${data}`);
-    });
-    
-    mumbleServer.on('close', (code) => {
-      console.log(`Mumble server exited with code ${code}`);
-      mumbleServer = null;
-    });
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Mumble server started successfully'
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: 'Error starting Mumble server',
-      error: err.message
-    });
-  }
+  return res.status(200).json({
+    success: true,
+    message: 'Mumble server is now located off-site and managed externally',
+    offsite: true
+  });
 });
 
-// Stop Mumble server
+// Stop Mumble server - now returns info that server is off-site
 router.post('/stop', isAuthenticated, async (req, res) => {
-  try {
-    // Check if server is running
-    if (mumbleServer === null || mumbleServer.killed) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mumble server is not running'
-      });
-    }
-    
-    // Stop Mumble server
-    mumbleServer.kill();
-    mumbleServer = null;
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Mumble server stopped successfully'
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: 'Error stopping Mumble server',
-      error: err.message
-    });
-  }
+  return res.status(200).json({
+    success: true,
+    message: 'Mumble server is now located off-site and managed externally',
+    offsite: true
+  });
 });
 
 // Update user Mumble metadata
