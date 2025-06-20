@@ -41,7 +41,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
 
 # Configuration
-MUMBLE_REPO_URL="https://github.com/Supermagnum/supermorse-app"
+MUMBLE_REPO_URL="https://github.com/Supermagnum/supermorse-mumble.git"
 MONGODB_PORT=27017
 MUMBLE_PORT=64738
 

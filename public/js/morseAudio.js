@@ -230,6 +230,11 @@ const MORSE_AUDIO = (function() {
      * @param {Object} newSettings - New settings to apply
      */
     function updateSettings(newSettings) {
+        // Ensure minimum speed of 12 WPM
+        if (newSettings.wpm) {
+            newSettings.wpm = Math.max(12, newSettings.wpm);
+        }
+        
         settings = { ...settings, ...newSettings };
         
         // Convert WPM to dit duration

@@ -42,7 +42,7 @@ if ($isAdmin) {
 }
 
 # Configuration
-$MumbleRepoUrl = "https://github.com/Supermagnum/supermorse-app"
+$MumbleRepoUrl = "https://github.com/Supermagnum/supermorse-mumble.git"
 $MongoDBPort = 27017
 $MumblePort = 64738
 $ScriptDir = $PSScriptRoot

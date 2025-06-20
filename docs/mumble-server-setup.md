@@ -44,7 +44,7 @@ mkdir -p ~/murmur-src
 cd ~/murmur-src
 
 # Clone the modified Mumble repository
-git clone https://github.com/Supermagnum/supermorse-mumble.git .
+git clone https://github.com/yourusername/supermorse-mumble.git .
 
 # Configure the build
 qmake -recursive CONFIG+=no-client CONFIG+=no-ice
@@ -56,7 +56,7 @@ make
 sudo ln -s ~/murmur-src/release/murmurd /usr/local/bin/murmur
 ```
 
-> Note: Replace `https://github.com/Supermagnum/supermorse-mumble.git` with the actual repository URL for the modified Mumble server.
+> Note: Replace `https://github.com/yourusername/supermorse-mumble.git` with the actual repository URL for the modified Mumble server.
 
 ### 3. Configure the Server
 
