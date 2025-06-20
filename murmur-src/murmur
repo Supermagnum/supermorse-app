@@ -1,0 +1,11 @@
+#!/bin/bash
+
+echo "ERROR: This is a placeholder for the modified Mumble server executable."
+echo "You need to build the actual executable and place it here."
+echo ""
+echo "Please follow the instructions in the Mumble Server Deployment Guide:"
+echo "../docs/mumble-server-setup.md"
+echo ""
+echo "After building the server, replace this placeholder with the compiled executable."
+
+exit 1

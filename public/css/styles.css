@@ -1,0 +1,608 @@
+/* Global Styles */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --success-color: #2ecc71;
+    --warning-color: #f39c12;
+    --light-color: #ecf0f1;
+    --dark-color: #34495e;
+    --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-main);
+    line-height: 1.6;
+    color: var(--dark-color);
+    background-color: var(--light-color);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1, h2, h3 {
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+
+button {
+    padding: 8px 16px;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+button:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.primary-button {
+    background-color: var(--secondary-color);
+    color: white;
+    font-weight: bold;
+    padding: 10px 20px;
+}
+
+.primary-button:hover {
+    background-color: #2980b9;
+}
+
+select, input {
+    padding: 8px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+/* Header Styles */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #bdc3c7;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: var(--secondary-color);
+}
+
+/* Section Styles */
+section {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Authentication Styles */
+#auth-section {
+    max-width: 500px;
+    margin: 0 auto 30px;
+}
+
+#auth-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #bdc3c7;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--dark-color);
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.auth-tab.active {
+    border-bottom-color: var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+.auth-form {
+    display: none;
+}
+
+.auth-form.active {
+    display: block;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+}
+
+.auth-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.error-message {
+    background-color: rgba(231, 76, 60, 0.1);
+    color: var(--accent-color);
+    border-left: 3px solid var(--accent-color);
+}
+
+.success-message {
+    background-color: rgba(46, 204, 113, 0.1);
+    color: var(--success-color);
+    border-left: 3px solid var(--success-color);
+}
+
+/* User Profile Styles */
+#user-profile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#username-display {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.user-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.feature-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.feature {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    background-color: #f8f9fa;
+}
+
+.feature-icon {
+    font-size: 1.2rem;
+}
+
+.feature-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.feature-status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.feature-status-indicator[data-status="locked"] {
+    background-color: var(--accent-color);
+}
+
+.feature-status-indicator[data-status="unlocked"] {
+    background-color: var(--success-color);
+}
+
+/* Connection Status */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+#connection-indicator {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.connected {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.disconnected {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+/* Settings */
+.setting-group {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.setting-group label {
+    width: 180px;
+    font-weight: bold;
+}
+
+/* Current Lesson */
+#character-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+}
+
+#current-character {
+    font-size: 5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+#current-morse {
+    font-size: 1.5rem;
+    font-family: monospace;
+    letter-spacing: 2px;
+}
+
+/* Special Language Displays */
+.telegraph-display, .wabun-display {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #f0f8ff; /* Light blue background */
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.telegraph-display h3, .wabun-display h3 {
+    color: var(--secondary-color);
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.telegraph-info, .wabun-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.telegraph-info div, .wabun-info div {
+    padding: 8px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#chinese-char, #katakana-char {
+    font-size: 2rem;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+#telegraph-code, #romaji-equiv {
+    font-family: monospace;
+    font-size: 1.2rem;
+    display: inline-block;
+    margin-top: 5px;
+    color: var(--primary-color);
+}
+
+#character-set {
+    margin: 20px 0;
+}
+
+#known-characters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.character-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    background-color: var(--secondary-color);
+    color: white;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* Practice Area */
+#expected-sequence, #user-input {
+    font-family: monospace;
+    font-size: 1.5rem;
+    margin: 15px 0;
+    min-height: 40px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    letter-spacing: 2px;
+}
+
+.correct {
+    color: var(--success-color);
+}
+
+.incorrect {
+    color: var(--accent-color);
+}
+
+.accuracy {
+    font-weight: bold;
+    margin: 15px 0;
+}
+
+/* Progress */
+#progress-bars {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.progress-item {
+    text-align: center;
+}
+
+.progress-bar {
+    height: 20px;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--success-color);
+    width: 0%;
+    transition: width 0.5s;
+}
+
+/* Session Info */
+.timer {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+#session-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+}
+
+/* Mumble Integration */
+#mumble-section h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lock-indicator {
+    font-size: 1.2rem;
+}
+
+.feature-locked-message {
+    background-color: rgba(231, 76, 60, 0.1);
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.feature-locked-message ul {
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+.locked-feature {
+    position: relative;
+    overflow: hidden;
+}
+
+.locked-feature::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.03);
+    pointer-events: none;
+}
+
+.mumble-status {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+#mumble-server-status {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    background-color: #95a5a6;
+    color: white;
+}
+
+.mumble-settings {
+    margin-bottom: 20px;
+}
+
+.mumble-settings .form-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.mumble-settings label {
+    width: 150px;
+    font-weight: bold;
+}
+
+.hf-propagation {
+    margin-top: 20px;
+}
+
+.map-placeholder {
+    height: 200px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    border: 1px dashed #bdc3c7;
+}
+
+#active-channels {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+}
+
+#channel-list {
+    list-style: none;
+    margin-top: 10px;
+}
+
+#channel-list li {
+    padding: 8px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+}
+
+#channel-list li:last-child {
+    border-bottom: none;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #95a5a6;
+}
+
+.close-modal:hover {
+    color: var(--accent-color);
+}
+
+/* Utility Classes */
+.hidden {
+    display: none;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #bdc3c7;
+    color: #7f8c8d;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .setting-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .setting-group label {
+        margin-bottom: 5px;
+    }
+    
+    #current-character {
+        font-size: 3rem;
+    }
+    
+    #user-profile {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .mumble-settings .form-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .mumble-settings label {
+        margin-bottom: 5px;
+    }
+}
