@@ -11,7 +11,13 @@ I had to use a AI,Claude.
 
 ##found bugs 
 21 Jun 2025:
-It displays the Morse character ( example A and .- ) but the character is played incorrectly, way to loud, it plays the tone by using a square wave, should be a sinusoidal wave. Also some issues with connecting to the MariaDB database.
+The start lesson button doesn't work.
+If tested with AI, that adds some debug stuff like a box that says ok when the start lesson is pressed.
+Upon pressing OK:
+It displays the Morse character ( A and .- ) but the character is played incorrectly, way to loud, it plays the tone by using a square wave, should be a sinusoidal wave.
+
+Related to logging in and creating a user:
+Some issues with connecting to the MariaDB database.
 Some suggestions:
 The local client doesn't need that, a hashed file with username,email and password,progress is enough. 
 
