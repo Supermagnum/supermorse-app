@@ -26,6 +26,11 @@ Remaining:
 Maybe the modified Mumble server can also use a local file if the server running MariaDB (for modified Mumble) also is troublesome. Test creating username,password with email upon registration to the modified Mumble server.
 Test acess to Mumble server rooms,and server rooms management etc..
 
+## Note:
+This web page version is showing the introduced morse character and plays the morse code audio correctly when start session is pushed. 
+https://github.com/Supermagnum/Supermorse
+
+
 ## Features
 
 - **Progressive Learning**: Start with just two characters and expand as you master them
