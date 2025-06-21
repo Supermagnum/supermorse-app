@@ -9,6 +9,16 @@ I had to use a AI,Claude.
 
 ## It needs testing and debugging
 
+##found bugs 
+21 Jun 2025:
+It displays the Morse character ( example A and .- ) but the character is played incorrectly, way to loud, it plays the tone by using a square wave, should be a sinusoidal wave. Also some issues with connecting to the MariaDB database.
+Some suggestions:
+The local client doesn't need that, a hashed file with username,email and password,progress is enough. 
+
+Remaining:
+Maybe the modified Mumble server can also use a local file if the server running MariaDB (for modified Mumble) also is troublesome. Test creating username,password with email upon registration to the modified Mumble server.
+Test acess to Mumble server rooms,and server rooms management etc..
+
 ## Features
 
 - **Progressive Learning**: Start with just two characters and expand as you master them
