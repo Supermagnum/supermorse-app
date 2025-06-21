@@ -9,7 +9,8 @@ I had to use a AI,Claude.
 
 ## It needs testing and debugging
 
-##found bugs 
+##found bugs:
+
 21 Jun 2025:
 The start lesson button doesn't work.
 If tested with AI, that adds some debug stuff like a box that says ok when the start lesson is pressed.
