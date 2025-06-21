@@ -1,0 +1,15 @@
+name: my-github-action-workflow
+run-name: ${{ github.workflow }} run by ${{ github.actor }}
+on:
+  push:
+    branches:
+      - main
+jobs:
+  my-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the main branch of this repository
+        uses: actions/checkout@v4
+
+      - name: List files in the repository
+        run: ls ${{ github.workspace }}
