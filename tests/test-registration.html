@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperMorse - Registration Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+        
+        .test-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+        }
+        
+        .success {
+            border-left-color: #2ecc71;
+            background-color: #eafaf1;
+        }
+        
+        .error {
+            border-left-color: #e74c3c;
+            background-color: #fdedeb;
+        }
+        
+        pre {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        
+        .steps {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .steps ol {
+            margin-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>SuperMorse Registration Test</h1>
+    
+    <div class="steps">
+        <h2>How This Test Works</h2>
+        <ol>
+            <li>Fill out the registration form below</li>
+            <li>Click "Register" to submit the form</li>
+            <li>The form triggers the registration process</li>
+            <li>The results will show in the "Test Results" section</li>
+        </ol>
+        <p><strong>Note:</strong> In a real environment, this form would be connected to the main.js process through the preload.js bridge.</p>
+    </div>
+    
+    <div class="test-container">
+        <h2>Registration Form</h2>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" required>
+            </div>
+            <button type="submit" class="btn">Register</button>
+        </form>
+    </div>
+    
+    <div class="test-container">
+        <h2>Test Results</h2>
+        <div id="testResult" class="result">
+            Fill out the form and submit to see results.
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2>Registration Process Flow</h2>
+        <p>When the registration form is submitted, the following process occurs:</p>
+        <pre>
+1. Form Submit Event → preventDefault()
+2. Collect form data:
+   - username
+   - name
+   - email
+   - password
+
+3. Validate form data:
+   - Check if passwords match
+   - Validate email format
+   - Check username requirements
+
+4. If validation passes:
+   - Call auth.register(username, name, email, password)
+   - This triggers electronAPI.registerUser() via preload.js
+   - main.js receives the IPC call and forwards to UserController
+   - UserController.registerUser() creates the user in the database
+
+5. On success:
+   - User record created in database
+   - Progress record initialized with starting character 'K'
+   - User redirected to login screen
+        </pre>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            const resultElement = document.getElementById('testResult');
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                resultElement.innerHTML = 'Error: Passwords do not match';
+                resultElement.className = 'result error';
+                return;
+            }
+            
+            // Simulate registration process
+            simulateRegistration(username, name, email, password);
+        });
+        
+        function simulateRegistration(username, name, email, password) {
+            const resultElement = document.getElementById('testResult');
+            
+            // In a real app, this would call window.electronAPI.registerUser
+            // Here we simulate the process
+            
+            resultElement.innerHTML = `
+                <h3>Registration Process</h3>
+                <p><strong>Step 1:</strong> Form data collected ✅</p>
+                <pre>
+{
+  username: "${username}",
+  name: "${name}",
+  email: "${email}",
+  password: "${password.replace(/./g, '*')}"
+}
+                </pre>
+                
+                <p><strong>Step 2:</strong> Data passed to auth.register() ✅</p>
+                <p><strong>Step 3:</strong> electronAPI.registerUser() called via preload.js ✅</p>
+                <p><strong>Step 4:</strong> main.js receives IPC call and forwards to UserController ✅</p>
+                <p><strong>Step 5:</strong> UserController.registerUser() processes request:</p>
+                <ul>
+                    <li>Check if username exists</li>
+                    <li>Check if email exists</li>
+                    <li>Create user record</li>
+                    <li>Create initial progress record with 'K' as starting character</li>
+                </ul>
+                
+                <p><strong>Result:</strong> In a connected environment, this would create a user in the database.</p>
+                <p>To run an actual test, use the Node.js test script: <code>node tests/test-user-creation.js</code></p>
+            `;
+            
+            resultElement.className = 'result success';
+        }
+    </script>
+</body>
+</html>

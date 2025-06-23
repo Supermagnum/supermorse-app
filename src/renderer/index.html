@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperMorse - Morse Code Tutor</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <h1>SuperMorse</h1>
+                <p>Morse Code Tutor & HF Communication</p>
+            </div>
+            <div class="user-info hidden" id="userInfoPanel">
+                <span id="userDisplayName">User</span>
+                <button id="logoutBtn" class="btn btn-small">Logout</button>
+            </div>
+        </header>
+
+        <!-- Authentication Section (shown before login) -->
+        <section id="authSection" class="auth-section">
+            <div class="auth-container">
+                <div class="auth-tabs">
+                    <div class="tab active" data-tab="login">Login</div>
+                    <div class="tab" data-tab="register">Register</div>
+                </div>
+                
+                <!-- Login Form -->
+                <div class="tab-content active" id="loginTab">
+                    <form id="loginForm" class="auth-form">
+                        <div class="form-group">
+                            <label for="loginUsername">Username</label>
+                            <input type="text" id="loginUsername" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Password</label>
+                            <input type="password" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                        <p class="form-message" id="loginMessage"></p>
+                    </form>
+                </div>
+                
+                <!-- Registration Form -->
+                <div class="tab-content" id="registerTab">
+                    <form id="registerForm" class="auth-form">
+                        <div class="form-group">
+                            <label for="registerUsername">Username</label>
+                            <input type="text" id="registerUsername" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerName">Full Name</label>
+                            <input type="text" id="registerName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerEmail">Email</label>
+                            <input type="email" id="registerEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPassword">Password</label>
+                            <input type="password" id="registerPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerConfirmPassword">Confirm Password</label>
+                            <input type="password" id="registerConfirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Register</button>
+                        <p class="form-message" id="registerMessage"></p>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Application (shown after login) -->
+        <main id="mainApp" class="main-app hidden">
+            <div class="app-layout">
+                <!-- Sidebar with options -->
+                <aside class="sidebar">
+                    <nav>
+                        <ul>
+                            <li class="active" data-section="training">
+                                <i class="fas fa-graduation-cap"></i> Training
+                            </li>
+                            <li data-section="progress">
+                                <i class="fas fa-chart-line"></i> Progress
+                            </li>
+                            <li data-section="settings">
+                                <i class="fas fa-cog"></i> Settings
+                            </li>
+                            <li id="murmurNavItem" class="locked" data-section="murmur">
+                                <i class="fas fa-broadcast-tower"></i> Murmur HF
+                                <span class="lock-icon">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                            </li>
+                        </ul>
+                    </nav>
+                    
+                    <!-- Arduino Connection Status -->
+                    <div class="arduino-status">
+                        <h4>Arduino Connection</h4>
+                        <div id="arduinoStatus" class="status-indicator disconnected">
+                            <i class="fas fa-microchip"></i>
+                            <span>Disconnected</span>
+                        </div>
+                        <button id="connectArduino" class="btn btn-small">Connect</button>
+                    </div>
+                </aside>
+
+                <!-- Main content area -->
+                <div class="content">
+                    <!-- Training Section -->
+                    <section id="trainingSection" class="active">
+                        <h2>Morse Code Training</h2>
+                        
+                        <div class="learning-panel">
+                            <div class="current-character">
+                                <h3>Current Character</h3>
+                                <div id="displayCharacter" class="character-display">K</div>
+                                <div id="morsePattern" class="morse-pattern">-.-</div>
+                            </div>
+                            
+                            <div class="training-controls">
+                                <button id="startLessonBtn" class="btn btn-primary">Start Lesson</button>
+                                <button id="stopLessonBtn" class="btn btn-danger hidden">Stop</button>
+                                <div class="training-progress">
+                                    <div class="progress-bar">
+                                        <div id="progressIndicator" class="progress-indicator" style="width: 0%"></div>
+                                    </div>
+                                    <span id="progressText">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="practice-area">
+                            <div class="practice-display">
+                                <div id="challengeText" class="challenge-text">Waiting to start...</div>
+                                <div id="userInput" class="user-input"></div>
+                            </div>
+                            
+                            <div class="tone-controls">
+                                <label for="toneFrequency">Tone Frequency: <span id="frequencyValue">600</span> Hz</label>
+                                <input type="range" id="toneFrequency" min="400" max="1000" step="10" value="600">
+                                
+                                <label for="morseSpeed">Morse Speed: <span id="speedValue">13</span> WPM</label>
+                                <input type="range" id="morseSpeed" min="5" max="30" step="1" value="13">
+                                
+                                <button id="playToneBtn" class="btn btn-small">
+                                    <i class="fas fa-play"></i> Test Tone
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="lesson-stats">
+                            <div class="stat-item">
+                                <h4>Time Elapsed</h4>
+                                <div id="timeElapsed">00:00</div>
+                            </div>
+                            <div class="stat-item">
+                                <h4>Accuracy</h4>
+                                <div id="accuracyRate">0%</div>
+                            </div>
+                            <div class="stat-item">
+                                <h4>Remaining Time</h4>
+                                <div id="timeRemaining">30:00</div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- Progress Section -->
+                    <section id="progressSection" class="hidden">
+                        <h2>Learning Progress</h2>
+                        
+                        <div class="progress-overview">
+                            <div class="mastery-stats">
+                                <h3>Mastery Level</h3>
+                                <div class="progress-circle">
+                                    <div id="masteryPercent" class="progress-circle-inner">0%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="learned-characters">
+                                <h3>Learned Characters</h3>
+                                <div id="learnedCharsList" class="char-grid"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="time-stats">
+                            <h3>Learning Time Statistics</h3>
+                            <div id="learningStats" class="stats-grid"></div>
+                        </div>
+                        
+                        <div class="next-steps">
+                            <h3>Next Characters to Learn</h3>
+                            <div id="nextCharsList" class="char-preview"></div>
+                        </div>
+                    </section>
+                    
+                    <!-- Settings Section -->
+                    <section id="settingsSection" class="hidden">
+                        <h2>Settings</h2>
+                        
+                        <div class="settings-group">
+                            <h3>Audio Settings</h3>
+                            
+                            <div class="form-group">
+                                <label for="settingsToneFrequency">Default Tone Frequency (Hz)</label>
+                                <input type="number" id="settingsToneFrequency" min="400" max="1000" value="600">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="settingsMorseSpeed">Default Morse Speed (WPM)</label>
+                                <input type="number" id="settingsMorseSpeed" min="5" max="30" value="13">
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <h3>Arduino Connection</h3>
+                            
+                            <div class="form-group">
+                                <label for="arduinoPortSelect">Serial Port</label>
+                                <select id="arduinoPortSelect">
+                                    <option value="">Select port...</option>
+                                </select>
+                                <button id="refreshPortsBtn" class="btn btn-small">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="keyModeSelect">Key Mode</label>
+                                <select id="keyModeSelect">
+                                    <option value="S">Straight Key</option>
+                                    <option value="P">Single Paddle</option>
+                                    <option value="A">Iambic Mode A</option>
+                                    <option value="B">Iambic Mode B</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <h3>Murmur Settings</h3>
+                            <div id="murmurSettingsLocked" class="locked-feature">
+                                <p>
+                                    <i class="fas fa-lock"></i>
+                                    Murmur settings will be available after mastering International Morse, Prosigns, and Special characters.
+                                </p>
+                            </div>
+                            
+                            <div id="murmurSettingsUnlocked" class="hidden">
+                                <div class="form-group">
+                                    <label for="maidenheadLocator">Maidenhead Locator</label>
+                                    <input type="text" id="maidenheadLocator" placeholder="e.g. JO91">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="preferredBand">Preferred HF Band</label>
+                                    <select id="preferredBand">
+                                        <option value="auto">Automatic (Best Propagation)</option>
+                                        <option value="160m">160m</option>
+                                        <option value="80m">80m</option>
+                                        <option value="60m">60m</option>
+                                        <option value="40m">40m</option>
+                                        <option value="30m">30m</option>
+                                        <option value="20m">20m</option>
+                                        <option value="17m">17m</option>
+                                        <option value="15m">15m</option>
+                                        <option value="10m">10m</option>
+                                        <option value="6m">6m</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <h3>Display Settings</h3>
+                            
+                            <div class="form-group">
+                                <label for="themeSelect">Theme</label>
+                                <select id="themeSelect">
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
+                    </section>
+                    
+                    <!-- Murmur HF Communication Section (locked until mastery) -->
+                    <section id="murmurSection" class="hidden">
+                        <h2>Murmur HF Communication</h2>
+                        
+                        <div id="murmurLocked" class="locked-feature">
+                            <div class="lock-message">
+                                <i class="fas fa-lock"></i>
+                                <h3>Feature Locked</h3>
+                                <p>Complete mastery of all Morse code characters is required to unlock Murmur HF Communication.</p>
+                                <div class="progress-bar">
+                                    <div id="unlockProgress" class="progress-indicator" style="width: 0%"></div>
+                                </div>
+                                <span id="unlockProgressText">0% Complete</span>
+                            </div>
+                        </div>
+                        
+                        <div id="murmurUnlocked" class="hidden">
+                            <div class="hf-status">
+                                <div class="current-band">
+                                    <h3>Current Band</h3>
+                                    <div id="currentBand">20m</div>
+                                    <div id="propagationQuality" class="signal-strength level-3">
+                                        <span></span><span></span><span></span><span></span><span></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="online-status">
+                                    <h3>Server Status</h3>
+                                    <div id="serverStatus" class="status-indicator disconnected">
+                                        <i class="fas fa-server"></i>
+                                        <span>Disconnected</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="communication-panel">
+                                <div class="contacts-list">
+                                    <h3>Stations</h3>
+                                    <div id="stationsList" class="stations"></div>
+                                </div>
+                                
+                                <div class="morse-chat">
+                                    <div id="morseMessages" class="messages"></div>
+                                    <div class="input-area">
+                                        <input type="text" id="morseInput" placeholder="Type or use Morse key...">
+                                        <button id="sendMorseBtn" class="btn btn-primary">
+                                            <i class="fas fa-paper-plane"></i> Send
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="voice-controls">
+                                <h3>Voice Communication</h3>
+                                <button id="voicePTTBtn" class="btn btn-large btn-ptt">
+                                    <i class="fas fa-microphone"></i> Push To Talk
+                                </button>
+                                <div class="volume-control">
+                                    <label for="volumeControl">Volume</label>
+                                    <input type="range" id="volumeControl" min="0" max="100" value="75">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2025 SuperMorse | <a href="#" id="aboutLink">About</a></p>
+        </footer>
+    </div>
+
+    <!-- Modal for messages and alerts -->
+    <div id="modalOverlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Message</h3>
+                <button id="closeModal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="modalPrimaryBtn" class="btn btn-primary">OK</button>
+                <button id="modalSecondaryBtn" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js" type="module"></script>
+</body>
+</html>

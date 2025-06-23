@@ -1,0 +1,796 @@
+/**
+ * training.js
+ * Handles Morse code training, progression, and evaluation
+ */
+
+export class MorseTrainer {
+    /**
+     * Initialize Morse trainer
+     * @param {Object} app - Reference to the main application
+     */
+    constructor(app) {
+        this.app = app;
+        
+        // Training state
+        this.isTraining = false;
+        this.lessonActive = false;
+        this.currentCharacters = [];
+        this.currentSequence = '';
+        this.userInput = '';
+        this.sequenceGroups = [];
+        this.groupIndex = 0;
+        this.correctGroups = 0;
+        this.totalGroups = 0;
+        this.newCharIntroduction = false;
+        
+        // Timing
+        this.sessionStartTime = null;
+        this.sessionDuration = 30 * 60 * 1000; // 30 minutes in milliseconds
+        this.sessionTimer = null;
+        this.groupTimer = null;
+        
+        // Speed settings
+        this.wpm = 13; // Words per minute
+        this.farnsworthWpm = 8; // Character spacing WPM
+        
+        // Progress tracking
+        this.learnedCharacters = [];
+        this.charactersInProgress = [];
+        this.currentCharacter = null;
+        this.mastery = {};
+        
+        // Audio player reference
+        this.morseAudio = null;
+    }
+    
+    /**
+     * Load the ALPHABETS module from the global scope
+     * This is defined in alphabets.js which is loaded in the HTML
+     * @returns {Object} - The ALPHABETS module
+     */
+    getAlphabets() {
+        // Use window.ALPHABETS which is loaded from alphabets.js
+        // If it's not available yet, return a placeholder
+        if (!window.ALPHABETS) {
+            console.warn('ALPHABETS module not loaded');
+            return {
+                getLearningOrder: () => ['K', 'M'],
+                charToMorse: (char) => char === 'K' ? '-.-' : '--'
+            };
+        }
+        return window.ALPHABETS;
+    }
+    
+    /**
+     * Load user progress from storage
+     * @param {string} userId - The user ID
+     * @returns {Promise} - Resolves when progress is loaded
+     */
+    async loadUserProgress(userId) {
+        try {
+            // Load progress from the main process
+            const progress = await window.electronAPI.getProgress(userId);
+            
+            if (progress) {
+                this.learnedCharacters = progress.learnedCharacters || [];
+                this.currentCharacter = progress.currentCharacter || null;
+                this.mastery = progress.mastery || {};
+                
+                // Initialize based on progress
+                this.initializeTrainingState();
+                
+                // Update progress display
+                this.updateProgressDisplay();
+            } else {
+                // New user, start from scratch
+                this.initializeNewUser();
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Error loading user progress:', error);
+            // Start from scratch on error
+            this.initializeNewUser();
+            return false;
+        }
+    }
+    
+    /**
+     * Initialize a new user with no prior progress
+     */
+    initializeNewUser() {
+        // Start with K and M as per requirements
+        this.learnedCharacters = [];
+        this.currentCharacter = 'K';
+        this.mastery = {
+            'international': 0,
+            'prosigns': 0,
+            'special': 0
+        };
+        
+        // Initialize training state
+        this.initializeTrainingState();
+        
+        // Update progress display
+        this.updateProgressDisplay();
+    }
+    
+    /**
+     * Initialize training state based on current progress
+     */
+    initializeTrainingState() {
+        const alphabets = this.getAlphabets();
+        
+        // If we have a current character but no learned characters, we're at the beginning
+        if (this.currentCharacter && this.learnedCharacters.length === 0) {
+            // Starting with K and M as per requirements
+            if (this.currentCharacter === 'K') {
+                this.charactersInProgress = ['K', 'M'];
+                this.currentCharacters = ['K', 'M'];
+            } else {
+                this.charactersInProgress = [this.currentCharacter];
+                this.currentCharacters = [this.currentCharacter];
+            }
+        } 
+        // If we have learned characters, use those plus the current character
+        else if (this.learnedCharacters.length > 0) {
+            this.charactersInProgress = [...this.learnedCharacters];
+            
+            // Add current character if it exists and isn't already in the list
+            if (this.currentCharacter && !this.learnedCharacters.includes(this.currentCharacter)) {
+                this.charactersInProgress.push(this.currentCharacter);
+            }
+            
+            // Use all characters for training
+            this.currentCharacters = [...this.charactersInProgress];
+        }
+        // Default starting state if no progress found
+        else {
+            this.charactersInProgress = ['K', 'M'];
+            this.currentCharacters = ['K', 'M'];
+            this.currentCharacter = 'K';
+        }
+        
+        // Display current character
+        this.updateCurrentCharacterDisplay();
+    }
+    
+    /**
+     * Save user progress to storage
+     * @param {string} userId - The user ID
+     * @returns {Promise} - Resolves when progress is saved
+     */
+    async saveProgress(userId) {
+        try {
+            const progressData = {
+                userId,
+                learnedCharacters: this.learnedCharacters,
+                currentCharacter: this.currentCharacter,
+                mastery: this.mastery
+            };
+            
+            await window.electronAPI.saveProgress(progressData);
+            return true;
+        } catch (error) {
+            console.error('Error saving progress:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Start a training lesson
+     */
+    startLesson() {
+        if (this.isTraining) return;
+        
+        this.isTraining = true;
+        this.lessonActive = true;
+        
+        // Reset counters
+        this.correctGroups = 0;
+        this.totalGroups = 0;
+        this.userInput = '';
+        this.groupIndex = 0;
+        
+        // Start session timer
+        this.sessionStartTime = Date.now();
+        this.startSessionTimer();
+        
+        // If we're introducing a new character, first play it 5 times while displaying it
+        if (this.currentCharacter && !this.learnedCharacters.includes(this.currentCharacter)) {
+            this.newCharIntroduction = true;
+            this.introduceNewCharacter();
+        } else {
+            // Start with normal practice
+            this.newCharIntroduction = false;
+            this.generatePracticeGroups();
+            this.startNextGroup();
+        }
+        
+        // Save the user's ID to use for progress updates
+        this.currentUserId = this.app.auth.getCurrentUser()?.id;
+    }
+    
+    /**
+     * Introduce a new character by playing it 5 times while showing it
+     */
+    introduceNewCharacter() {
+        // Show the character being introduced
+        document.getElementById('displayCharacter').textContent = this.currentCharacter;
+        
+        // Show its Morse pattern
+        const morsePattern = this.getAlphabets().charToMorse(this.currentCharacter);
+        document.getElementById('morsePattern').textContent = morsePattern;
+        
+        // Update challenge text
+        document.getElementById('challengeText').textContent = `Learning new character: ${this.currentCharacter}`;
+        document.getElementById('userInput').textContent = '';
+        
+        // Play the character 5 times
+        let playCount = 0;
+        
+        const playNextCharacter = () => {
+            if (playCount >= 5) {
+                // Move to practice mode after introduction
+                this.newCharIntroduction = false;
+                this.generatePracticeGroups();
+                this.startNextGroup();
+                return;
+            }
+            
+            // Play the character
+            this.playMorseCharacter(this.currentCharacter);
+            
+            // Increment counter
+            playCount++;
+            
+            // Schedule next play with appropriate delay
+            setTimeout(playNextCharacter, 2000);
+        };
+        
+        // Start playing
+        playNextCharacter();
+    }
+    
+    /**
+     * Generate practice groups based on current characters
+     */
+    generatePracticeGroups() {
+        this.sequenceGroups = [];
+        
+        // Generate 10 groups of 5 characters each
+        for (let i = 0; i < 10; i++) {
+            let group = '';
+            
+            // If we're introducing a new character, include it in each group
+            // and fill the rest with random characters from learned ones
+            if (this.newCharIntroduction) {
+                // Add the new character in a random position
+                const position = Math.floor(Math.random() * 5);
+                
+                for (let j = 0; j < 5; j++) {
+                    if (j === position) {
+                        group += this.currentCharacter;
+                    } else {
+                        const randomIndex = Math.floor(Math.random() * this.learnedCharacters.length);
+                        group += this.learnedCharacters[randomIndex];
+                    }
+                }
+            } 
+            // Otherwise, use all current characters randomly
+            else {
+                for (let j = 0; j < 5; j++) {
+                    const randomIndex = Math.floor(Math.random() * this.currentCharacters.length);
+                    group += this.currentCharacters[randomIndex];
+                }
+            }
+            
+            this.sequenceGroups.push(group);
+        }
+    }
+    
+    /**
+     * Start the next group in the sequence
+     */
+    startNextGroup() {
+        if (!this.lessonActive || this.groupIndex >= this.sequenceGroups.length) {
+            // End of groups, check progress
+            this.evaluateOverallProgress();
+            return;
+        }
+        
+        // Get the next group
+        this.currentSequence = this.sequenceGroups[this.groupIndex];
+        this.userInput = '';
+        
+        // Update display
+        document.getElementById('challengeText').textContent = 'Listen and type what you hear:';
+        document.getElementById('userInput').innerHTML = '';
+        
+        // Play the Morse code for this group
+        this.playMorseSequence(this.currentSequence);
+        
+        // Wait for user input (handled by Arduino/keyboard events)
+        // When user submits 5 characters, evaluateUserInput will be called
+    }
+    
+    /**
+     * Evaluate user input against the current sequence
+     */
+    evaluateUserInput() {
+        // Compare user input with current sequence
+        let correct = 0;
+        let displayHtml = '';
+        
+        for (let i = 0; i < this.currentSequence.length; i++) {
+            const expectedChar = this.currentSequence[i];
+            const userChar = this.userInput[i] || '';
+            
+            if (userChar.toUpperCase() === expectedChar.toUpperCase()) {
+                correct++;
+                displayHtml += `<span class="correct">${userChar.toUpperCase()}</span>`;
+            } else {
+                displayHtml += `<span class="incorrect">${userChar.toUpperCase()}</span>`;
+            }
+        }
+        
+        // Update display
+        document.getElementById('userInput').innerHTML = displayHtml;
+        
+        // Calculate accuracy for this group
+        const accuracy = (correct / this.currentSequence.length) * 100;
+        
+        // Update counters
+        this.totalGroups++;
+        if (accuracy >= 80) { // Count as correct if at least 4/5 characters are correct
+            this.correctGroups++;
+        }
+        
+        // Update progress bar
+        const progressPercent = (this.correctGroups / this.totalGroups) * 100;
+        document.getElementById('progressIndicator').style.width = `${progressPercent}%`;
+        document.getElementById('progressText').textContent = `${Math.round(progressPercent)}%`;
+        
+        // Update accuracy display
+        document.getElementById('accuracyRate').textContent = `${Math.round(progressPercent)}%`;
+        
+        // Wait a moment to show the results, then move to next group
+        setTimeout(() => {
+            this.groupIndex++;
+            this.startNextGroup();
+        }, 2000);
+    }
+    
+    /**
+     * Handle user input (from Arduino or keyboard)
+     * @param {string} char - The character input
+     */
+    handleUserInput(char) {
+        if (!this.lessonActive || this.newCharIntroduction) return;
+        
+        // Add to user input if we don't have 5 characters yet
+        if (this.userInput.length < 5) {
+            this.userInput += char.toUpperCase();
+            
+            // Update display
+            document.getElementById('userInput').textContent = this.userInput;
+            
+            // If we have 5 characters, evaluate the input
+            if (this.userInput.length === 5) {
+                this.evaluateUserInput();
+            }
+        }
+    }
+    
+    /**
+     * Evaluate overall progress at the end of the lesson or groups
+     */
+    evaluateOverallProgress() {
+        // Calculate overall accuracy
+        const accuracy = this.totalGroups > 0 ? (this.correctGroups / this.totalGroups) * 100 : 0;
+        
+        // Check if we've reached the threshold for introducing a new character
+        if (accuracy >= 90) {
+            // If we've been practicing a new character, mark it as learned
+            if (this.currentCharacter && !this.learnedCharacters.includes(this.currentCharacter)) {
+                this.learnedCharacters.push(this.currentCharacter);
+                
+                // Show congratulations message
+                this.app.showModal('Character Mastered!', 
+                    `<p>Congratulations! You've mastered the character "${this.currentCharacter}".</p>
+                    <p>Moving on to the next character.</p>`
+                );
+            }
+            
+            // Find the next character to learn
+            this.findNextCharacterToLearn();
+        } else {
+            // Not enough accuracy, keep practicing the same characters
+            this.app.showModal('Keep Practicing', 
+                `<p>Your accuracy was ${Math.round(accuracy)}%.</p>
+                <p>You need 90% accuracy to progress. Keep practicing!</p>`
+            );
+        }
+        
+        // Update progress display
+        this.updateProgressDisplay();
+        
+        // Save progress
+        if (this.currentUserId) {
+            this.saveProgress(this.currentUserId);
+        }
+        
+        // Reset lesson state but keep session timer running
+        this.lessonActive = false;
+        document.getElementById('startLessonBtn').classList.remove('hidden');
+        document.getElementById('stopLessonBtn').classList.add('hidden');
+        document.getElementById('challengeText').textContent = 'Press Start to begin a new lesson';
+        document.getElementById('userInput').textContent = '';
+    }
+    
+    /**
+     * Find the next character to learn based on learning order
+     */
+    findNextCharacterToLearn() {
+        const alphabets = this.getAlphabets();
+        
+        // Get the international learning order
+        const internationalOrder = alphabets.getLearningOrder('international', 1);
+        
+        // Find the next character in the order that we haven't learned yet
+        for (const char of internationalOrder) {
+            if (!this.learnedCharacters.includes(char)) {
+                this.currentCharacter = char;
+                
+                // Update display
+                this.updateCurrentCharacterDisplay();
+                
+                // Update the characters in progress
+                this.currentCharacters = [...this.learnedCharacters, this.currentCharacter];
+                
+                return;
+            }
+        }
+        
+        // If we've learned all international characters, check prosigns
+        if (this.learnedCharacters.length >= internationalOrder.length) {
+            const prosignsOrder = alphabets.getLearningOrder('international', 3);
+            
+            for (const char of prosignsOrder) {
+                if (!this.learnedCharacters.includes(char)) {
+                    this.currentCharacter = char;
+                    
+                    // Update display
+                    this.updateCurrentCharacterDisplay();
+                    
+                    // Update the characters in progress
+                    this.currentCharacters = [...this.learnedCharacters, this.currentCharacter];
+                    
+                    return;
+                }
+            }
+        }
+        
+        // If we've learned all prosigns, check special characters
+        if (this.learnedCharacters.length >= internationalOrder.length + alphabets.getLearningOrder('international', 3).length) {
+            const specialOrder = alphabets.getLearningOrder('international', 4);
+            
+            for (const char of specialOrder) {
+                if (!this.learnedCharacters.includes(char)) {
+                    this.currentCharacter = char;
+                    
+                    // Update display
+                    this.updateCurrentCharacterDisplay();
+                    
+                    // Update the characters in progress
+                    this.currentCharacters = [...this.learnedCharacters, this.currentCharacter];
+                    
+                    return;
+                }
+            }
+        }
+        
+        // If we've learned everything, show completion message and unlock regional
+        if (this.learnedCharacters.length >= internationalOrder.length + 
+            alphabets.getLearningOrder('international', 3).length + 
+            alphabets.getLearningOrder('international', 4).length) {
+            
+            // Update mastery to 100%
+            this.mastery = {
+                'international': 100,
+                'prosigns': 100,
+                'special': 100
+            };
+            
+            // Show completion message
+            this.app.showModal('Congratulations!', 
+                `<p>You've mastered all International Morse characters, prosigns, and special characters!</p>
+                <p>You've unlocked regional character sets and the Murmur HF Communication feature.</p>`
+            );
+            
+            // Check for feature unlocks
+            this.app.checkFeatureUnlocks();
+        }
+    }
+    
+    /**
+     * Update the current character display
+     */
+    updateCurrentCharacterDisplay() {
+        if (this.currentCharacter) {
+            document.getElementById('displayCharacter').textContent = this.currentCharacter;
+            
+            // Show its Morse pattern
+            const morsePattern = this.getAlphabets().charToMorse(this.currentCharacter);
+            document.getElementById('morsePattern').textContent = morsePattern;
+        }
+    }
+    
+    /**
+     * Update progress display in the progress section
+     */
+    updateProgressDisplay() {
+        // Update mastery percentage
+        const totalChars = this.getAlphabets().getLearningOrder('international', 1).length + 
+                          this.getAlphabets().getLearningOrder('international', 3).length + 
+                          this.getAlphabets().getLearningOrder('international', 4).length;
+        
+        const masteryPercent = Math.round((this.learnedCharacters.length / totalChars) * 100);
+        
+        // Update mastery display
+        document.getElementById('masteryPercent').textContent = `${masteryPercent}%`;
+        
+        // Update progress circle using conic gradient
+        const progressCircle = document.querySelector('.progress-circle');
+        if (progressCircle) {
+            progressCircle.style.background = `conic-gradient(var(--primary-color) ${masteryPercent}%, var(--border-color) 0%)`;
+        }
+        
+        // Update learned characters list
+        const learnedList = document.getElementById('learnedCharsList');
+        if (learnedList) {
+            learnedList.innerHTML = '';
+            
+            this.learnedCharacters.forEach(char => {
+                const charSpan = document.createElement('span');
+                charSpan.textContent = char;
+                learnedList.appendChild(charSpan);
+            });
+        }
+        
+        // Update next characters to learn
+        const nextList = document.getElementById('nextCharsList');
+        if (nextList) {
+            nextList.innerHTML = '';
+            
+            // Show current character in progress
+            if (this.currentCharacter && !this.learnedCharacters.includes(this.currentCharacter)) {
+                const charDiv = document.createElement('div');
+                charDiv.className = 'preview-char';
+                
+                const charSpan = document.createElement('span');
+                charSpan.className = 'char';
+                charSpan.textContent = this.currentCharacter;
+                
+                const morseSpan = document.createElement('span');
+                morseSpan.className = 'morse';
+                morseSpan.textContent = this.getAlphabets().charToMorse(this.currentCharacter);
+                
+                charDiv.appendChild(charSpan);
+                charDiv.appendChild(morseSpan);
+                nextList.appendChild(charDiv);
+            }
+            
+            // Show next few characters
+            const alphabet = this.getAlphabets();
+            const allChars = [
+                ...alphabet.getLearningOrder('international', 1),
+                ...alphabet.getLearningOrder('international', 3),
+                ...alphabet.getLearningOrder('international', 4)
+            ];
+            
+            let nextCharsCount = 0;
+            for (const char of allChars) {
+                if (!this.learnedCharacters.includes(char) && char !== this.currentCharacter) {
+                    const charDiv = document.createElement('div');
+                    charDiv.className = 'preview-char';
+                    
+                    const charSpan = document.createElement('span');
+                    charSpan.className = 'char';
+                    charSpan.textContent = char;
+                    
+                    const morseSpan = document.createElement('span');
+                    morseSpan.className = 'morse';
+                    morseSpan.textContent = alphabet.charToMorse(char);
+                    
+                    charDiv.appendChild(charSpan);
+                    charDiv.appendChild(morseSpan);
+                    nextList.appendChild(charDiv);
+                    
+                    nextCharsCount++;
+                    if (nextCharsCount >= 4) break;
+                }
+            }
+        }
+        
+        // Update learning stats
+        // This would be populated with actual learning time data in a full implementation
+        const statsGrid = document.getElementById('learningStats');
+        if (statsGrid) {
+            statsGrid.innerHTML = '';
+            
+            // For now, just show the learned characters with placeholder times
+            this.learnedCharacters.slice(0, 10).forEach(char => {
+                const statCard = document.createElement('div');
+                statCard.className = 'stat-card';
+                
+                const charSpan = document.createElement('div');
+                charSpan.className = 'char';
+                charSpan.textContent = char;
+                
+                const timeSpan = document.createElement('div');
+                timeSpan.className = 'time';
+                timeSpan.textContent = '5 min';
+                
+                statCard.appendChild(charSpan);
+                statCard.appendChild(timeSpan);
+                statsGrid.appendChild(statCard);
+            });
+        }
+    }
+    
+    /**
+     * Start the session timer
+     */
+    startSessionTimer() {
+        // Clear any existing timer
+        if (this.sessionTimer) {
+            clearInterval(this.sessionTimer);
+        }
+        
+        // Update timer displays
+        this.updateTimerDisplays();
+        
+        // Start a new timer that updates every second
+        this.sessionTimer = setInterval(() => {
+            this.updateTimerDisplays();
+            
+            // Check if session time is up
+            const elapsed = Date.now() - this.sessionStartTime;
+            if (elapsed >= this.sessionDuration) {
+                this.endSession();
+            }
+        }, 1000);
+    }
+    
+    /**
+     * Update timer displays
+     */
+    updateTimerDisplays() {
+        if (!this.sessionStartTime) return;
+        
+        const elapsed = Date.now() - this.sessionStartTime;
+        const remaining = Math.max(0, this.sessionDuration - elapsed);
+        
+        // Format times as MM:SS
+        document.getElementById('timeElapsed').textContent = this.formatTime(elapsed);
+        document.getElementById('timeRemaining').textContent = this.formatTime(remaining);
+    }
+    
+    /**
+     * Format time in milliseconds as MM:SS
+     * @param {number} timeMs - Time in milliseconds
+     * @returns {string} - Formatted time string
+     */
+    formatTime(timeMs) {
+        const totalSeconds = Math.floor(timeMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    /**
+     * End the training session
+     */
+    endSession() {
+        // Stop the session timer
+        if (this.sessionTimer) {
+            clearInterval(this.sessionTimer);
+            this.sessionTimer = null;
+        }
+        
+        // End the current lesson if active
+        if (this.lessonActive) {
+            this.lessonActive = false;
+            document.getElementById('startLessonBtn').classList.remove('hidden');
+            document.getElementById('stopLessonBtn').classList.add('hidden');
+        }
+        
+        // Show session completion message
+        this.app.showModal('Session Complete', 
+            `<p>Your 30-minute training session is complete.</p>
+            <p>Take at least a 1-hour break to let your brain absorb what you've learned.</p>
+            <p>Remember to stay hydrated!</p>`
+        );
+        
+        // Save progress
+        if (this.currentUserId) {
+            this.saveProgress(this.currentUserId);
+        }
+        
+        // Reset training state
+        this.isTraining = false;
+    }
+    
+    /**
+     * Stop the current lesson
+     */
+    stopLesson() {
+        this.lessonActive = false;
+        
+        // Stop any audio playback
+        if (this.app.morseAudio) {
+            this.app.morseAudio.stopTone();
+        }
+        
+        // Clear group timer
+        if (this.groupTimer) {
+            clearTimeout(this.groupTimer);
+            this.groupTimer = null;
+        }
+        
+        // Reset display
+        document.getElementById('challengeText').textContent = 'Lesson stopped';
+        document.getElementById('userInput').textContent = '';
+    }
+    
+    /**
+     * Play a Morse code sequence
+     * @param {string} sequence - The sequence to play
+     */
+    playMorseSequence(sequence) {
+        if (!this.app.morseAudio) return;
+        
+        // Convert the sequence to Morse code
+        const alphabets = this.getAlphabets();
+        let morseSequence = '';
+        
+        for (const char of sequence) {
+            morseSequence += alphabets.charToMorse(char) + ' ';
+        }
+        
+        // Play the Morse code
+        this.app.morseAudio.playMorseCode(morseSequence, this.wpm, this.farnsworthWpm);
+    }
+    
+    /**
+     * Play a single Morse character
+     * @param {string} char - The character to play
+     */
+    playMorseCharacter(char) {
+        if (!this.app.morseAudio) return;
+        
+        // Convert the character to Morse code
+        const alphabets = this.getAlphabets();
+        const morseChar = alphabets.charToMorse(char);
+        
+        // Play the Morse code
+        this.app.morseAudio.playMorseCode(morseChar, this.wpm, this.farnsworthWpm);
+    }
+    
+    /**
+     * Set the Morse code speed
+     * @param {number} wpm - The speed in words per minute
+     */
+    setSpeed(wpm) {
+        this.wpm = wpm;
+        
+        // Adjust Farnsworth speed if needed
+        if (wpm > 18) {
+            this.farnsworthWpm = wpm;
+        } else {
+            this.farnsworthWpm = Math.min(wpm, 10);
+        }
+    }
+}
