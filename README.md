@@ -26,6 +26,8 @@ Remaining:
 Maybe the modified Mumble server can also use a local file if the server running MariaDB (for modified Mumble) also is troublesome. Test creating username,password with email upon registration to the modified Mumble server.
 Test acess to Mumble server rooms,and server rooms management etc..
 
+Any help is enormously appreciated!
+
 ## Features
 
 - **Progressive Learning**: Start with just two characters and expand as you master them
