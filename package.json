@@ -1,0 +1,37 @@
+{
+  "name": "supermorse-app",
+  "version": "1.0.0",
+  "description": "Morse code tutor and HF communication app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "jest",
+    "build": "electron-builder"
+  },
+  "keywords": [
+    "morse",
+    "tutor",
+    "hf",
+    "communication",
+    "arduino",
+    "murmur"
+  ],
+  "author": "SuperMorse Team",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "dotenv": "^16.0.3",
+    "electron-store": "^8.1.0",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "node-mumble": "^2.2.0",
+    "serialport": "^10.5.0",
+    "tone": "^14.7.77"
+  },
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.1.1",
+    "jest": "^29.5.0"
+  }
+}
