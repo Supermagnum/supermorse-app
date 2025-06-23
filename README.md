@@ -2,6 +2,13 @@
 
 A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
 
+
+## Development Notes
+
+This application was developed with the assistance of AI (Claude from Anthropic) due to a neurological condition related to dyscalculia that makes programming extremely difficult. The AI assistance made it possible to implement complex features and functionality despite these challenges. There might be bugs,- so testing is required. 
+
+For more detailed information, see the documentation in the `tests` directory.
+
 ## About SuperMorse
 
 SuperMorse is a modern implementation of the Koch method for learning Morse code, enhanced with features for physical key integration, visual feedback, and simulated HF communication. The application progressively unlocks features as you master Morse code elements, eventually enabling voice communication through a modified Murmur server.
@@ -114,8 +121,3 @@ This will present a menu of available tests:
 3. **End-to-End Registration Test** - Complete test of registration form
 4. **Run All Tests** - Run all available tests
 
-## Development Notes
-
-This application was developed with the assistance of AI (Claude from Anthropic) due to a neurological condition related to dyscalculia that makes programming extremely difficult. The AI assistance made it possible to implement complex features and functionality despite these challenges.
-
-For more detailed information, see the documentation in the `tests` directory.
