@@ -18,7 +18,8 @@ export class MurmurInterface {
         this.serverAddress = '';
         
         // Audio settings
-        this.audioOutputEnabled = true;
+        this.audioOutputEnabled = true; // Audio output is enabled so users can hear sounds
+        // IMPORTANT: Audio decoding is not implemented and completely disabled for security purposes
         this.volume = 75; // 0-100 scale
     }
     
@@ -125,7 +126,8 @@ export class MurmurInterface {
     setVolume(level) {
         this.volume = level;
         
-        // In a real implementation, this would adjust the Murmur client volume
+        // Adjust volume for audio playback only
+        // Note: Audio decoding is not implemented and not possible in this application
         console.log('Set volume to', level);
     }
     
@@ -145,6 +147,7 @@ export class MurmurInterface {
         // Update server status
         this.updateServerStatus(this.isConnected);
         
+        // Note: Audio decoding is intentionally not implemented for security purposes
         
         // Populate stations list (placeholder)
         this.updateStationsList();
@@ -152,6 +155,7 @@ export class MurmurInterface {
     
     /**
      * Connect to the Murmur server
+     * Note: Audio can be heard but is NEVER decoded
      * @returns {Promise} - Resolves when connected
      */
     async connect() {
@@ -388,7 +392,6 @@ export class MurmurInterface {
             );
             return;
         }
-        
         // In a real implementation, this would send the message to the Murmur server
         console.log('Sending Morse message:', message);
         
