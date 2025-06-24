@@ -92,26 +92,6 @@ else
   exit 1
 fi
 
-# Create supermorse user and group if they don't exist
-echo -e "\n${YELLOW}Setting up supermorse user and group...${NC}"
-if ! getent group supermorse > /dev/null; then
-  sudo groupadd supermorse
-  echo -e "${GREEN}✓ Created supermorse group${NC}"
-  log "Created supermorse group"
-else
-  echo -e "${GREEN}✓ supermorse group already exists${NC}"
-  log "supermorse group already exists"
-fi
-
-if ! id -u supermorse > /dev/null 2>&1; then
-  sudo useradd -r -g supermorse -s /bin/false -d /opt/supermorse supermorse
-  echo -e "${GREEN}✓ Created supermorse user${NC}"
-  log "Created supermorse user"
-else
-  echo -e "${GREEN}✓ supermorse user already exists${NC}"
-  log "supermorse user already exists"
-fi
-
 # Install npm dependencies
 echo -e "\n${YELLOW}Installing npm dependencies...${NC}"
 npm install
@@ -169,62 +149,14 @@ sudo mkdir -p $INSTALL_DIR/data/stats
 echo -e "${GREEN}✓ Data directories created${NC}"
 log "Data directories created"
 
-# Set ownership and permissions
-echo -e "\n${YELLOW}Setting permissions...${NC}"
-sudo chown -R supermorse:supermorse $INSTALL_DIR
-sudo chmod -R 755 $INSTALL_DIR
-echo -e "${GREEN}✓ Permissions set${NC}"
-log "Permissions set for supermorse user"
-
-# Create systemd service file
-echo -e "\n${YELLOW}Creating systemd service...${NC}"
-cat << EOF | sudo tee /etc/systemd/system/supermorse.service > /dev/null
-[Unit]
-Description=SuperMorse Application Service
-After=network.target
-
-[Service]
-Type=simple
-User=supermorse
-Group=supermorse
-WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/node $INSTALL_DIR/main.js
-Restart=on-failure
-RestartSec=10
-StandardOutput=syslog
-StandardError=syslog
-SyslogIdentifier=supermorse
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ Systemd service created${NC}"
-  log "Systemd service created"
-else
-  echo -e "${RED}Failed to create systemd service.${NC}"
-  log "Failed to create systemd service"
-  exit 1
-fi
-
-# Make script files executable
+# Make script files executable if they exist
 echo -e "\n${YELLOW}Making scripts executable...${NC}"
-sudo chmod +x $INSTALL_DIR/run-tests.sh
-log "Scripts made executable"
-
-# Enable and start the service
-echo -e "\n${YELLOW}Enabling and starting SuperMorse service...${NC}"
-sudo systemctl daemon-reload
-sudo systemctl enable supermorse.service
-sudo systemctl start supermorse.service
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ SuperMorse service enabled and started${NC}"
-  log "SuperMorse service enabled and started"
+if [ -f "$INSTALL_DIR/run-tests.sh" ]; then
+  sudo chmod +x $INSTALL_DIR/run-tests.sh
+  log "Scripts made executable"
 else
-  echo -e "${RED}Failed to enable or start SuperMorse service.${NC}"
-  log "Failed to enable or start SuperMorse service"
-  exit 1
+  echo -e "${YELLOW}No run-tests.sh script found${NC}"
+  log "No run-tests.sh script found"
 fi
 
 # Create a desktop shortcut for the application
@@ -233,11 +165,11 @@ cat << EOF | sudo tee /usr/share/applications/supermorse.desktop > /dev/null
 [Desktop Entry]
 Name=SuperMorse
 Comment=Morse code tutor and HF communication app
-Exec=$INSTALL_DIR/supermorse
+Exec=$INSTALL_DIR/supermorse-app
 Icon=$INSTALL_DIR/resources/icon.png
 Terminal=false
 Type=Application
-Categories=Education;Utility;
+Categories=Hamradio;Education;Utility;
 EOF
 
 if [ $? -eq 0 ]; then
@@ -251,12 +183,9 @@ fi
 echo -e "\n${GREEN}==================================================${NC}"
 echo -e "${GREEN}       SuperMorse Installation Complete!       ${NC}"
 echo -e "${GREEN}==================================================${NC}"
-echo -e "\nThe SuperMorse service is now running!"
-echo -e "\nTo check service status, run:"
-echo -e "${BLUE}sudo systemctl status supermorse.service${NC}"
-echo -e "\nTo stop the service, run:"
-echo -e "${BLUE}sudo systemctl stop supermorse.service${NC}"
-echo -e "\nTo run tests, use:"
+echo -e "\nYou can now run SuperMorse from your applications menu or directly with:"
+echo -e "${BLUE}$INSTALL_DIR/supermorse-app${NC}"
+echo -e "\nTo run tests, use (if available):"
 echo -e "${BLUE}cd $INSTALL_DIR && ./run-tests.sh${NC}"
 echo -e "\nFor more information, see the README.md file."
 echo -e "\nInstallation log saved to: ${LOGFILE}"
