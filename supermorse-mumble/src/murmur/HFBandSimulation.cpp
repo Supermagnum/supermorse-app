@@ -719,3 +719,253 @@ bool HFBandSimulation::isAutoTimeEnabled() const {
     
     return m_autoTimeEnabled;
 }
+
+void HFBandSimulation::setUseExternalData(bool use) {
+    QMutexLocker locker(&m_mutex);
+    
+    m_useExternalData = use;
+    
+    // Update propagation with new setting
+    updatePropagation();
+}
+
+bool HFBandSimulation::useExternalData() const {
+    QMutexLocker locker(&m_mutex);
+    
+    return m_useExternalData;
+}
+
+void HFBandSimulation::setUseDXViewData(bool use) {
+    QMutexLocker locker(&m_mutex);
+    
+    m_useDXViewData = use;
+    
+    // Update propagation with new setting
+    if (m_useExternalData && m_useDXViewData) {
+        fetchDXViewData();
+    }
+}
+
+bool HFBandSimulation::useDXViewData() const {
+    QMutexLocker locker(&m_mutex);
+    
+    return m_useDXViewData;
+}
+
+void HFBandSimulation::setUseSWPCData(bool use) {
+    QMutexLocker locker(&m_mutex);
+    
+    m_useSWPCData = use;
+    
+    // Update propagation with new setting
+    if (m_useExternalData && m_useSWPCData) {
+        fetchSWPCData();
+    }
+}
+
+bool HFBandSimulation::useSWPCData() const {
+    QMutexLocker locker(&m_mutex);
+    
+    return m_useSWPCData;
+}
+
+void HFBandSimulation::fetchDXViewData() {
+    QMutexLocker locker(&m_mutex);
+    
+    if (!m_networkManager) {
+        qWarning() << "Network manager not initialized for DXView data fetching";
+        return;
+    }
+    
+    // Construct the URL for DXView.org HF propagation data
+    QUrl url("https://hf.dxview.org/api/propagation");
+    
+    // Create and send the request
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    
+    // Connect the response handler
+    QNetworkReply *reply = m_networkManager->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        processDXViewResponse(reply);
+    });
+    
+    qDebug() << "Fetching DXView.org propagation data from" << url.toString();
+}
+
+void HFBandSimulation::fetchSWPCData() {
+    QMutexLocker locker(&m_mutex);
+    
+    if (!m_networkManager) {
+        qWarning() << "Network manager not initialized for SWPC data fetching";
+        return;
+    }
+    
+    // Construct the URL for SWPC (Space Weather Prediction Center) data
+    QUrl url("https://services.swpc.noaa.gov/products/summary/solar-indices.json");
+    
+    // Create and send the request
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    
+    // Connect the response handler
+    QNetworkReply *reply = m_networkManager->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        processSWPCResponse(reply);
+    });
+    
+    qDebug() << "Fetching SWPC solar weather data from" << url.toString();
+}
+
+void HFBandSimulation::processDXViewResponse(QNetworkReply *reply) {
+    if (!reply) {
+        qWarning() << "Null reply in processDXViewResponse";
+        emit externalDataUpdated("DXView", false);
+        return;
+    }
+    
+    // Handle errors
+    if (reply->error() != QNetworkReply::NoError) {
+        qWarning() << "Error fetching DXView data:" << reply->errorString();
+        emit externalDataUpdated("DXView", false);
+        reply->deleteLater();
+        return;
+    }
+    
+    // Read the response data
+    QByteArray data = reply->readAll();
+    reply->deleteLater();
+    
+    // Parse the JSON response
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (doc.isNull() || !doc.isObject()) {
+        qWarning() << "Invalid JSON response from DXView";
+        emit externalDataUpdated("DXView", false);
+        return;
+    }
+    
+    QJsonObject obj = doc.object();
+    
+    // Extract propagation data
+    QMutexLocker locker(&m_mutex);
+    
+    bool updated = false;
+    
+    // Check for SFI (Solar Flux Index)
+    if (obj.contains("sfi") && obj["sfi"].isDouble()) {
+        int sfi = qRound(obj["sfi"].toDouble());
+        m_solarFluxIndex = qBound(60, sfi, 300);
+        updated = true;
+    }
+    
+    // Check for K-index
+    if (obj.contains("kindex") && obj["kindex"].isDouble()) {
+        int kIndex = qRound(obj["kindex"].toDouble());
+        m_kIndex = qBound(0, kIndex, 9);
+        updated = true;
+    }
+    
+    // Extract band-specific data if available
+    if (obj.contains("bands") && obj["bands"].isObject()) {
+        QJsonObject bands = obj["bands"].toObject();
+        
+        // Process each band
+        QStringList bandKeys = bands.keys();
+        for (const QString &key : bandKeys) {
+            // Convert band name to meters (e.g., "10m" -> 10)
+            QString bandStr = key;
+            bandStr.remove(QRegularExpression("[^0-9]"));
+            bool ok;
+            int band = bandStr.toInt(&ok);
+            
+            if (ok && bands[key].isObject()) {
+                QJsonObject bandData = bands[key].toObject();
+                
+                // Extract propagation quality for this band
+                if (bandData.contains("quality") && bandData["quality"].isDouble()) {
+                    double quality = bandData["quality"].toDouble();
+                    
+                    // Update band-specific propagation in our model
+                    // This would update the relevant band definition
+                    for (int i = 0; i < m_bandDefinitions.size(); ++i) {
+                        if (m_bandDefinitions[i].band == band) {
+                            // Scale quality to our reliability factor (0.0-1.0)
+                            m_bandDefinitions[i].reliability = quality / 10.0f;
+                            updated = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Emit the result
+    emit externalDataUpdated("DXView", updated);
+    
+    if (updated) {
+        qDebug() << "Updated propagation data from DXView.org: SFI =" << m_solarFluxIndex << ", K-index =" << m_kIndex;
+        
+        // Update propagation with the new data
+        updatePropagation();
+    }
+}
+
+void HFBandSimulation::processSWPCResponse(QNetworkReply *reply) {
+    if (!reply) {
+        qWarning() << "Null reply in processSWPCResponse";
+        emit externalDataUpdated("SWPC", false);
+        return;
+    }
+    
+    // Handle errors
+    if (reply->error() != QNetworkReply::NoError) {
+        qWarning() << "Error fetching SWPC data:" << reply->errorString();
+        emit externalDataUpdated("SWPC", false);
+        reply->deleteLater();
+        return;
+    }
+    
+    // Read the response data
+    QByteArray data = reply->readAll();
+    reply->deleteLater();
+    
+    // Parse the JSON response
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (doc.isNull() || !doc.isObject()) {
+        qWarning() << "Invalid JSON response from SWPC";
+        emit externalDataUpdated("SWPC", false);
+        return;
+    }
+    
+    QJsonObject obj = doc.object();
+    
+    // Extract solar weather data
+    QMutexLocker locker(&m_mutex);
+    
+    bool updated = false;
+    
+    // Check for SFI (Solar Flux Index)
+    if (obj.contains("sfi") && obj["sfi"].isDouble()) {
+        int sfi = qRound(obj["sfi"].toDouble());
+        m_solarFluxIndex = qBound(60, sfi, 300);
+        updated = true;
+    }
+    
+    // Check for K-index
+    if (obj.contains("k_index") && obj["k_index"].isDouble()) {
+        int kIndex = qRound(obj["k_index"].toDouble());
+        m_kIndex = qBound(0, kIndex, 9);
+        updated = true;
+    }
+    
+    // Emit the result
+    emit externalDataUpdated("SWPC", updated);
+    
+    if (updated) {
+        qDebug() << "Updated solar weather data from SWPC: SFI =" << m_solarFluxIndex << ", K-index =" << m_kIndex;
+        
+        // Update propagation with the new data
+        updatePropagation();
+    }
+}

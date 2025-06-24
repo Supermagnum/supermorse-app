@@ -1,0 +1,37 @@
+# Murmur Screenshot Update
+
+## Updates Made to the Murmur GUI Interface
+
+The Murmur GUI interface has been updated to show the available server rooms/channels in a dropdown selector. This enhancement improves the user experience by providing clear visibility of all available channels on the Murmur server.
+
+### What's New in the Updated Screenshot:
+
+1. **Channel Selector Dropdown**
+   - Location: Below the "Available Rooms & Stations" heading
+   - Shows multiple channel options:
+     - General (Default)
+     - HF Band channels (160m, 80m, 60m, 40m, 30m, 20m, 17m, 15m, 12m, 10m, 6m)
+     - Special channels (DX Cluster, Emergency Net, Digital Modes, Contest)
+
+2. **Current Band Display**
+   - Shows which band/channel is currently selected
+   - Updates when a user selects a different channel from the dropdown
+
+3. **Channel Switching Functionality**
+   - When a user selects a different channel, the system:
+     - Updates the current band display
+     - Adjusts the propagation indicator based on the selected band
+     - Refreshes the list of stations visible on that band
+     - Shows a system message confirming the channel switch
+
+These updates ensure that users can see and interact with all available channels configured on the Murmur server, as defined in the Server.cpp setup.
+
+### Implementation Details:
+
+- The channel list is dynamically populated from the server configuration
+- Each HF band has its own channel, reflecting different frequency ranges
+- Special purpose channels are also available for specific types of communication
+- The UI adapts to show currently active users in the selected channel
+- Proper visual feedback is provided when switching between channels
+
+This enhancement significantly improves the user experience by making the channel structure of the server more transparent and accessible to users.

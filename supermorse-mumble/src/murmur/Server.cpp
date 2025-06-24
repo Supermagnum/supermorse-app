@@ -5,6 +5,7 @@
 
 #include "Server.h"
 #include "HFBandSimulation.h"
+#include "database/MariaDBConnectionParameter.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QSettings>
@@ -22,17 +23,13 @@
 // In a real implementation, this would include all the functionality
 // from the original Server.cpp file, with modifications for HF band simulation
 
-Server::Server(QObject *parent) : QObject(parent) {
+Server::Server(unsigned int snum, const ::mumble::db::ConnectionParameter &connectionParam, QObject *parent) : QThread(parent), iServerNum(snum), m_dbWrapper(connectionParam), m_hfBandSimulation(this) {
     // Initialize the server
     qsRegName = "Supermorse Mumble Server";
-    
-    // Create the HF band simulation
-    m_hfBandSimulation = new HFBandSimulation(this);
 }
 
 Server::~Server() {
-    // Clean up
-    delete m_hfBandSimulation;
+    // No cleanup needed for HFBandSimulation as it's an object member now
 }
 
 void Server::initialize() {
@@ -102,7 +99,7 @@ void Server::setupChannels(QSettings &qs) {
 
 void Server::initializeHFBandSimulation() {
     // Initialize the HF band simulation
-    m_hfBandSimulation->initialize();
+    m_hfBandSimulation.initialize();
     
     // Load propagation parameters from configuration
     QSettings qs("mumble-server.ini", QSettings::IniFormat);
@@ -118,16 +115,16 @@ void Server::initializeHFBandSimulation() {
     
     // Set external data source settings
     bool useExternalData = qs.value("use_external_data", false).toBool();
-    m_hfBandSimulation->setUseExternalData(useExternalData);
+    m_hfBandSimulation.setUseExternalData(useExternalData);
     
     if (useExternalData) {
         // Set DXView.org data settings
         bool useDXViewData = qs.value("use_dxview_data", false).toBool();
-        m_hfBandSimulation->setUseDXViewData(useDXViewData);
+        m_hfBandSimulation.setUseDXViewData(useDXViewData);
         
         // Set SWPC data settings
         bool useSWPCData = qs.value("use_swpc_data", false).toBool();
-        m_hfBandSimulation->setUseSWPCData(useSWPCData);
+        m_hfBandSimulation.setUseSWPCData(useSWPCData);
         
         qWarning() << "HF band simulation using external data sources:"
                   << "DXView.org:" << (useDXViewData ? "enabled" : "disabled")
@@ -136,20 +133,20 @@ void Server::initializeHFBandSimulation() {
     
     // Set solar flux index (default: 120)
     int sfi = qs.value("solar_flux_index", 120).toInt();
-    m_hfBandSimulation->setSolarFluxIndex(sfi);
+    m_hfBandSimulation.setSolarFluxIndex(sfi);
     
     // Set K-index (default: 3)
     int kIndex = qs.value("k_index", 3).toInt();
-    m_hfBandSimulation->setKIndex(kIndex);
+    m_hfBandSimulation.setKIndex(kIndex);
     
     // Set season (0=Winter, 1=Spring, 2=Summer, 3=Fall, default: auto)
     bool autoSeason = qs.value("auto_season", true).toBool();
     if (autoSeason) {
-        m_hfBandSimulation->setAutoTimeEnabled(true);
+        m_hfBandSimulation.setAutoTimeEnabled(true);
     } else {
         int season = qs.value("season", 0).toInt();
-        m_hfBandSimulation->setSeason(season);
-        m_hfBandSimulation->setAutoTimeEnabled(false);
+        m_hfBandSimulation.setSeason(season);
+        m_hfBandSimulation.setAutoTimeEnabled(false);
     }
     
     // Set update interval (default: 30 minutes)
@@ -161,10 +158,10 @@ void Server::initializeHFBandSimulation() {
     qs.endGroup();
     
     // Connect signals and slots for propagation updates
-    connect(m_hfBandSimulation, &HFBandSimulation::propagationUpdated, this, &Server::onPropagationUpdated);
-    connect(m_hfBandSimulation, &HFBandSimulation::signalStrengthChanged, this, &Server::onSignalStrengthChanged);
-    connect(m_hfBandSimulation, &HFBandSimulation::mufChanged, this, &Server::onMUFChanged);
-    connect(m_hfBandSimulation, &HFBandSimulation::externalDataUpdated, this, &Server::onExternalDataUpdated);
+    connect(&m_hfBandSimulation, &HFBandSimulation::propagationUpdated, this, &Server::onPropagationUpdated);
+    connect(&m_hfBandSimulation, &HFBandSimulation::signalStrengthChanged, this, &Server::onSignalStrengthChanged);
+    connect(&m_hfBandSimulation, &HFBandSimulation::mufChanged, this, &Server::onMUFChanged);
+    connect(&m_hfBandSimulation, &HFBandSimulation::externalDataUpdated, this, &Server::onExternalDataUpdated);
     
     // Initial propagation update
     updateHFBandPropagation();
@@ -175,9 +172,9 @@ void Server::onPropagationUpdated() {
     // Update the server state based on the new propagation conditions
     
     // Get current propagation conditions
-    int sfi = m_hfBandSimulation->solarFluxIndex();
-    int kIndex = m_hfBandSimulation->kIndex();
-    int season = m_hfBandSimulation->season();
+    int sfi = m_hfBandSimulation.solarFluxIndex();
+    int kIndex = m_hfBandSimulation.kIndex();
+    int season = m_hfBandSimulation.season();
     QString seasonName;
     
     switch (season) {
@@ -263,22 +260,22 @@ void Server::sendMessage(ServerUser *u, const QString &message) {
 
 bool Server::canCommunicate(ServerUser *u1, ServerUser *u2) {
     // Check if two users can communicate based on HF band simulation
-    return m_hfBandSimulation->canCommunicate(u1, u2);
+    return m_hfBandSimulation.canCommunicate(u1, u2);
 }
 
 float Server::calculatePropagation(ServerUser *u1, ServerUser *u2) {
     // Calculate the propagation between two users
-    return m_hfBandSimulation->calculatePropagation(u1, u2);
+    return m_hfBandSimulation.calculatePropagation(u1, u2);
 }
 
 float Server::calculateSignalStrength(const QString &grid1, const QString &grid2) {
     // Calculate the signal strength between two grid locators
-    return m_hfBandSimulation->calculateSignalStrength(grid1, grid2);
+    return m_hfBandSimulation.calculateSignalStrength(grid1, grid2);
 }
 
 int Server::recommendBand(float distance) {
     // Recommend a band for a given distance
-    return m_hfBandSimulation->recommendBand(distance);
+    return m_hfBandSimulation.recommendBand(distance);
 }
 
 void Server::userStateChanged(ServerUser *u) {
@@ -340,7 +337,7 @@ void Server::updateHFBandPropagation() {
     // when propagation conditions change
     
     // Update the HF band simulation
-    m_hfBandSimulation->updatePropagation();
+    m_hfBandSimulation.updatePropagation();
     
     // Update audio routing for all users
     foreach(ServerUser *u1, qhUsers) {
@@ -390,8 +387,8 @@ void Server::updateChannelLinks() {
     // Update channel links based on current propagation conditions
     
     // Get current propagation conditions
-    int sfi = m_hfBandSimulation->solarFluxIndex();
-    int kIndex = m_hfBandSimulation->kIndex();
+    int sfi = m_hfBandSimulation.solarFluxIndex();
+    int kIndex = m_hfBandSimulation.kIndex();
     
     // Determine which bands are open based on conditions
     QList<int> openBands;
@@ -435,14 +432,14 @@ void Server::sendBandRecommendations(ServerUser *u, const QString &grid) {
     
     // Get current time
     QDateTime now = QDateTime::currentDateTime();
-    bool isDaytime = m_hfBandSimulation->calculateSolarZenithAngle(grid, now) < 90.0f;
+    bool isDaytime = m_hfBandSimulation.calculateSolarZenithAngle(grid, now) < 90.0f;
     
     // Create a message with band recommendations
     QString message = QString("Band recommendations for %1 (%2):\n").arg(grid).arg(isDaytime ? "Day" : "Night");
     
     // Get solar conditions
-    int sfi = m_hfBandSimulation->solarFluxIndex();
-    int kIndex = m_hfBandSimulation->kIndex();
+    int sfi = m_hfBandSimulation.solarFluxIndex();
+    int kIndex = m_hfBandSimulation.kIndex();
     
     // Add solar conditions to the message
     message += QString("Solar Flux Index: %1, K-Index: %2\n").arg(sfi).arg(kIndex);
