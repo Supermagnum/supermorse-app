@@ -75,6 +75,15 @@ cd supermorse-app
   3. Special characters
   4. Regional Morse code variations
   5. Murmur HF communication with simulated band conditions
+ 
+## Needed hardware
+A Seeeduino XIAO, it's the smallest available.
+It can be tucked into the base of the morse key.
+Dual paddle morse key
+You can of course use other Arduino's and other morse keys.
+Suitable USB cable.
+3 conductor wire.
+Any computer that has usb ports and a screen + keyboard.
 
 ## Screenshots
 
