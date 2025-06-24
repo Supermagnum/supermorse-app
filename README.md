@@ -29,6 +29,10 @@ SuperMorse uses simple JSON files for all data storage:
 
 All user data, progress tracking, and settings are stored in plain JSON files in the `data` directory.
 
+## Modified Mumble server.
+It is located here.
+https://github.com/Supermagnum/Supermorse-server
+
 ## Installation
 
 ### Linux (Ubuntu)
