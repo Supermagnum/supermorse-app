@@ -40,6 +40,10 @@ class SuperMorseApp {
         // Load settings
         await this.settings.loadSettings();
         
+        // Show main app initially with account tab
+        document.getElementById('mainApp').classList.remove('hidden');
+        this.navigateTo('account');
+        
         // Check for saved authentication
         const savedAuth = localStorage.getItem('authToken');
         if (savedAuth) {
@@ -48,7 +52,7 @@ class SuperMorseApp {
                 await this.auth.restoreSession(savedAuth);
             } catch (error) {
                 console.error('Failed to restore session:', error);
-                // Continue to login screen
+                // Continue with account tab displayed
             }
         }
     }
@@ -294,8 +298,6 @@ class SuperMorseApp {
         this.currentUser = user;
         
         // Update UI elements
-        document.getElementById('authSection').classList.add('hidden');
-        document.getElementById('mainApp').classList.remove('hidden');
         document.getElementById('userInfoPanel').classList.remove('hidden');
         document.getElementById('userDisplayName').textContent = user.name;
         
@@ -316,9 +318,10 @@ class SuperMorseApp {
         this.currentUser = null;
         
         // Update UI elements
-        document.getElementById('mainApp').classList.add('hidden');
         document.getElementById('userInfoPanel').classList.add('hidden');
-        document.getElementById('authSection').classList.remove('hidden');
+        
+        // Navigate to account section
+        this.navigateTo('account');
         
         // Clear form fields
         document.getElementById('loginUsername').value = '';
