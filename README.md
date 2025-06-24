@@ -104,6 +104,8 @@ A callsign example is CU2RA. CU is the prefix for the Azores.
 See this folder for correct prefix for your country, a example conversation, common abbreviations! 
 https://github.com/Supermagnum/supermorse-app/tree/main/examples
 
+##Suggested/planned features:
+https://github.com/Supermagnum/supermorse-app/issues
 
 ## Learning Progression
 
