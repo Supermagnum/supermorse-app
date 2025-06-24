@@ -126,6 +126,6 @@ This will present a menu of available tests:
 
 ## Development Notes
 
-This application was developed with the assistance of AI (Claude from Anthropic) due to a neurological condition related to dyscalculia that makes programming extremely difficult. The AI assistance made it possible to implement complex features and functionality despite these challenges.
+This application was developed with the assistance of AI (Claude from Anthropic) due to a neurological condition related to dyscalculia that makes programming extremely difficult for me. The AI assistance made it possible to implement complex features and functionality despite these challenges.
 
 For more detailed information, see the documentation in the `tests` directory.
