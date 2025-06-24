@@ -25,6 +25,11 @@ What makes this method so effective:
 - **Progressive Character Introduction**: By starting with just two characters and adding more only after mastery, the method prevents overwhelm.
 - **Proven Results**: Koch himself, with hand-picked students, got a group to master receiving Morse code at 13 WPM in a mere 13.5 hours - much faster than any other method in the psychological literature.
 - **Based on Learned Reflexes**: The method builds muscle memory and auditory reflexes, making it effective for both receiving and sending Morse code.
+- **Use a real morse key**
+  Straigh, single paddle, dual paddle Iambic A or B
+-**Cheap hardware**
+  Any computer running Linux Ubuntu,Windows or mac os.
+  A arduino Uno is all you need to interface with the key.
 
 SuperMorse implements this method while adding modern features like regional character support, visual feedback, and integration with physical keys through Arduino.
 
