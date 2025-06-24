@@ -151,6 +151,105 @@ export class MurmurInterface {
         
         // Populate stations list (placeholder)
         this.updateStationsList();
+        
+        // Populate channels dropdown
+        this.updateChannelsDropdown();
+    }
+    
+    /**
+     * Update the channels dropdown with available server rooms/channels
+     */
+    updateChannelsDropdown() {
+        const roomSelector = document.getElementById('roomSelector');
+        
+        if (roomSelector) {
+            // Clear existing options except the default one
+            while (roomSelector.options.length > 1) {
+                roomSelector.remove(1);
+            }
+            
+            if (!this.isConnected) {
+                return;
+            }
+            
+            // In a real implementation, this would fetch channels from the Murmur server
+            // For now, generate channels based on HF bands
+            const hfBands = ['160m', '80m', '60m', '40m', '30m', '20m', '17m', '15m', '12m', '10m', '6m'];
+            
+            // Add each HF band as a channel
+            hfBands.forEach(band => {
+                const option = document.createElement('option');
+                option.value = band;
+                option.textContent = `${band} Band`;
+                roomSelector.appendChild(option);
+            });
+            
+            // Add special channels
+            const specialChannels = [
+                { value: 'dx', name: 'DX Cluster' },
+                { value: 'emergency', name: 'Emergency Net' },
+                { value: 'digital', name: 'Digital Modes' },
+                { value: 'contest', name: 'Contest' }
+            ];
+            
+            specialChannels.forEach(channel => {
+                const option = document.createElement('option');
+                option.value = channel.value;
+                option.textContent = channel.name;
+                roomSelector.appendChild(option);
+            });
+            
+            // Set the current band as selected if it exists
+            if (this.currentBand) {
+                for (let i = 0; i < roomSelector.options.length; i++) {
+                    if (roomSelector.options[i].value === this.currentBand) {
+                        roomSelector.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            // Add change event listener
+            roomSelector.addEventListener('change', (e) => {
+                this.switchChannel(e.target.value);
+            });
+        }
+    }
+    
+    /**
+     * Switch to a different channel
+     * @param {string} channelId - The channel ID to switch to
+     */
+    switchChannel(channelId) {
+        if (!this.isConnected) return;
+        
+        console.log('Switching to channel:', channelId);
+        
+        // In a real implementation, this would send a request to the Murmur server
+        // to switch channels
+        
+        // Update current band if it's an HF band channel
+        const hfBandRegex = /^\d+m$/;
+        if (hfBandRegex.test(channelId)) {
+            this.currentBand = channelId;
+            document.getElementById('currentBand').textContent = channelId;
+            
+            // Update propagation based on the new band
+            const propagationLevel = this.simulatePropagation(channelId);
+            this.updatePropagationIndicator(propagationLevel);
+            
+            // Regenerate stations for the new band
+            const settings = this.app.settings.getSettings();
+            this.generateSimulatedStations(settings.maidenheadLocator);
+        }
+        
+        // Display a message about the channel switch
+        this.displayMessage({
+            sender: 'System',
+            content: `You have switched to the ${channelId} channel.`,
+            time: new Date(),
+            isSelf: false
+        });
     }
     
     /**
@@ -233,6 +332,9 @@ export class MurmurInterface {
             
             // Simulate stations list
             this.generateSimulatedStations(locator);
+            
+            // Update channels dropdown with available rooms
+            this.updateChannelsDropdown();
             
             return true;
         } catch (error) {
