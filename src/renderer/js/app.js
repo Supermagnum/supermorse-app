@@ -96,10 +96,10 @@ class SuperMorseApp {
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('registerUsername').value;
-            const name = document.getElementById('registerName').value;
             const email = document.getElementById('registerEmail').value;
             const password = document.getElementById('registerPassword').value;
             const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            const maidenhead = document.getElementById('registerMaidenhead').value;
             
             if (password !== confirmPassword) {
                 document.getElementById('registerMessage').textContent = 'Passwords do not match';
@@ -107,7 +107,8 @@ class SuperMorseApp {
                 return;
             }
             
-            await this.auth.register(username, name, email, password);
+            // Use username as name if needed
+            await this.auth.register(username, username, email, password, maidenhead);
         });
         
         // Logout button
@@ -323,10 +324,10 @@ class SuperMorseApp {
         document.getElementById('loginUsername').value = '';
         document.getElementById('loginPassword').value = '';
         document.getElementById('registerUsername').value = '';
-        document.getElementById('registerName').value = '';
         document.getElementById('registerEmail').value = '';
         document.getElementById('registerPassword').value = '';
         document.getElementById('registerConfirmPassword').value = '';
+        document.getElementById('registerMaidenhead').value = '';
         
         // Clear form messages
         document.getElementById('loginMessage').textContent = '';
