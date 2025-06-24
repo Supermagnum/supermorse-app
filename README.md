@@ -85,11 +85,10 @@ cd supermorse-app
   4. Regional Morse code variations
   5. Murmur HF communication with simulated band conditions. Very useful to train conversations without any real license needed.
 
-I Higly recommend using a proper callsign format.
-Example CU2RA. CU is the prefix for the Azores.
-Complete list
-https://rsgb.org/main/operating/licensing-novs-visitors/international-prefixes/
-
+I Higly recommend using a proper callsign format, and correct abbreviations etc.. 
+A callsign example is CU2RA. CU is the prefix for the Azores.
+See this folder for correct prefix for your country, a example conversation, common abbreviations! 
+https://github.com/Supermagnum/supermorse-app/tree/main/examples
 
 
 ## Learning Progression
