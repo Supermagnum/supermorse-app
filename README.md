@@ -76,12 +76,16 @@ cd supermorse-app
   4. Regional Morse code variations
   5. Murmur HF communication with simulated band conditions
  
-Needed Hardware
+## Needed Hardware
 • Seeeduino XIAO – The smallest compatible Arduino board,can fit into the morse key base.
 Other Arduino's are supported. 
+
 • Dual-paddle Morse key (other types also supported)
+
 • Suitable USB cable
+
 • 3-conductor wire
+
 • Any computer with USB ports, screen, and keyboard
 
 ## Screenshots
