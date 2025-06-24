@@ -218,47 +218,7 @@ sudo chmod -R 755 "$INSTALL_DIR"
 echo -e "${GREEN}✓ Permissions set${NC}"
 log "Set application permissions"
 
-# Create LaunchAgent for auto-start
-echo -e "\n${YELLOW}Creating LaunchAgent for SuperMorse...${NC}"
-mkdir -p "$USER_LAUNCHAGENT_DIR"
-
-cat << EOF > "$USER_LAUNCHAGENT_DIR/com.supermorse.app.plist"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.supermorse.app</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>${INSTALL_DIR}/Contents/MacOS/SuperMorse</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>${USER_HOME}/Library/Logs/SuperMorse.log</string>
-    <key>StandardErrorPath</key>
-    <string>${USER_HOME}/Library/Logs/SuperMorse.log</string>
-</dict>
-</plist>
-EOF
-
-chmod 644 "$USER_LAUNCHAGENT_DIR/com.supermorse.app.plist"
-echo -e "${GREEN}✓ LaunchAgent created${NC}"
-log "LaunchAgent created"
-
-# Load the LaunchAgent
-echo -e "\n${YELLOW}Loading LaunchAgent...${NC}"
-launchctl load "$USER_LAUNCHAGENT_DIR/com.supermorse.app.plist"
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✓ SuperMorse LaunchAgent loaded${NC}"
-  log "SuperMorse LaunchAgent loaded"
-else
-  echo -e "${RED}Failed to load SuperMorse LaunchAgent. You can load it manually later.${NC}"
-  log "Failed to load SuperMorse LaunchAgent"
-fi
+# No LaunchAgent setup needed as per updated installation process
 
 # Check for serial port access
 echo -e "\n${YELLOW}Checking for serial port access...${NC}"
@@ -276,14 +236,9 @@ fi
 echo -e "\n${GREEN}==================================================${NC}"
 echo -e "${GREEN}       SuperMorse Installation Complete!       ${NC}"
 echo -e "${GREEN}==================================================${NC}"
-echo -e "\nThe SuperMorse application has been installed to your Applications folder"
-echo -e "and configured to start automatically when you log in."
+echo -e "\nThe SuperMorse application has been installed to your Applications folder."
 echo -e "\nTo start the application now, you can click on it in the Applications folder"
 echo -e "or run: ${BLUE}open ${INSTALL_DIR}${NC}"
-echo -e "\nTo check service status, run:"
-echo -e "${BLUE}launchctl list | grep supermorse${NC}"
-echo -e "\nTo stop the service, run:"
-echo -e "${BLUE}launchctl unload ${USER_LAUNCHAGENT_DIR}/com.supermorse.app.plist${NC}"
 echo -e "\nTo run tests, use:"
 echo -e "${BLUE}cd ${INSTALL_DIR}/Contents/Resources/app && ./run-tests.sh${NC}"
 echo -e "\nFor more information, see the README.md file."
