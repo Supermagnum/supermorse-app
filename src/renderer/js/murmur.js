@@ -17,9 +17,7 @@ export class MurmurInterface {
         this.mumbleClient = null;
         this.serverAddress = '';
         
-        // Voice chat state
-        this.isTalking = false;
-        this.audioInputEnabled = false;
+        // Audio settings
         this.audioOutputEnabled = true;
         this.volume = 75; // 0-100 scale
     }
@@ -81,33 +79,6 @@ export class MurmurInterface {
             });
         }
         
-        // Push-to-talk button
-        const pttButton = document.getElementById('voicePTTBtn');
-        if (pttButton) {
-            pttButton.addEventListener('mousedown', () => {
-                this.startTalking();
-            });
-            
-            pttButton.addEventListener('mouseup', () => {
-                this.stopTalking();
-            });
-            
-            pttButton.addEventListener('mouseleave', () => {
-                this.stopTalking();
-            });
-            
-            // Also handle touch events for mobile
-            pttButton.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                this.startTalking();
-            });
-            
-            pttButton.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                this.stopTalking();
-            });
-        }
-        
         // Volume control
         const volumeControl = document.getElementById('volumeControl');
         if (volumeControl) {
@@ -119,6 +90,11 @@ export class MurmurInterface {
         // Morse input field
         const morseInput = document.getElementById('morseInput');
         const sendMorseBtn = document.getElementById('sendMorseBtn');
+        
+        // Update volume control
+        if (document.getElementById('volumeControl')) {
+            document.getElementById('volumeControl').value = this.volume;
+        }
         
         if (morseInput && sendMorseBtn) {
             sendMorseBtn.addEventListener('click', () => {
@@ -143,6 +119,17 @@ export class MurmurInterface {
     }
     
     /**
+     * Set the audio volume
+     * @param {number} level - Volume level (0-100)
+     */
+    setVolume(level) {
+        this.volume = level;
+        
+        // In a real implementation, this would adjust the Murmur client volume
+        console.log('Set volume to', level);
+    }
+    
+    /**
      * Initialize the Murmur UI
      */
     initMurmurUI() {
@@ -158,8 +145,6 @@ export class MurmurInterface {
         // Update server status
         this.updateServerStatus(this.isConnected);
         
-        // Update volume control
-        document.getElementById('volumeControl').value = this.volume;
         
         // Populate stations list (placeholder)
         this.updateStationsList();
@@ -391,56 +376,6 @@ export class MurmurInterface {
         console.log('Selected station:', station);
     }
     
-    /**
-     * Start talking (push-to-talk)
-     */
-    startTalking() {
-        if (!this.isConnected || this.isTalking) return;
-        
-        // Set talking state
-        this.isTalking = true;
-        
-        // Update button appearance
-        const pttButton = document.getElementById('voicePTTBtn');
-        if (pttButton) {
-            pttButton.classList.add('active');
-        }
-        
-        // In a real implementation, this would enable the microphone
-        // and start transmitting audio to the Murmur server
-        console.log('Started talking');
-    }
-    
-    /**
-     * Stop talking (release push-to-talk)
-     */
-    stopTalking() {
-        if (!this.isTalking) return;
-        
-        // Reset talking state
-        this.isTalking = false;
-        
-        // Update button appearance
-        const pttButton = document.getElementById('voicePTTBtn');
-        if (pttButton) {
-            pttButton.classList.remove('active');
-        }
-        
-        // In a real implementation, this would disable the microphone
-        // and stop transmitting audio to the Murmur server
-        console.log('Stopped talking');
-    }
-    
-    /**
-     * Set the audio volume
-     * @param {number} level - Volume level (0-100)
-     */
-    setVolume(level) {
-        this.volume = level;
-        
-        // In a real implementation, this would adjust the Murmur client volume
-        console.log('Set volume to', level);
-    }
     
     /**
      * Send a Morse code message
