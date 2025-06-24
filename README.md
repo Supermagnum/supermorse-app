@@ -2,21 +2,9 @@
 
 A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
 
-
-## Development Notes
-
-This application was developed with the assistance of AI (Claude from Anthropic) due to a neurological condition related to dyscalculia that makes programming extremely difficult for me. 
-
-I simply had no choice.
-
-The AI assistance made it possible to implement complex features and functionality despite these challenges. There might be bugs,- so testing is required.
-I hope that it works!
-
-For more detailed information, see the documentation in the `tests` directory.
-
 ## About SuperMorse
 
-SuperMorse is a modern implementation of the Koch method for learning Morse code, enhanced with features for physical key integration, visual feedback, and simulated HF communication. The application progressively unlocks features as you master Morse code elements, eventually enabling morse communication through a modified Murmur server.
+SuperMorse is a modern implementation of the Koch method for learning Morse code, enhanced with features for physical key integration, visual feedback, and simulated HF communication. The application progressively unlocks features as you master Morse code elements, eventually enabling voice communication through a modified Murmur server.
 
 ## The Koch Method
 
@@ -28,11 +16,6 @@ What makes this method so effective:
 - **Progressive Character Introduction**: By starting with just two characters and adding more only after mastery, the method prevents overwhelm.
 - **Proven Results**: Koch himself, with hand-picked students, got a group to master receiving Morse code at 13 WPM in a mere 13.5 hours - much faster than any other method in the psychological literature.
 - **Based on Learned Reflexes**: The method builds muscle memory and auditory reflexes, making it effective for both receiving and sending Morse code.
-- **Use a real morse key**
-  Straigh, single paddle, dual paddle Iambic A or B
--**Cheap hardware**
-  Any computer running Linux Ubuntu,Windows or mac os.
-  A arduino Uno is all you need to interface with the key.
 
 SuperMorse implements this method while adding modern features like regional character support, visual feedback, and integration with physical keys through Arduino.
 
@@ -78,12 +61,6 @@ cd supermorse-app
 ./install-mac.sh
 ```
 
-To install the modified Mumble server locally:
-Enter the /supermorse-mumble folder. Read the instructions.
-
-To install it on your server running Ubuntu etc..
-Copy the  /supermorse-mumble folder to the server, read the readme file and follow the instructions.
-
 ## Features
 
 - Progressive Morse code learning using the Koch method (starting with K and M)
@@ -97,15 +74,16 @@ Copy the  /supermorse-mumble folder to the server, read the readme file and foll
   2. Prosigns
   3. Special characters
   4. Regional Morse code variations
-  5. Murmur HF communication with simulated band conditions. Very useful to train conversations without any real license needed.
+  5. Murmur HF communication with simulated band conditions
 
-I Higly recommend using a proper callsign format, and correct abbreviations etc.. 
-A callsign example is CU2RA. CU is the prefix for the Azores.
-See this folder for correct prefix for your country, a example conversation, common abbreviations! 
-https://github.com/Supermagnum/supermorse-app/tree/main/examples
+## Screenshots
 
-##Suggested/planned features:
-https://github.com/Supermagnum/supermorse-app/issues
+Get a visual overview of the SuperMorse application:
+
+- [Login Screen](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/login.jpeg) - User authentication interface
+- [Progress Tracking](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/progress.jpeg) - Track your Morse code learning progress
+- [Settings Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/settings.jpeg) - Configure your learning experience
+- [Murmur Communication](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/murmur.jpeg) - HF communication feature
 
 ## Learning Progression
 
@@ -145,3 +123,8 @@ This will present a menu of available tests:
 3. **End-to-End Registration Test** - Complete test of registration form
 4. **Run All Tests** - Run all available tests
 
+## Development Notes
+
+This application was developed with the assistance of AI (Claude from Anthropic) due to a neurological condition related to dyscalculia that makes programming extremely difficult. The AI assistance made it possible to implement complex features and functionality despite these challenges.
+
+For more detailed information, see the documentation in the `tests` directory.
