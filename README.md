@@ -5,7 +5,10 @@ A comprehensive Morse code tutor and HF communication application with Arduino i
 
 ## Development Notes
 
-This application was developed with the assistance of AI (Claude from Anthropic) due to a neurological condition related to dyscalculia that makes programming extremely difficult for me. I simply had no choice.
+This application was developed with the assistance of AI (Claude from Anthropic) due to a neurological condition related to dyscalculia that makes programming extremely difficult for me. 
+
+I simply had no choice.
+
 The AI assistance made it possible to implement complex features and functionality despite these challenges. There might be bugs,- so testing is required.
 I hope that it works!
 
