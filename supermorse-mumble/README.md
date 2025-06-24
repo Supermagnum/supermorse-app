@@ -227,6 +227,12 @@ Users receive recommendations when they connect and when propagation conditions 
 
 This modified Mumble server is designed to work with the Supermorse application. The Supermorse application can start and stop this server programmatically and uses it for voice communication and HF simulation.
 
+## For future usage
+The band_segments contains what's available of bands and modes in different countries.
+One can simply enable SSB after all the required international Morse codes are learned.
+As a example, to avoid that CW is used where it's not permitted the table can be used as a set of rules.
+If the ssb option is enabled, the main GUI will accept microphone input.
+
 ## License
 
 This project is based on Mumble, which is licensed under the BSD license. See the [LICENSE](LICENSE) file for details.
