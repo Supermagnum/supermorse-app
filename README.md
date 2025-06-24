@@ -70,6 +70,9 @@ cd supermorse-app
 ./install-mac.sh
 ```
 
+There also are uninstall scripts, please run:
+chmod u+x  uninstall-linux.sh  to set the file as a executable.
+
 ## Features
 
 - Progressive Morse code learning using the Koch method (starting with K and M)
