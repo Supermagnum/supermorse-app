@@ -75,6 +75,12 @@ cd supermorse-app
 ./install-mac.sh
 ```
 
+To install the modified Mumble server locally:
+Enter the /supermorse-mumble folder. Read the instructions.
+
+To install it on your server running Ubuntu etc..
+Copy the  /supermorse-mumble folder to the server, read the readme file and follow the instructions.
+
 ## Features
 
 - Progressive Morse code learning using the Koch method (starting with K and M)
