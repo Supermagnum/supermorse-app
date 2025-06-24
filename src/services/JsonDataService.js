@@ -37,11 +37,12 @@ ensureDirectoriesExist();
  */
 async function createUser(userData) {
   try {
-    const { username, name, email, password } = userData;
+    const { username, email, password, maidenheadLocator } = userData;
+    const name = userData.name || username; // Use username as name if not provided
     
     // Validate data
-    if (!username || !name || !email || !password) {
-      return { success: false, message: 'Missing required fields' };
+    if (!username || !email || !password || !maidenheadLocator) {
+      return { success: false, message: 'Missing required fields (username, email, password, maidenheadLocator)' };
     }
     
     // Check if username or email already exists
@@ -66,6 +67,7 @@ async function createUser(userData) {
       name,
       email,
       password: hashedPassword,
+      maidenheadLocator,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

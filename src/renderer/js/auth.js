@@ -20,19 +20,29 @@ export class AuthManager {
      * @param {string} name - User's full name
      * @param {string} email - User's email address
      * @param {string} password - User's password
+     * @param {string} maidenheadLocator - User's Maidenhead grid locator
      * @returns {Promise} - Resolves when registration is complete
      */
-    async register(username, name, email, password) {
+    async register(username, name, email, password, maidenheadLocator) {
         try {
             // Show loading state
             this.setFormMessage('registerMessage', 'Registering...', false);
+            
+            // Validate Maidenhead locator
+            if (!this.app.settings.validateMaidenhead(maidenheadLocator)) {
+                this.setFormMessage('registerMessage', 
+                    'Invalid Maidenhead locator format. Please enter a valid 4 or 6 character grid square (e.g., JO91, IO83, FN20).', 
+                    false);
+                return;
+            }
             
             // Call the main process to register the user
             const result = await window.electronAPI.registerUser({
                 username,
                 name,
                 email,
-                password
+                password,
+                maidenheadLocator
             });
             
             if (result.success) {

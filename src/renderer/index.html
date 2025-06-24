@@ -53,10 +53,6 @@
                             <input type="text" id="registerUsername" required>
                         </div>
                         <div class="form-group">
-                            <label for="registerName">Full Name</label>
-                            <input type="text" id="registerName" required>
-                        </div>
-                        <div class="form-group">
                             <label for="registerEmail">Email</label>
                             <input type="email" id="registerEmail" required>
                         </div>
@@ -67,6 +63,11 @@
                         <div class="form-group">
                             <label for="registerConfirmPassword">Confirm Password</label>
                             <input type="password" id="registerConfirmPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerMaidenhead">Maidenhead Locator</label>
+                            <input type="text" id="registerMaidenhead" placeholder="e.g. JO91" required>
+                            <p class="hint">Your grid square location (e.g., JO91, IO83, FN20)</p>
                         </div>
                         <button type="submit" class="btn btn-primary">Register</button>
                         <p class="form-message" id="registerMessage"></p>
@@ -205,45 +206,19 @@
                         <h2>Settings</h2>
                         
                         <div class="settings-group">
-                            <h3>Audio Settings</h3>
+                            <h3>User Settings</h3>
                             
                             <div class="form-group">
-                                <label for="settingsToneFrequency">Default Tone Frequency (Hz)</label>
-                                <input type="number" id="settingsToneFrequency" min="400" max="1000" value="600">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="settingsMorseSpeed">Default Morse Speed (WPM)</label>
-                                <input type="number" id="settingsMorseSpeed" min="5" max="30" value="13">
+                                <label for="userSettings">User Information</label>
+                                <p id="userSettings" class="settings-info">
+                                    <span class="label">Username:</span> <span id="settingsUsername"></span><br>
+                                    <span class="label">Email:</span> <span id="settingsEmail"></span>
+                                </p>
                             </div>
                         </div>
                         
                         <div class="settings-group">
-                            <h3>Arduino Connection</h3>
-                            
-                            <div class="form-group">
-                                <label for="arduinoPortSelect">Serial Port</label>
-                                <select id="arduinoPortSelect">
-                                    <option value="">Select port...</option>
-                                </select>
-                                <button id="refreshPortsBtn" class="btn btn-small">
-                                    <i class="fas fa-sync"></i> Refresh
-                                </button>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="keyModeSelect">Key Mode</label>
-                                <select id="keyModeSelect">
-                                    <option value="S">Straight Key</option>
-                                    <option value="P">Single Paddle</option>
-                                    <option value="A">Iambic Mode A</option>
-                                    <option value="B">Iambic Mode B</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="settings-group">
-                            <h3>Murmur Settings</h3>
+                            <h3>Murmur Server Settings</h3>
                             <div id="murmurSettingsLocked" class="locked-feature">
                                 <p>
                                     <i class="fas fa-lock"></i>
@@ -255,6 +230,21 @@
                                 <div class="form-group">
                                     <label for="maidenheadLocator">Maidenhead Locator</label>
                                     <input type="text" id="maidenheadLocator" placeholder="e.g. JO91">
+                                    <p class="hint">Your grid square location (e.g., JO91, IO83, FN20)</p>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="serverAddress">Murmur Server Address</label>
+                                    <input type="text" id="serverAddress" placeholder="IP address or domain (e.g., supermorse.dynamic.org)">
+                                    <p class="hint">Server connection requires 100% mastery of all Morse characters.</p>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="serverStatus">Server Connection Status</label>
+                                    <div id="serverConnectionStatus" class="status-indicator disconnected">
+                                        <i class="fas fa-server"></i>
+                                        <span>Disconnected</span>
+                                    </div>
                                 </div>
                                 
                                 <div class="form-group">
@@ -273,24 +263,6 @@
                                         <option value="6m">6m</option>
                                     </select>
                                 </div>
-                                
-                                <div class="form-group">
-                                    <label for="serverAddress">Murmur Server Address</label>
-                                    <input type="text" id="serverAddress" placeholder="IP address or domain (e.g., supermorse.dynamic.org)">
-                                    <p class="hint">Server connection requires 100% mastery of all Morse characters.</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="settings-group">
-                            <h3>Display Settings</h3>
-                            
-                            <div class="form-group">
-                                <label for="themeSelect">Theme</label>
-                                <select id="themeSelect">
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                </select>
                             </div>
                         </div>
                         
@@ -348,8 +320,31 @@
                             
                             <div class="communication-panel">
                                 <div class="contacts-list">
-                                    <h3>Stations</h3>
-                                    <div id="stationsList" class="stations"></div>
+                                    <h3>Available Rooms & Stations</h3>
+                                    <div class="rooms-container">
+                                        <select id="roomSelector" class="room-select">
+                                            <option value="general">General (Default)</option>
+                                            <option value="dx">DX Hunting</option>
+                                            <option value="chat">Casual Chat</option>
+                                            <option value="training">Training Room</option>
+                                        </select>
+                                        <span class="room-users-count">Users online: <span id="onlineUsersCount">0</span></span>
+                                    </div>
+                                    <div id="stationsList" class="stations">
+                                        <!-- Stations will be dynamically added here with distance information -->
+                                    </div>
+                                    <div class="station-template hidden">
+                                        <div class="station-item">
+                                            <div class="station-header">
+                                                <span class="callsign"></span>
+                                                <span class="locator"></span>
+                                            </div>
+                                            <div class="station-details">
+                                                <span class="distance"></span>
+                                                <span class="signal"></span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="morse-chat">

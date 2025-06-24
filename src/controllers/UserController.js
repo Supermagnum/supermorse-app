@@ -67,7 +67,8 @@ async function loginUser(username, password) {
         id: user.id,
         username: user.username,
         name: user.name,
-        email: user.email
+        email: user.email,
+        maidenheadLocator: user.maidenheadLocator
       },
       progress: progress || {}
     };
@@ -100,7 +101,8 @@ async function verifyToken(token) {
         id: user.id,
         username: user.username,
         name: user.name,
-        email: user.email
+        email: user.email,
+        maidenheadLocator: user.maidenheadLocator
       }
     };
   } catch (error) {
