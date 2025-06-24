@@ -285,11 +285,11 @@ ipcMain.handle('save-user-settings', (event, userId, settings) => {
 });
 
 // Token verification IPC handler
-ipcMain.handle('verify-token', (event, token) => {
+ipcMain.handle('verify-token', async (event, token) => {
   try {
     // Verify JWT token
-    const decoded = UserController.verifyToken(token);
-    return decoded ? { valid: true, user: decoded } : { valid: false };
+    const result = await UserController.verifyToken(token);
+    return result.success ? { valid: true, user: result.user } : { valid: false };
   } catch (error) {
     console.error('Error verifying token:', error);
     return { valid: false };

@@ -1,6 +1,11 @@
 /**
  * User.js
  * Sequelize model for user data
+ * 
+ * DEPRECATION NOTICE:
+ * This file contains Sequelize models that are no longer used in the application.
+ * The application has been migrated to use JSON file storage instead of a database.
+ * See JsonDataService.js for the current implementation.
  */
 
 const { Sequelize, DataTypes } = require('sequelize');

@@ -27,12 +27,12 @@ async function registerUser(userData) {
 
 /**
  * Login a user
- * @param {string} username - Username
- * @param {string} password - Password
+ * @param {Object} credentials - Object containing username and password
  * @returns {Promise<Object>} - Result with success flag, token, and user data or error message
  */
-async function loginUser(username, password) {
+async function loginUser(credentials) {
   try {
+    const { username, password } = credentials;
     // Verify credentials using JSON data service
     const result = await jsonDataService.verifyCredentials(username, password);
     
