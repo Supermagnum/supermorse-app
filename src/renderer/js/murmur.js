@@ -1,6 +1,6 @@
 /**
  * murmur.js
- * Handles Murmur server communication and HF simulation
+ * Handles Murmur server communication via Electron IPC
  */
 
 export class MurmurInterface {
@@ -14,13 +14,15 @@ export class MurmurInterface {
         this.isConnected = false;
         this.currentBand = null;
         this.stations = [];
-        this.mumbleClient = null;
         this.serverAddress = '';
         
         // Audio settings
         this.audioOutputEnabled = true; // Audio output is enabled so users can hear sounds
         // IMPORTANT: Audio decoding is not implemented and completely disabled for security purposes
         this.volume = 75; // 0-100 scale
+        
+        // Event handler cleanup functions
+        this.eventCleanupFunctions = [];
     }
     
     /**
@@ -31,26 +33,101 @@ export class MurmurInterface {
         if (this.isInitialized) return true;
         
         try {
-        // Set up event listeners
-        this.setupEventListeners();
-        
-        // Mark as initialized
-        this.isInitialized = true;
-        
-        // Populate server address if available
-        const settings = this.app.settings.getSettings();
-        if (settings.serverAddress) {
-            this.serverAddress = settings.serverAddress;
-            document.getElementById('murmurServerAddress').value = this.serverAddress;
-        }
-        
-        return true;
+            // Set up UI event listeners
+            this.setupEventListeners();
+            
+            // Set up Mumble event listeners from main process
+            this.setupMumbleEventListeners();
+            
+            // Mark as initialized
+            this.isInitialized = true;
+            
+            // Populate server address if available
+            const settings = this.app.settings.getSettings();
+            if (settings.serverAddress) {
+                this.serverAddress = settings.serverAddress;
+                document.getElementById('murmurServerAddress').value = this.serverAddress;
+            }
+            
+            return true;
         } catch (error) {
             console.error('Error initializing Murmur interface:', error);
             return false;
         }
     }
-    
+    /**
+     * Set up Mumble event listeners from main process
+     */
+    setupMumbleEventListeners() {
+        // Connection status updates
+        const connectionStatusCleanup = window.electronAPI.onMumbleConnectionStatus((status) => {
+            console.log('Mumble connection status:', status);
+            
+            // Update connected state
+            this.isConnected = status.status === 'connected';
+            
+            // Update current band/channel
+            if (status.currentChannel) {
+                this.currentBand = status.currentChannel;
+                document.getElementById('currentBand').textContent = status.currentChannel;
+            } else if (!this.isConnected) {
+                this.currentBand = null;
+                document.getElementById('currentBand').textContent = 'Not connected';
+            }
+            
+            // Update UI
+            this.updateServerStatus(this.isConnected);
+            
+            // Update UI buttons
+            if (this.isConnected) {
+                document.getElementById('connectMurmurBtn').classList.add('hidden');
+                document.getElementById('disconnectMurmurBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('disconnectMurmurBtn').classList.add('hidden');
+                document.getElementById('connectMurmurBtn').classList.remove('hidden');
+            }
+            
+            // Show error if any
+            if (status.error) {
+                this.app.showModal('Connection Error', `Failed to connect to Mumble server: ${status.error}`);
+            }
+            
+            // Update stations list (will be empty if disconnected)
+            this.updateStationsList();
+        });
+        this.eventCleanupFunctions.push(connectionStatusCleanup);
+        
+        // User updates
+        const userUpdateCleanup = window.electronAPI.onMumbleUserUpdate((users) => {
+            console.log('Mumble users updated:', users);
+            
+            // Convert users to stations format
+            this.stations = users.map(user => ({
+                callsign: user.name,
+                locator: user.channel || 'Unknown',
+                muted: user.mute || user.selfMute,
+                deafened: user.deaf || user.selfDeaf
+            }));
+            
+            // Update UI
+            this.updateStationsList();
+        });
+        this.eventCleanupFunctions.push(userUpdateCleanup);
+        
+        // Message updates
+        const messageCleanup = window.electronAPI.onMumbleMessage((message) => {
+            console.log('Mumble message received:', message);
+            
+            // Display the message
+            this.displayMessage({
+                sender: message.sender,
+                content: message.content,
+                time: new Date(message.time),
+                isSelf: false
+            });
+        });
+        this.eventCleanupFunctions.push(messageCleanup);
+    }
     /**
      * Set up event listeners
      */
@@ -159,7 +236,7 @@ export class MurmurInterface {
     /**
      * Update the channels dropdown with available server rooms/channels
      */
-    updateChannelsDropdown() {
+    async updateChannelsDropdown() {
         const roomSelector = document.getElementById('roomSelector');
         
         if (roomSelector) {
@@ -172,47 +249,69 @@ export class MurmurInterface {
                 return;
             }
             
-            // In a real implementation, this would fetch channels from the Murmur server
-            // For now, generate channels based on HF bands
-            const hfBands = ['160m', '80m', '60m', '40m', '30m', '20m', '17m', '15m', '12m', '10m', '6m'];
-            
-            // Add each HF band as a channel
-            hfBands.forEach(band => {
-                const option = document.createElement('option');
-                option.value = band;
-                option.textContent = `${band} Band`;
-                roomSelector.appendChild(option);
-            });
-            
-            // Add special channels
-            const specialChannels = [
-                { value: 'dx', name: 'DX Cluster' },
-                { value: 'emergency', name: 'Emergency Net' },
-                { value: 'digital', name: 'Digital Modes' },
-                { value: 'contest', name: 'Contest' }
-            ];
-            
-            specialChannels.forEach(channel => {
-                const option = document.createElement('option');
-                option.value = channel.value;
-                option.textContent = channel.name;
-                roomSelector.appendChild(option);
-            });
-            
-            // Set the current band as selected if it exists
-            if (this.currentBand) {
-                for (let i = 0; i < roomSelector.options.length; i++) {
-                    if (roomSelector.options[i].value === this.currentBand) {
-                        roomSelector.selectedIndex = i;
-                        break;
+            try {
+                // Get channels from the server
+                const response = await window.electronAPI.getMumbleChannels();
+                
+                if (response.success && response.channels) {
+                    // Add each channel to the dropdown
+                    response.channels.forEach(channel => {
+                        const option = document.createElement('option');
+                        option.value = channel.name;
+                        
+                        // Add indentation based on level for nested channels
+                        const indent = '—'.repeat(channel.level);
+                        const prefix = channel.level > 0 ? indent + ' ' : '';
+                        
+                        option.textContent = `${prefix}${channel.name} (${channel.userCount})`;
+                        roomSelector.appendChild(option);
+                    });
+                } else {
+                    // Fallback to default HF bands if no channels are returned
+                    const hfBands = ['160m', '80m', '60m', '40m', '30m', '20m', '17m', '15m', '12m', '10m', '6m'];
+                    
+                    // Add each HF band as a channel
+                    hfBands.forEach(band => {
+                        const option = document.createElement('option');
+                        option.value = band;
+                        option.textContent = `${band} Band`;
+                        roomSelector.appendChild(option);
+                    });
+                    
+                    // Add special channels
+                    const specialChannels = [
+                        { value: 'dx', name: 'DX Cluster' },
+                        { value: 'emergency', name: 'Emergency Net' },
+                        { value: 'digital', name: 'Digital Modes' },
+                        { value: 'contest', name: 'Contest' }
+                    ];
+                    
+                    specialChannels.forEach(channel => {
+                        const option = document.createElement('option');
+                        option.value = channel.value;
+                        option.textContent = channel.name;
+                        roomSelector.appendChild(option);
+                    });
+                }
+                
+                // Set the current band as selected if it exists
+                if (this.currentBand) {
+                    for (let i = 0; i < roomSelector.options.length; i++) {
+                        if (roomSelector.options[i].value === this.currentBand) {
+                            roomSelector.selectedIndex = i;
+                            break;
+                        }
                     }
                 }
+                
+                // Add change event listener
+                roomSelector.addEventListener('change', (e) => {
+                    this.switchChannel(e.target.value);
+                });
+                
+            } catch (error) {
+                console.error('Error getting Mumble channels:', error);
             }
-            
-            // Add change event listener
-            roomSelector.addEventListener('change', (e) => {
-                this.switchChannel(e.target.value);
-            });
         }
     }
     
@@ -220,36 +319,48 @@ export class MurmurInterface {
      * Switch to a different channel
      * @param {string} channelId - The channel ID to switch to
      */
-    switchChannel(channelId) {
+    async switchChannel(channelId) {
         if (!this.isConnected) return;
         
         console.log('Switching to channel:', channelId);
         
-        // In a real implementation, this would send a request to the Murmur server
-        // to switch channels
-        
-        // Update current band if it's an HF band channel
-        const hfBandRegex = /^\d+m$/;
-        if (hfBandRegex.test(channelId)) {
-            this.currentBand = channelId;
-            document.getElementById('currentBand').textContent = channelId;
+        try {
+            // Join the channel via IPC
+            const result = await window.electronAPI.joinMumbleChannel(channelId);
             
-            // Update propagation based on the new band
-            const propagationLevel = this.simulatePropagation(channelId);
-            this.updatePropagationIndicator(propagationLevel);
-            
-            // Regenerate stations for the new band
-            const settings = this.app.settings.getSettings();
-            this.generateSimulatedStations(settings.maidenheadLocator);
+            if (result.success) {
+                // Update current band
+                this.currentBand = channelId;
+                document.getElementById('currentBand').textContent = channelId;
+                
+                // Update propagation indicator based on the channel name
+                // We'll keep this for backward compatibility with the HF band simulation
+                const hfBandRegex = /^\d+m$/;
+                if (hfBandRegex.test(channelId)) {
+                    const propagationLevel = this.simulatePropagation(channelId);
+                    this.updatePropagationIndicator(propagationLevel);
+                } else {
+                    // Default propagation for non-HF channels
+                    this.updatePropagationIndicator(4);
+                }
+                
+                // Display a message about the channel switch
+                this.displayMessage({
+                    sender: 'System',
+                    content: `You have switched to the ${channelId} channel.`,
+                    time: new Date(),
+                    isSelf: false
+                });
+            } else {
+                // Show error
+                this.app.showModal('Channel Switch Error', 
+                    `Failed to switch to channel ${channelId}: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error switching channel:', error);
+            this.app.showModal('Channel Switch Error', 
+                `Failed to switch to channel ${channelId}: ${error.message}`);
         }
-        
-        // Display a message about the channel switch
-        this.displayMessage({
-            sender: 'System',
-            content: `You have switched to the ${channelId} channel.`,
-            time: new Date(),
-            isSelf: false
-        });
     }
     
     /**
@@ -306,37 +417,30 @@ export class MurmurInterface {
                 serverAddress: this.serverAddress
             });
             
-            // In a real implementation, this would actually connect to the Murmur server
-            // For now, just simulate a successful connection
+            // Connect to the server via IPC
+            const options = {
+                username: this.app.auth.getCurrentUser()?.name || 'SuperMorse User',
+                password: '', // No password for now
+                tokens: [], // No access tokens
+                channelName: settings.preferredBand || 'Root' // Initial channel
+            };
             
-            // Calculate best band based on time of day and location
-            // This would normally come from VOACAP data
-            const bestBand = this.calculateBestBand(locator);
+            const result = await window.electronAPI.connectMumble(this.serverAddress, options);
             
-            // Use preferred band if set, otherwise use best band
-            const preferredBand = settings.preferredBand;
-            this.currentBand = preferredBand === 'auto' ? bestBand : preferredBand;
-            
-            // Update UI
-            this.isConnected = true;
-            this.updateServerStatus(true);
-            document.getElementById('currentBand').textContent = this.currentBand;
-            
-            // Update UI buttons
-            document.getElementById('connectMurmurBtn').classList.add('hidden');
-            document.getElementById('disconnectMurmurBtn').classList.remove('hidden');
-            
-            // Simulate propagation quality based on band and time
-            const propagationLevel = this.simulatePropagation(this.currentBand);
-            this.updatePropagationIndicator(propagationLevel);
-            
-            // Simulate stations list
-            this.generateSimulatedStations(locator);
-            
-            // Update channels dropdown with available rooms
-            this.updateChannelsDropdown();
-            
-            return true;
+            if (result.success) {
+                // Update channels dropdown with available rooms
+                await this.updateChannelsDropdown();
+                
+                // Set propagation indicator based on preferred band
+                if (settings.preferredBand && /^\d+m$/.test(settings.preferredBand)) {
+                    const propagationLevel = this.simulatePropagation(settings.preferredBand);
+                    this.updatePropagationIndicator(propagationLevel);
+                } else {
+                    this.updatePropagationIndicator(4); // Default level
+                }
+                
+                return true;
+            }
         } catch (error) {
             console.error('Error connecting to Murmur server:', error);
             this.updateServerStatus(false);
@@ -352,21 +456,8 @@ export class MurmurInterface {
         if (!this.isConnected) return true;
         
         try {
-            // In a real implementation, this would disconnect from the Murmur server
-            
-            // Update state
-            this.isConnected = false;
-            this.currentBand = null;
-            this.stations = [];
-            
-            // Update UI
-            this.updateServerStatus(false);
-            document.getElementById('currentBand').textContent = 'Not connected';
-            this.updateStationsList();
-            
-            // Update UI buttons
-            document.getElementById('disconnectMurmurBtn').classList.add('hidden');
-            document.getElementById('connectMurmurBtn').classList.remove('hidden');
+            // Disconnect from the server via IPC
+            await window.electronAPI.disconnectMumble();
             
             return true;
         } catch (error) {
@@ -478,8 +569,13 @@ export class MurmurInterface {
             }
         }
         
-        // In a real implementation, this would select the station in the Murmur server
+        // Log selection (actual user messaging is handled through channels in Mumble)
         console.log('Selected station:', station);
+        
+        // Switch to the user's channel if possible
+        if (station.locator && station.locator !== 'Unknown') {
+            this.switchChannel(station.locator);
+        }
     }
     
     
@@ -487,37 +583,36 @@ export class MurmurInterface {
      * Send a Morse code message
      * @param {string} message - The message to send
      */
-    sendMorseMessage(message) {
+    async sendMorseMessage(message) {
         if (!this.isConnected) {
             this.app.showModal('Not Connected', 
                 'You must be connected to the server to send messages.'
             );
             return;
         }
-        // In a real implementation, this would send the message to the Murmur server
-        console.log('Sending Morse message:', message);
         
-        // For now, just display the message in the chat area
-        this.displayMessage({
-            sender: this.app.auth.getCurrentUser()?.name || 'You',
-            content: message,
-            time: new Date(),
-            isSelf: true
-        });
-        
-        // Simulate a reply after a short delay
-        setTimeout(() => {
-            // Only simulate if still connected
-            if (this.isConnected && this.stations.length > 0) {
-                const station = this.stations[0];
+        try {
+            // Send the message via IPC
+            const result = await window.electronAPI.sendMumbleMessage(message);
+            
+            if (result.success) {
+                // Display the message in the chat area
                 this.displayMessage({
-                    sender: station.callsign,
-                    content: this.generateSimulatedReply(message),
+                    sender: this.app.auth.getCurrentUser()?.name || 'You',
+                    content: message,
                     time: new Date(),
-                    isSelf: false
+                    isSelf: true
                 });
+            } else {
+                // Show error
+                this.app.showModal('Message Error', 
+                    `Failed to send message: ${result.error}`);
             }
-        }, 2000 + Math.random() * 3000);
+        } catch (error) {
+            console.error('Error sending Morse message:', error);
+            this.app.showModal('Message Error', 
+                `Failed to send message: ${error.message}`);
+        }
     }
     
     /**
@@ -631,88 +726,6 @@ export class MurmurInterface {
         return Math.max(1, Math.min(5, baseLevel + variation));
     }
     
-    /**
-     * Generate simulated stations
-     * @param {string} userLocator - User's Maidenhead grid locator
-     */
-    generateSimulatedStations(userLocator) {
-        // Clear existing stations
-        this.stations = [];
-        
-        // Generate 3-6 random stations
-        const count = 3 + Math.floor(Math.random() * 4);
-        
-        const callsignPrefixes = [
-            'LA', 'SM', 'OH', 'OZ', 'G', 'DL', 'F', 'EA', 'I', 'HA', 'OK', 'SP',
-            'W', 'K', 'N', 'VE', 'JA', 'VK', 'ZL', 'PY', 'LU'
-        ];
-        
-        const locators = [
-            'JO59', 'JO65', 'KP20', 'IO91', 'JN49', 'JO10', 'JN33', 'IM76', 'JN54',
-            'JN97', 'JO70', 'KO02', 'FN31', 'EN82', 'DN70', 'FN25', 'PM95', 'QF56',
-            'RF80', 'GG66', 'FF57'
-        ];
-        
-        for (let i = 0; i < count; i++) {
-            const prefixIndex = Math.floor(Math.random() * callsignPrefixes.length);
-            const prefix = callsignPrefixes[prefixIndex];
-            
-            // Generate a random number for the callsign
-            const number = Math.floor(Math.random() * 10);
-            
-            // Generate 2-3 random letters for the suffix
-            const suffixLength = 2 + Math.floor(Math.random() * 2);
-            let suffix = '';
-            for (let j = 0; j < suffixLength; j++) {
-                suffix += String.fromCharCode(65 + Math.floor(Math.random() * 26));
-            }
-            
-            // Combine to form callsign
-            const callsign = `${prefix}${number}${suffix}`;
-            
-            // Get a random locator (avoiding the user's locator)
-            let locator;
-            do {
-                const locatorIndex = Math.floor(Math.random() * locators.length);
-                locator = locators[locatorIndex];
-            } while (locator === userLocator);
-            
-            // Add to stations list
-            this.stations.push({
-                callsign,
-                locator
-            });
-        }
-        
-        // Update UI
-        this.updateStationsList();
-    }
-    
-    /**
-     * Generate a simulated reply to a message
-     * @param {string} message - The original message
-     * @returns {string} - The simulated reply
-     */
-    generateSimulatedReply(message) {
-        const commonReplies = [
-            'RR FB OM TNX',
-            'QSL TNX FOR CALL',
-            'GM UR RST 599',
-            'RR NAME IS JOHN QTH LONDON',
-            'FB COPY ES 73',
-            'QSB QRN QSY?',
-            'WX SUNNY TEMP 25C',
-            'RIG ICOM IC-7300 PWR 100W',
-            'ANT DIPOLE',
-            'HW CPY?',
-            'QRM PSE REPEAT',
-            'TNX FER NICE QSO 73'
-        ];
-        
-        // Pick a random reply
-        const replyIndex = Math.floor(Math.random() * commonReplies.length);
-        return commonReplies[replyIndex];
-    }
     
     /**
      * Calculate distance between two Maidenhead locators

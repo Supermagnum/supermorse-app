@@ -38,11 +38,8 @@ https://github.com/Supermagnum/Supermorse-server
 ### Linux (Ubuntu)
 ```bash
 # Clone the repository
-git clone https://github.com/Supermagnum/supermorse-app.git
-
+git checkout https://github.com/Supermagnum/supermorse-app.git
 cd supermorse-app
-
-chmod u+x install-linux.sh
 
 # Run the Linux installation script
 ./install-linux.sh
@@ -51,8 +48,7 @@ chmod u+x install-linux.sh
 ### Windows
 ```bash
 # Clone the repository
-git clone https://github.com/Supermagnum/supermorse-app.git
-
+git checkout https://github.com/Supermagnum/supermorse-app.git
 cd supermorse-app
 
 # Run the Windows installation script
@@ -62,16 +58,12 @@ cd supermorse-app
 ### macOS
 ```bash
 # Clone the repository
-git clone https://github.com/Supermagnum/supermorse-app.git
-
+git checkout https://github.com/Supermagnum/supermorse-app.git
 cd supermorse-app
 
 # Run the macOS installation script
 ./install-mac.sh
 ```
-
-There also are uninstall scripts, please run:
-chmod u+x  uninstall-linux.sh  to set the file as a executable.
 
 ## Features
 
