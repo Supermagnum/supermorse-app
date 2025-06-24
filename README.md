@@ -42,6 +42,8 @@ git clone https://github.com/Supermagnum/supermorse-app.git
 
 cd supermorse-app
 
+chmod u+x install-linux.sh
+
 # Run the Linux installation script
 ./install-linux.sh
 ```
