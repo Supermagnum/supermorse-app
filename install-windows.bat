@@ -1,11 +1,14 @@
 @echo off
 :: SuperMorse Installation Script for Windows
-:: This script installs all dependencies and sets up the SuperMorse application
+:: This script installs all dependencies, builds and sets up the SuperMorse application
 
 echo ====================================================
 echo       SuperMorse Application - Windows Setup       
 echo ====================================================
 echo.
+
+:: Set installation directory
+set INSTALL_DIR=C:\Program Files\SuperMorse
 
 :: Create a log file
 set LOGFILE=supermorse_install.log
@@ -75,28 +78,119 @@ if %errorLevel% == 0 (
     exit
 )
 
+:: Build the application
+echo.
+echo [33mBuilding the application...[0m
+call npm run build
+if %errorLevel% == 0 (
+    echo [32m✓ Application built successfully[0m
+    call :log "Application built successfully"
+) else (
+    echo [31mFailed to build the application. See error above.[0m
+    call :log "Failed to build application"
+    pause
+    exit
+)
+
+:: Create installation directory if it doesn't exist
+echo.
+echo [33mCreating installation directory...[0m
+if not exist "%INSTALL_DIR%" (
+    mkdir "%INSTALL_DIR%"
+)
+
+if %errorLevel% == 0 (
+    echo [32m✓ Installation directory created[0m
+    call :log "Installation directory created"
+) else (
+    echo [31mFailed to create installation directory.[0m
+    call :log "Failed to create installation directory"
+    pause
+    exit
+)
+
+:: Copy application files to installation directory
+echo.
+echo [33mInstalling application...[0m
+if exist "dist\win-unpacked" (
+    xcopy "dist\win-unpacked\*" "%INSTALL_DIR%" /E /I /H /Y
+    echo [32m✓ Application installed successfully[0m
+    call :log "Application installed from dist\win-unpacked"
+) else (
+    :: If no build was created, copy the source files directly
+    xcopy "*" "%INSTALL_DIR%" /E /I /H /Y
+    echo [33mNo build found, copied source files directly[0m
+    call :log "Copied source files directly to installation directory"
+)
+
 :: Create data directory for JSON storage
 echo.
 echo [33mSetting up data directory for JSON storage...[0m
 
 :: Create directories if they don't exist
-if not exist data\users mkdir data\users
-if not exist data\progress mkdir data\progress
-if not exist data\stats mkdir data\stats
+if not exist "%INSTALL_DIR%\data\users" mkdir "%INSTALL_DIR%\data\users"
+if not exist "%INSTALL_DIR%\data\progress" mkdir "%INSTALL_DIR%\data\progress"
+if not exist "%INSTALL_DIR%\data\stats" mkdir "%INSTALL_DIR%\data\stats"
 
 echo [32m✓ Data directories created[0m
 call :log "Data directories created"
+
+:: Create Windows service using nssm (Non-Sucking Service Manager)
+echo.
+echo [33mSetting up Windows service...[0m
+
+:: Download NSSM if not already present
+if not exist nssm.exe (
+    echo Downloading NSSM (Non-Sucking Service Manager)...
+    powershell -Command "Invoke-WebRequest -Uri 'https://nssm.cc/release/nssm-2.24.zip' -OutFile 'nssm.zip'"
+    powershell -Command "Expand-Archive -Path 'nssm.zip' -DestinationPath '.'"
+    copy "nssm-2.24\win64\nssm.exe" "."
+    call :log "Downloaded NSSM"
+)
+
+:: Install the service
+echo Installing SuperMorse service...
+nssm.exe install SuperMorse "%INSTALL_DIR%\SuperMorse.exe"
+nssm.exe set SuperMorse DisplayName "SuperMorse Application Service"
+nssm.exe set SuperMorse Description "SuperMorse Morse Code Learning Application"
+nssm.exe set SuperMorse AppDirectory "%INSTALL_DIR%"
+nssm.exe set SuperMorse Start SERVICE_AUTO_START
+nssm.exe set SuperMorse ObjectName LocalSystem
+nssm.exe start SuperMorse
+
+if %errorLevel% == 0 (
+    echo [32m✓ SuperMorse service installed and started[0m
+    call :log "SuperMorse service installed and started"
+) else (
+    echo [31mFailed to install or start SuperMorse service.[0m
+    call :log "Failed to install or start SuperMorse service"
+)
+
+:: Create desktop shortcut
+echo.
+echo [33mCreating desktop shortcut...[0m
+powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%USERPROFILE%\Desktop\SuperMorse.lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\SuperMorse.exe'; $Shortcut.Save()"
+
+if %errorLevel% == 0 (
+    echo [32m✓ Desktop shortcut created[0m
+    call :log "Desktop shortcut created"
+) else (
+    echo [33mFailed to create desktop shortcut.[0m
+    call :log "Failed to create desktop shortcut"
+)
 
 echo.
 echo [32m====================================================[0m
 echo [32m       SuperMorse Installation Complete!       [0m
 echo [32m====================================================[0m
 echo.
-echo To start the application, run:
-echo [36mnpm start[0m
+echo The SuperMorse application has been installed and service started!
 echo.
-echo To run tests, use:
-echo [36mnode test-create-user.js[0m
+echo To check service status, run:
+echo [36mnssm.exe status SuperMorse[0m
+echo.
+echo To stop the service, run:
+echo [36mnssm.exe stop SuperMorse[0m
 echo.
 echo For more information, see the README.md file.
 echo.
