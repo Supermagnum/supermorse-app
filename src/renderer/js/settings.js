@@ -17,7 +17,8 @@ export class SettingsManager {
             keyMode: 'S', // S = Straight key, P = Paddle, A = Iambic A, B = Iambic B
             theme: 'light',
             maidenheadLocator: '',
-            preferredBand: 'auto'
+            preferredBand: 'auto',
+            serverAddress: ''
         };
     }
     
@@ -111,6 +112,7 @@ export class SettingsManager {
         // Only set these if they're visible (Murmur unlocked)
         const maidenheadInput = document.getElementById('maidenheadLocator');
         const bandSelect = document.getElementById('preferredBand');
+        const serverAddressInput = document.getElementById('serverAddress');
         
         if (maidenheadInput && !maidenheadInput.closest('.hidden')) {
             maidenheadInput.value = this.settings.maidenheadLocator || '';
@@ -118,6 +120,10 @@ export class SettingsManager {
         
         if (bandSelect && !bandSelect.closest('.hidden')) {
             bandSelect.value = this.settings.preferredBand || 'auto';
+        }
+        
+        if (serverAddressInput && !serverAddressInput.closest('.hidden')) {
+            serverAddressInput.value = this.settings.serverAddress || '';
         }
         
         // Populate Arduino port select

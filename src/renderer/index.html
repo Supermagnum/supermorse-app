@@ -273,6 +273,12 @@
                                         <option value="6m">6m</option>
                                     </select>
                                 </div>
+                                
+                                <div class="form-group">
+                                    <label for="serverAddress">Murmur Server Address</label>
+                                    <input type="text" id="serverAddress" placeholder="IP address or domain (e.g., supermorse.dynamic.org)">
+                                    <p class="hint">Server connection requires 100% mastery of all Morse characters.</p>
+                                </div>
                             </div>
                         </div>
                         
@@ -324,6 +330,20 @@
                                         <span>Disconnected</span>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <div class="server-connection">
+                                <h3>Server Connection</h3>
+                                <div class="form-group">
+                                    <label for="murmurServerAddress">Server Address</label>
+                                    <input type="text" id="murmurServerAddress" placeholder="IP address or domain (e.g., supermorse.dynamic.org)">
+                                </div>
+                                <button id="connectMurmurBtn" class="btn btn-primary">
+                                    <i class="fas fa-plug"></i> Connect
+                                </button>
+                                <button id="disconnectMurmurBtn" class="btn btn-danger hidden">
+                                    <i class="fas fa-times"></i> Disconnect
+                                </button>
                             </div>
                             
                             <div class="communication-panel">

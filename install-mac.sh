@@ -1,6 +1,6 @@
 #!/bin/bash
 # SuperMorse Installation Script for macOS
-# This script installs all dependencies and sets up the SuperMorse application
+# This script installs all dependencies, builds and sets up the SuperMorse application
 
 # Colors for console output
 RED='\033[0;31m'
@@ -8,6 +8,11 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Installation directory
+INSTALL_DIR="/Applications/SuperMorse.app"
+USER_HOME=$(eval echo ~$USER)
+USER_LAUNCHAGENT_DIR="$USER_HOME/Library/LaunchAgents"
 
 echo -e "${BLUE}==================================================${NC}"
 echo -e "${BLUE}        SuperMorse Application - macOS Setup       ${NC}"
@@ -52,6 +57,18 @@ fi
 echo -e "\n${YELLOW}Updating Homebrew...${NC}"
 brew update
 log "Homebrew updated"
+
+# List of required packages
+echo -e "\n${YELLOW}Installing additional required packages...${NC}"
+brew install python3 make
+if [ $? -eq 0 ]; then
+  echo -e "${GREEN}✓ Required packages installed successfully${NC}"
+  log "Required packages installed"
+else
+  echo -e "${RED}Failed to install some required packages. See error above.${NC}"
+  log "Failed to install required packages"
+  exit 1
+fi
 
 # Check if Node.js is installed
 echo -e "\n${YELLOW}Checking system dependencies...${NC}"
@@ -99,18 +116,149 @@ else
   exit 1
 fi
 
+# Build the application
+echo -e "\n${YELLOW}Building the application...${NC}"
+npm run build
+if [ $? -eq 0 ]; then
+  echo -e "${GREEN}✓ Application built successfully${NC}"
+  log "Application built successfully"
+else
+  echo -e "${RED}Failed to build the application. See error above.${NC}"
+  log "Failed to build application"
+  exit 1
+fi
+
+# Copy application to Applications directory
+echo -e "\n${YELLOW}Installing application...${NC}"
+if [ -d "dist/mac" ]; then
+  # If we have a properly built macOS app, use it
+  if [ -d "$INSTALL_DIR" ]; then
+    echo -e "${YELLOW}Removing previous installation...${NC}"
+    sudo rm -rf "$INSTALL_DIR"
+  fi
+  
+  sudo cp -R dist/mac/*.app "$INSTALL_DIR"
+  echo -e "${GREEN}✓ Application installed to $INSTALL_DIR${NC}"
+  log "Application installed from dist/mac"
+else
+  # If no build was created, create a basic app structure
+  echo -e "${YELLOW}No app build found, creating basic app structure...${NC}"
+  
+  APP_CONTENTS="$INSTALL_DIR/Contents"
+  APP_MACOS="$APP_CONTENTS/MacOS"
+  APP_RESOURCES="$APP_CONTENTS/Resources"
+  
+  # Create directories
+  sudo mkdir -p "$APP_MACOS"
+  sudo mkdir -p "$APP_RESOURCES"
+  
+  # Copy files
+  sudo cp -r . "$APP_RESOURCES/app"
+  
+  # Create launcher script
+  sudo tee "$APP_MACOS/SuperMorse" > /dev/null << 'EOF'
+#!/bin/bash
+cd "$(dirname "$0")/../Resources/app"
+/usr/local/bin/node main.js
+EOF
+  
+  sudo chmod +x "$APP_MACOS/SuperMorse"
+  
+  # Create Info.plist
+  sudo tee "$APP_CONTENTS/Info.plist" > /dev/null << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key>
+  <string>SuperMorse</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.supermorse.app</string>
+  <key>CFBundleName</key>
+  <string>SuperMorse</string>
+  <key>CFBundleDisplayName</key>
+  <string>SuperMorse</string>
+  <key>CFBundleVersion</key>
+  <string>1.0.0</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0.0</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>10.10</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+</dict>
+</plist>
+EOF
+  
+  echo -e "${GREEN}✓ Basic application structure created at $INSTALL_DIR${NC}"
+  log "Created basic application structure"
+fi
+
 # Create data directory for JSON storage
 echo -e "\n${YELLOW}Setting up data directory for JSON storage...${NC}"
-mkdir -p data/users
-mkdir -p data/progress
-mkdir -p data/stats
+sudo mkdir -p "$APP_RESOURCES/app/data/users"
+sudo mkdir -p "$APP_RESOURCES/app/data/progress"
+sudo mkdir -p "$APP_RESOURCES/app/data/stats"
 echo -e "${GREEN}✓ Data directories created${NC}"
 log "Data directories created"
 
 # Make script files executable
 echo -e "\n${YELLOW}Making scripts executable...${NC}"
-chmod +x run-tests.sh
+sudo chmod +x "$APP_RESOURCES/app/run-tests.sh"
 log "Scripts made executable"
+
+# Set permissions
+echo -e "\n${YELLOW}Setting permissions...${NC}"
+sudo chown -R $USER:staff "$INSTALL_DIR"
+sudo chmod -R 755 "$INSTALL_DIR"
+echo -e "${GREEN}✓ Permissions set${NC}"
+log "Set application permissions"
+
+# Create LaunchAgent for auto-start
+echo -e "\n${YELLOW}Creating LaunchAgent for SuperMorse...${NC}"
+mkdir -p "$USER_LAUNCHAGENT_DIR"
+
+cat << EOF > "$USER_LAUNCHAGENT_DIR/com.supermorse.app.plist"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.supermorse.app</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>${INSTALL_DIR}/Contents/MacOS/SuperMorse</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>${USER_HOME}/Library/Logs/SuperMorse.log</string>
+    <key>StandardErrorPath</key>
+    <string>${USER_HOME}/Library/Logs/SuperMorse.log</string>
+</dict>
+</plist>
+EOF
+
+chmod 644 "$USER_LAUNCHAGENT_DIR/com.supermorse.app.plist"
+echo -e "${GREEN}✓ LaunchAgent created${NC}"
+log "LaunchAgent created"
+
+# Load the LaunchAgent
+echo -e "\n${YELLOW}Loading LaunchAgent...${NC}"
+launchctl load "$USER_LAUNCHAGENT_DIR/com.supermorse.app.plist"
+if [ $? -eq 0 ]; then
+  echo -e "${GREEN}✓ SuperMorse LaunchAgent loaded${NC}"
+  log "SuperMorse LaunchAgent loaded"
+else
+  echo -e "${RED}Failed to load SuperMorse LaunchAgent. You can load it manually later.${NC}"
+  log "Failed to load SuperMorse LaunchAgent"
+fi
 
 # Check for serial port access
 echo -e "\n${YELLOW}Checking for serial port access...${NC}"
@@ -118,18 +266,25 @@ if groups | grep -q -e dialout -e uucp; then
   echo -e "${GREEN}✓ User has serial port access${NC}"
   log "User has serial port access"
 else
-  echo -e "${YELLOW}You may need additional permissions to access Arduino devices.${NC}"
-  echo -e "If you have issues accessing Arduino, try running:"
-  echo -e "${BLUE}sudo dscl . -append /Groups/_uucp GroupMembership $(whoami)${NC}"
-  log "User may need additional serial port access"
+  echo -e "${YELLOW}Setting up serial port access...${NC}"
+  sudo dscl . -append /Groups/_uucp GroupMembership $(whoami)
+  echo -e "${GREEN}✓ Serial port access configured${NC}"
+  echo -e "${YELLOW}Note: You may need to log out and back in for changes to take effect${NC}"
+  log "Configured serial port access for user"
 fi
 
 echo -e "\n${GREEN}==================================================${NC}"
 echo -e "${GREEN}       SuperMorse Installation Complete!       ${NC}"
 echo -e "${GREEN}==================================================${NC}"
-echo -e "\nTo start the application, run:"
-echo -e "${BLUE}npm start${NC}"
+echo -e "\nThe SuperMorse application has been installed to your Applications folder"
+echo -e "and configured to start automatically when you log in."
+echo -e "\nTo start the application now, you can click on it in the Applications folder"
+echo -e "or run: ${BLUE}open ${INSTALL_DIR}${NC}"
+echo -e "\nTo check service status, run:"
+echo -e "${BLUE}launchctl list | grep supermorse${NC}"
+echo -e "\nTo stop the service, run:"
+echo -e "${BLUE}launchctl unload ${USER_LAUNCHAGENT_DIR}/com.supermorse.app.plist${NC}"
 echo -e "\nTo run tests, use:"
-echo -e "${BLUE}./run-tests.sh${NC}"
+echo -e "${BLUE}cd ${INSTALL_DIR}/Contents/Resources/app && ./run-tests.sh${NC}"
 echo -e "\nFor more information, see the README.md file."
 echo -e "\nInstallation log saved to: ${LOGFILE}"

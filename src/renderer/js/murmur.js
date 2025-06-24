@@ -15,6 +15,7 @@ export class MurmurInterface {
         this.currentBand = null;
         this.stations = [];
         this.mumbleClient = null;
+        this.serverAddress = '';
         
         // Voice chat state
         this.isTalking = false;
@@ -31,13 +32,20 @@ export class MurmurInterface {
         if (this.isInitialized) return true;
         
         try {
-            // Set up event listeners
-            this.setupEventListeners();
-            
-            // Mark as initialized
-            this.isInitialized = true;
-            
-            return true;
+        // Set up event listeners
+        this.setupEventListeners();
+        
+        // Mark as initialized
+        this.isInitialized = true;
+        
+        // Populate server address if available
+        const settings = this.app.settings.getSettings();
+        if (settings.serverAddress) {
+            this.serverAddress = settings.serverAddress;
+            document.getElementById('murmurServerAddress').value = this.serverAddress;
+        }
+        
+        return true;
         } catch (error) {
             console.error('Error initializing Murmur interface:', error);
             return false;
@@ -48,6 +56,31 @@ export class MurmurInterface {
      * Set up event listeners
      */
     setupEventListeners() {
+        // Connect/disconnect buttons for Murmur server
+        const connectBtn = document.getElementById('connectMurmurBtn');
+        const disconnectBtn = document.getElementById('disconnectMurmurBtn');
+        const serverAddressInput = document.getElementById('murmurServerAddress');
+        
+        if (connectBtn) {
+            connectBtn.addEventListener('click', () => {
+                // Get the server address from the input field
+                const address = serverAddressInput.value.trim();
+                if (address) {
+                    this.serverAddress = address;
+                    this.connect();
+                } else {
+                    this.app.showModal('Server Address Required', 
+                        'Please enter a valid server address (IP or domain name) to connect.');
+                }
+            });
+        }
+        
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', () => {
+                this.disconnect();
+            });
+        }
+        
         // Push-to-talk button
         const pttButton = document.getElementById('voicePTTBtn');
         if (pttButton) {
@@ -140,8 +173,33 @@ export class MurmurInterface {
         if (this.isConnected) return true;
         
         try {
-            // Get the user's Maidenhead locator from settings
+            // Check if user has mastered all required character sets
+            const progress = await window.electronAPI.getProgress(this.app.auth.getCurrentUser()?.id);
+            if (!progress || !progress.mastery || 
+                !progress.mastery.international || progress.mastery.international < 100 ||
+                !progress.mastery.prosigns || progress.mastery.prosigns < 100 ||
+                !progress.mastery.special || progress.mastery.special < 100) {
+                
+                this.app.showModal('Feature Locked', 
+                    'You need to achieve 100% mastery of the International Morse alphabet, numbers, and prosigns before connecting to a Murmur server.',
+                    () => {
+                        this.app.navigateTo('training');
+                    }
+                );
+                return false;
+            }
+            
+            // Get the server address from settings
             const settings = this.app.settings.getSettings();
+            this.serverAddress = settings.serverAddress || this.serverAddress;
+            
+            if (!this.serverAddress) {
+                this.app.showModal('Server Address Required', 
+                    'Please enter a valid server address (IP or domain name) to connect.');
+                return false;
+            }
+            
+            // Get the user's Maidenhead locator from settings
             const locator = settings.maidenheadLocator;
             
             if (!locator || !this.app.settings.validateMaidenhead(locator)) {
@@ -154,6 +212,11 @@ export class MurmurInterface {
                 );
                 return false;
             }
+            
+            // Save the server address to settings
+            await this.app.settings.saveSettings({
+                serverAddress: this.serverAddress
+            });
             
             // In a real implementation, this would actually connect to the Murmur server
             // For now, just simulate a successful connection
@@ -170,6 +233,10 @@ export class MurmurInterface {
             this.isConnected = true;
             this.updateServerStatus(true);
             document.getElementById('currentBand').textContent = this.currentBand;
+            
+            // Update UI buttons
+            document.getElementById('connectMurmurBtn').classList.add('hidden');
+            document.getElementById('disconnectMurmurBtn').classList.remove('hidden');
             
             // Simulate propagation quality based on band and time
             const propagationLevel = this.simulatePropagation(this.currentBand);
@@ -205,6 +272,10 @@ export class MurmurInterface {
             this.updateServerStatus(false);
             document.getElementById('currentBand').textContent = 'Not connected';
             this.updateStationsList();
+            
+            // Update UI buttons
+            document.getElementById('disconnectMurmurBtn').classList.add('hidden');
+            document.getElementById('connectMurmurBtn').classList.remove('hidden');
             
             return true;
         } catch (error) {
