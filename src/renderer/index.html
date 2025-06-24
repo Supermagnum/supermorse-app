@@ -21,60 +21,6 @@
             </div>
         </header>
 
-        <!-- Authentication Section (shown before login) -->
-        <section id="authSection" class="auth-section">
-            <div class="auth-container">
-                <div class="auth-tabs">
-                    <div class="tab active" data-tab="login">Login</div>
-                    <div class="tab" data-tab="register">Register</div>
-                </div>
-                
-                <!-- Login Form -->
-                <div class="tab-content active" id="loginTab">
-                    <form id="loginForm" class="auth-form">
-                        <div class="form-group">
-                            <label for="loginUsername">Username</label>
-                            <input type="text" id="loginUsername" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="loginPassword">Password</label>
-                            <input type="password" id="loginPassword" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Login</button>
-                        <p class="form-message" id="loginMessage"></p>
-                    </form>
-                </div>
-                
-                <!-- Registration Form -->
-                <div class="tab-content" id="registerTab">
-                    <form id="registerForm" class="auth-form">
-                        <div class="form-group">
-                            <label for="registerUsername">Username</label>
-                            <input type="text" id="registerUsername" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="registerEmail">Email</label>
-                            <input type="email" id="registerEmail" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="registerPassword">Password</label>
-                            <input type="password" id="registerPassword" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="registerConfirmPassword">Confirm Password</label>
-                            <input type="password" id="registerConfirmPassword" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="registerMaidenhead">Maidenhead Locator</label>
-                            <input type="text" id="registerMaidenhead" placeholder="e.g. JO91" required>
-                            <p class="hint">Your grid square location (e.g., JO91, IO83, FN20)</p>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Register</button>
-                        <p class="form-message" id="registerMessage"></p>
-                    </form>
-                </div>
-            </div>
-        </section>
 
         <!-- Main Application (shown after login) -->
         <main id="mainApp" class="main-app hidden">
@@ -83,6 +29,9 @@
                 <aside class="sidebar">
                     <nav>
                         <ul>
+                            <li data-section="account">
+                                <i class="fas fa-user-circle"></i> Account
+                            </li>
                             <li class="active" data-section="training">
                                 <i class="fas fa-graduation-cap"></i> Training
                             </li>
@@ -114,6 +63,63 @@
 
                 <!-- Main content area -->
                 <div class="content">
+                    <!-- Account Section -->
+                    <section id="accountSection" class="hidden">
+                        <h2>Account Management</h2>
+                        
+                        <div class="auth-container">
+                            <div class="auth-tabs">
+                                <div class="tab active" data-tab="login">Login</div>
+                                <div class="tab" data-tab="register">Register</div>
+                            </div>
+                            
+                            <!-- Login Form -->
+                            <div class="tab-content active" id="loginTab">
+                                <form id="loginForm" class="auth-form">
+                                    <div class="form-group">
+                                        <label for="loginUsername">Username</label>
+                                        <input type="text" id="loginUsername" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="loginPassword">Password</label>
+                                        <input type="password" id="loginPassword" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Login</button>
+                                    <p class="form-message" id="loginMessage"></p>
+                                </form>
+                            </div>
+                            
+                            <!-- Registration Form -->
+                            <div class="tab-content" id="registerTab">
+                                <form id="registerForm" class="auth-form">
+                                    <div class="form-group">
+                                        <label for="registerUsername">Username</label>
+                                        <input type="text" id="registerUsername" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="registerEmail">Email</label>
+                                        <input type="email" id="registerEmail" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="registerPassword">Password</label>
+                                        <input type="password" id="registerPassword" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="registerConfirmPassword">Confirm Password</label>
+                                        <input type="password" id="registerConfirmPassword" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="registerMaidenhead">Maidenhead Locator</label>
+                                        <input type="text" id="registerMaidenhead" placeholder="e.g. JO91" required>
+                                        <p class="hint">Your grid square location (e.g., JO91, IO83, FN20)</p>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Register</button>
+                                    <p class="form-message" id="registerMessage"></p>
+                                </form>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- Training Section -->
                     <section id="trainingSection" class="active">
                         <h2>Morse Code Training</h2>
