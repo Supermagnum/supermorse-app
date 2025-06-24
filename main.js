@@ -8,12 +8,23 @@ const path = require('path');
 const { SerialPort } = require('serialport');
 const Store = require('electron-store');
 const fs = require('fs');
+const mumble = require('node-mumble');
 
 // Initialize electron-store for persistent settings and user data
 const store = new Store();
 
 // Import user controller (now using JSON storage)
 const UserController = require('./src/controllers/UserController');
+
+// Mumble client state
+let mumbleClient = null;
+let mumbleConnection = {
+  status: 'disconnected',
+  error: null,
+  currentChannel: null,
+  users: [],
+  channels: []
+};
 
 // Make sure data directories exist for JSON storage
 const DATA_DIR = path.join(__dirname, 'data');
@@ -32,6 +43,48 @@ const STATS_DIR = path.join(DATA_DIR, 'stats');
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow;
 let serialConnection = null;
+
+// Create certificates directory and files if they don't exist
+const CERT_DIR = path.join(__dirname, 'cert');
+if (!fs.existsSync(CERT_DIR)) {
+  fs.mkdirSync(CERT_DIR, { recursive: true });
+  console.log(`Created directory: ${CERT_DIR}`);
+  
+  // Generate self-signed certificates for development
+  const { execSync } = require('child_process');
+  try {
+    execSync(`openssl req -x509 -newkey rsa:2048 -nodes -keyout "${path.join(CERT_DIR, 'key.pem')}" -out "${path.join(CERT_DIR, 'cert.pem')}" -days 365 -subj "/CN=localhost"`, {
+      stdio: 'inherit'
+    });
+    console.log('Generated self-signed certificates for Mumble connection');
+  } catch (error) {
+    console.error('Failed to generate certificates:', error);
+    // Create empty files to prevent errors
+    fs.writeFileSync(path.join(CERT_DIR, 'key.pem'), '');
+    fs.writeFileSync(path.join(CERT_DIR, 'cert.pem'), '');
+  }
+}
+
+// Set up mumble connection options
+let MUMBLE_OPTIONS = {
+  rejectUnauthorized: false // For development - in production this should be true
+};
+
+// Try to read certificate files if they exist
+try {
+  const keyPath = path.join(__dirname, 'cert', 'key.pem');
+  const certPath = path.join(__dirname, 'cert', 'cert.pem');
+  
+  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+    MUMBLE_OPTIONS.key = fs.readFileSync(keyPath);
+    MUMBLE_OPTIONS.cert = fs.readFileSync(certPath);
+    console.log('Successfully loaded SSL certificates for Mumble connection');
+  } else {
+    console.warn('SSL certificate files exist but could not be read, using insecure connection');
+  }
+} catch (error) {
+  console.warn('Failed to read SSL certificates, using insecure connection:', error.message);
+}
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -295,3 +348,288 @@ ipcMain.handle('verify-token', async (event, token) => {
     return { valid: false };
   }
 });
+
+// Mumble server connection IPC handlers
+ipcMain.handle('connect-mumble', async (event, serverAddress, options = {}) => {
+  try {
+    // Close existing connection if open
+    if (mumbleClient) {
+      await disconnectMumble();
+    }
+    
+    // Set connection status to connecting
+    mumbleConnection.status = 'connecting';
+    mumbleConnection.error = null;
+    sendMumbleStatusUpdate();
+    
+    // Connect to the server
+    return new Promise((resolve, reject) => {
+      mumble.connect(serverAddress, MUMBLE_OPTIONS, (error, client) => {
+        if (error) {
+          console.error('Mumble connection error:', error);
+          mumbleConnection.status = 'error';
+          mumbleConnection.error = error.message;
+          sendMumbleStatusUpdate();
+          reject({ success: false, error: error.message });
+          return;
+        }
+        
+        // Store client reference
+        mumbleClient = client;
+        
+        // Set up event handlers
+        setupMumbleEventHandlers();
+        
+        // Set connection status to connected
+        mumbleConnection.status = 'connected';
+        sendMumbleStatusUpdate();
+        
+        // Get channels and users
+        updateMumbleChannelsAndUsers();
+        
+        // Return success
+        resolve({ success: true });
+      });
+    });
+  } catch (error) {
+    console.error('Error connecting to Mumble server:', error);
+    mumbleConnection.status = 'error';
+    mumbleConnection.error = error.message;
+    sendMumbleStatusUpdate();
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('disconnect-mumble', async () => {
+  try {
+    await disconnectMumble();
+    return { success: true };
+  } catch (error) {
+    console.error('Error disconnecting from Mumble server:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('join-mumble-channel', async (event, channelName) => {
+  try {
+    if (!mumbleClient) {
+      return { success: false, error: 'Not connected to a Mumble server' };
+    }
+    
+    // Find the channel
+    const channel = findChannelByName(channelName);
+    if (!channel) {
+      return { success: false, error: `Channel '${channelName}' not found` };
+    }
+    
+    // Join the channel
+    channel.join();
+    
+    // Update current channel
+    mumbleConnection.currentChannel = channelName;
+    sendMumbleStatusUpdate();
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error joining Mumble channel:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('send-mumble-message', async (event, message) => {
+  try {
+    if (!mumbleClient) {
+      return { success: false, error: 'Not connected to a Mumble server' };
+    }
+    
+    // Send message to current channel
+    const channel = mumbleClient.channelByName(mumbleConnection.currentChannel || 'Root');
+    if (channel) {
+      channel.sendMessage(message);
+      return { success: true };
+    } else {
+      return { success: false, error: 'Current channel not found' };
+    }
+  } catch (error) {
+    console.error('Error sending Mumble message:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-mumble-channels', async () => {
+  try {
+    if (!mumbleClient) {
+      return { success: false, error: 'Not connected to a Mumble server' };
+    }
+    
+    return { 
+      success: true, 
+      channels: mumbleConnection.channels 
+    };
+  } catch (error) {
+    console.error('Error getting Mumble channels:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-mumble-users', async () => {
+  try {
+    if (!mumbleClient) {
+      return { success: false, error: 'Not connected to a Mumble server' };
+    }
+    
+    return { 
+      success: true, 
+      users: mumbleConnection.users 
+    };
+  } catch (error) {
+    console.error('Error getting Mumble users:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+/**
+ * Disconnect from the Mumble server
+ */
+async function disconnectMumble() {
+  if (mumbleClient) {
+    mumbleClient.disconnect();
+    mumbleClient = null;
+  }
+  
+  // Reset connection state
+  mumbleConnection = {
+    status: 'disconnected',
+    error: null,
+    currentChannel: null,
+    users: [],
+    channels: []
+  };
+  
+  // Notify renderer
+  sendMumbleStatusUpdate();
+}
+
+/**
+ * Set up Mumble event handlers
+ */
+function setupMumbleEventHandlers() {
+  if (!mumbleClient) return;
+  
+  // Handle voice data
+  mumbleClient.on('voice', (voice) => {
+    // Forwarding voice data to renderer is not implemented
+    // in this version for security reasons
+  });
+  
+  // Handle user changes
+  mumbleClient.on('userChange', (user, states) => {
+    // Update users list
+    updateMumbleChannelsAndUsers();
+  });
+  
+  // Handle channel changes
+  mumbleClient.on('channelChange', (channel) => {
+    // Update channels list
+    updateMumbleChannelsAndUsers();
+  });
+  
+  // Handle server messages
+  mumbleClient.on('message', (message, user, scope) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('mumble-message', {
+        sender: user ? user.name : 'Server',
+        content: message,
+        time: new Date().toISOString(),
+        scope: scope
+      });
+    }
+  });
+  
+  // Handle disconnection
+  mumbleClient.on('disconnect', () => {
+    mumbleClient = null;
+    mumbleConnection.status = 'disconnected';
+    sendMumbleStatusUpdate();
+  });
+}
+
+/**
+ * Update Mumble channels and users lists
+ */
+function updateMumbleChannelsAndUsers() {
+  if (!mumbleClient) return;
+  
+  // Get channels
+  mumbleConnection.channels = [];
+  const rootChannel = mumbleClient.channelById(0); // Root channel
+  if (rootChannel) {
+    addChannelRecursive(rootChannel, mumbleConnection.channels);
+  }
+  
+  // Get users
+  mumbleConnection.users = Object.values(mumbleClient.users).map(user => ({
+    id: user.id,
+    name: user.name,
+    channel: user.channel ? user.channel.name : 'Unknown',
+    mute: user.mute,
+    deaf: user.deaf,
+    selfMute: user.selfMute,
+    selfDeaf: user.selfDeaf
+  }));
+  
+  // Send updates to renderer
+  if (mainWindow) {
+    mainWindow.webContents.send('mumble-user-update', mumbleConnection.users);
+  }
+}
+
+/**
+ * Add channel and its subchannels recursively
+ * @param {Object} channel - Mumble channel object
+ * @param {Array} channelsList - List to add channels to
+ * @param {number} level - Nesting level (for UI indentation)
+ */
+function addChannelRecursive(channel, channelsList, level = 0) {
+  channelsList.push({
+    id: channel.id,
+    name: channel.name,
+    description: channel.description,
+    level: level,
+    userCount: Object.keys(channel.users).length
+  });
+  
+  // Add subchannels
+  Object.values(channel.children).forEach(subChannel => {
+    addChannelRecursive(subChannel, channelsList, level + 1);
+  });
+}
+
+/**
+ * Find a channel by name
+ * @param {string} name - Channel name
+ * @returns {Object} - Channel object or null
+ */
+function findChannelByName(name) {
+  if (!mumbleClient) return null;
+  
+  try {
+    return mumbleClient.channelByName(name);
+  } catch (error) {
+    console.error(`Error finding channel '${name}':`, error);
+    return null;
+  }
+}
+
+/**
+ * Send Mumble connection status update to renderer
+ */
+function sendMumbleStatusUpdate() {
+  if (mainWindow) {
+    mainWindow.webContents.send('mumble-connection-status', {
+      status: mumbleConnection.status,
+      error: mumbleConnection.error,
+      currentChannel: mumbleConnection.currentChannel
+    });
+  }
+}

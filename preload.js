@@ -45,7 +45,40 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // User-specific settings
   getUserSettings: (userId) => ipcRenderer.invoke('get-user-settings', userId),
-  saveUserSettings: (userId, settings) => ipcRenderer.invoke('save-user-settings', userId, settings)
+  saveUserSettings: (userId, settings) => ipcRenderer.invoke('save-user-settings', userId, settings),
+  
+  // Mumble server communication
+  connectMumble: (serverAddress, options) => ipcRenderer.invoke('connect-mumble', serverAddress, options),
+  disconnectMumble: () => ipcRenderer.invoke('disconnect-mumble'),
+  joinMumbleChannel: (channelName) => ipcRenderer.invoke('join-mumble-channel', channelName),
+  sendMumbleMessage: (message) => ipcRenderer.invoke('send-mumble-message', message),
+  getMumbleChannels: () => ipcRenderer.invoke('get-mumble-channels'),
+  getMumbleUsers: () => ipcRenderer.invoke('get-mumble-users'),
+  
+  // Mumble events
+  onMumbleMessage: (callback) => {
+    const subscription = (event, message) => callback(message);
+    ipcRenderer.on('mumble-message', subscription);
+    return () => {
+      ipcRenderer.removeListener('mumble-message', subscription);
+    };
+  },
+  
+  onMumbleConnectionStatus: (callback) => {
+    const subscription = (event, status) => callback(status);
+    ipcRenderer.on('mumble-connection-status', subscription);
+    return () => {
+      ipcRenderer.removeListener('mumble-connection-status', subscription);
+    };
+  },
+  
+  onMumbleUserUpdate: (callback) => {
+    const subscription = (event, users) => callback(users);
+    ipcRenderer.on('mumble-user-update', subscription);
+    return () => {
+      ipcRenderer.removeListener('mumble-user-update', subscription);
+    };
+  }
 });
 
 // Expose MorseAPI to renderer
