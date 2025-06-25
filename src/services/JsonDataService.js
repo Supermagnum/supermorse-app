@@ -8,23 +8,43 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 
-// Path constants
-const DATA_DIR = path.join(process.cwd(), 'data');
-const USERS_DIR = path.join(DATA_DIR, 'users');
-const PROGRESS_DIR = path.join(DATA_DIR, 'progress');
-const STATS_DIR = path.join(DATA_DIR, 'stats');
+// Default path constants - these will be overridden by the paths provided from main.js
+let DATA_DIR;
+let USERS_DIR;
+let PROGRESS_DIR;
+let STATS_DIR;
+
+/**
+ * Set the data directories to use for storage
+ * @param {Object} paths - Object containing paths for data storage
+ */
+function setDataDirectories(paths) {
+  DATA_DIR = paths.dataDir;
+  USERS_DIR = paths.usersDir;
+  PROGRESS_DIR = paths.progressDir;
+  STATS_DIR = paths.statsDir;
+  
+  // Ensure directories exist
+  ensureDirectoriesExist();
+}
 
 // Ensure directories exist
 function ensureDirectoriesExist() {
+  if (!DATA_DIR) {
+    console.warn('Data directories not set. Using default paths.');
+    // Fallback to default paths if not set (for backward compatibility)
+    DATA_DIR = path.join(process.cwd(), 'data');
+    USERS_DIR = path.join(DATA_DIR, 'users');
+    PROGRESS_DIR = path.join(DATA_DIR, 'progress');
+    STATS_DIR = path.join(DATA_DIR, 'stats');
+  }
+  
   [DATA_DIR, USERS_DIR, PROGRESS_DIR, STATS_DIR].forEach(dir => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
   });
 }
-
-// Initialize storage
-ensureDirectoriesExist();
 
 /**
  * User Management Functions
@@ -380,6 +400,9 @@ async function getAllCharacterStats(userId) {
 }
 
 module.exports = {
+  // Configuration
+  setDataDirectories,
+  
   // User management
   createUser,
   getUserById,

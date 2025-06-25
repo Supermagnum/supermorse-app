@@ -169,7 +169,7 @@ Exec=$INSTALL_DIR/supermorse-app
 Icon=$INSTALL_DIR/resources/icon.png
 Terminal=false
 Type=Application
-Categories=Hamradio;Education;Utility;
+Categories=hamradio;
 EOF
 
 if [ $? -eq 0 ]; then

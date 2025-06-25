@@ -13,8 +13,9 @@ const mumble = require('node-mumble');
 // Initialize electron-store for persistent settings and user data
 const store = new Store();
 
-// Import user controller (now using JSON storage)
+// Import user controller and data service
 const UserController = require('./src/controllers/UserController');
+const JsonDataService = require('./src/services/JsonDataService');
 
 // Mumble client state
 let mumbleClient = null;
@@ -27,7 +28,8 @@ let mumbleConnection = {
 };
 
 // Make sure data directories exist for JSON storage
-const DATA_DIR = path.join(__dirname, 'data');
+// Use app.getPath('userData') instead of __dirname to ensure we have write access
+const DATA_DIR = path.join(app.getPath('userData'), 'data');
 const USERS_DIR = path.join(DATA_DIR, 'users');
 const PROGRESS_DIR = path.join(DATA_DIR, 'progress');
 const STATS_DIR = path.join(DATA_DIR, 'stats');
@@ -40,12 +42,21 @@ const STATS_DIR = path.join(DATA_DIR, 'stats');
   }
 });
 
+// Configure JsonDataService to use the same paths
+JsonDataService.setDataDirectories({
+  dataDir: DATA_DIR,
+  usersDir: USERS_DIR,
+  progressDir: PROGRESS_DIR,
+  statsDir: STATS_DIR
+});
+
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow;
 let serialConnection = null;
 
 // Create certificates directory and files if they don't exist
-const CERT_DIR = path.join(__dirname, 'cert');
+// Use app.getPath('userData') instead of __dirname to ensure we have write access
+const CERT_DIR = path.join(app.getPath('userData'), 'cert');
 if (!fs.existsSync(CERT_DIR)) {
   fs.mkdirSync(CERT_DIR, { recursive: true });
   console.log(`Created directory: ${CERT_DIR}`);
@@ -72,8 +83,8 @@ let MUMBLE_OPTIONS = {
 
 // Try to read certificate files if they exist
 try {
-  const keyPath = path.join(__dirname, 'cert', 'key.pem');
-  const certPath = path.join(__dirname, 'cert', 'cert.pem');
+  const keyPath = path.join(CERT_DIR, 'key.pem');
+  const certPath = path.join(CERT_DIR, 'cert.pem');
   
   if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
     MUMBLE_OPTIONS.key = fs.readFileSync(keyPath);

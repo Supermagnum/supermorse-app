@@ -181,10 +181,20 @@ export class MorseTrainer {
      * Start a training lesson
      */
     startLesson() {
-        if (this.isTraining) return;
+        console.log("Starting lesson");
         
+        // Don't start if already training
+        if (this.isTraining && this.lessonActive) {
+            console.log("Already training, ignoring start request");
+            return;
+        }
+        
+        // Reset all state flags
         this.isTraining = true;
         this.lessonActive = true;
+        this.newCharIntroduction = false;
+        this.isIntroducing = false;
+        this.shouldStop = false;
         
         // Reset counters
         this.correctGroups = 0;
@@ -192,16 +202,34 @@ export class MorseTrainer {
         this.userInput = '';
         this.groupIndex = 0;
         
+        // Reset any existing timers
+        if (this.groupTimer) {
+            clearTimeout(this.groupTimer);
+            this.groupTimer = null;
+        }
+        
+        // Update UI
+        document.getElementById('startLessonBtn').classList.add('hidden');
+        document.getElementById('stopLessonBtn').classList.remove('hidden');
+        
         // Start session timer
         this.sessionStartTime = Date.now();
         this.startSessionTimer();
         
+        // Special case for first-time users: Always introduce K and M
+        if (this.learnedCharacters.length === 0) {
+            console.log("First-time user detected - introducing K and M");
+            this.newCharIntroduction = true;
+            this.introduceNewCharacter();
+        }
         // If we're introducing a new character, first play it 5 times while displaying it
-        if (this.currentCharacter && !this.learnedCharacters.includes(this.currentCharacter)) {
+        else if (this.currentCharacter && !this.learnedCharacters.includes(this.currentCharacter)) {
+            console.log(`Introducing new character: ${this.currentCharacter}`);
             this.newCharIntroduction = true;
             this.introduceNewCharacter();
         } else {
             // Start with normal practice
+            console.log("Starting normal practice");
             this.newCharIntroduction = false;
             this.generatePracticeGroups();
             this.startNextGroup();
@@ -215,48 +243,178 @@ export class MorseTrainer {
      * Introduce a new character by playing it 5 times while showing it
      */
     introduceNewCharacter() {
+        this.isIntroducing = true;
+        this.shouldStop = false;
+        
+        // For beginners (no learned characters)
+        if (this.learnedCharacters.length === 0) {
+            console.log("First-time user: Will introduce both K and M");
+            this.charactersToIntroduce = ['K', 'M'];
+            
+            // Ensure currentCharacter is set
+            if (!this.currentCharacter) {
+                this.currentCharacter = 'K';
+            }
+        } else if (this.currentCharacter) {
+            // Introduce the current character if it's valid
+            console.log(`Introducing character: ${this.currentCharacter}`);
+            this.charactersToIntroduce = [this.currentCharacter];
+        } else {
+            // Fallback if currentCharacter is somehow null
+            console.log("No character specified, defaulting to K");
+            this.currentCharacter = 'K';
+            this.charactersToIntroduce = ['K'];
+        }
+        
+        console.log(`Characters to introduce: ${this.charactersToIntroduce.join(', ')}`);
+        this.currentIntroductionIndex = 0;
+        this.continueCharacterIntroduction();
+    }
+    
+    /**
+     * Continue introducing characters in the sequence
+     */
+    continueCharacterIntroduction() {
+        // Check if we've introduced all characters
+        if (this.currentIntroductionIndex >= this.charactersToIntroduce.length) {
+            console.log("All characters introduced, moving to practice");
+            
+            // Only if we're still active
+            if (this.lessonActive && !this.shouldStop) {
+                this.newCharIntroduction = false;
+                
+                // Add a longer delay before starting practice to ensure proper cleanup
+                console.log("Adding delay before starting practice...");
+                setTimeout(() => {
+                    // Reset audio state completely
+                    if (this.app.morseAudio) {
+                        this.app.morseAudio.stopTone();
+                    }
+                    
+                    // Reset any flags that might interfere with new playback
+                    if (this.app.morseAudio) {
+                        this.app.morseAudio.cancelPlayback = false;
+                        this.app.morseAudio.isPlaying = false;
+                    }
+                    
+                    console.log("Starting practice groups after character introduction");
+                    this.generatePracticeGroups();
+                    this.startNextGroup();
+                }, 1000);
+            }
+            return;
+        }
+        
+        // Get the current character to introduce
+        const charToIntroduce = this.charactersToIntroduce[this.currentIntroductionIndex];
+        console.log(`Introducing character ${this.currentIntroductionIndex + 1}/${this.charactersToIntroduce.length}: ${charToIntroduce}`);
+        
         // Show the character being introduced
-        document.getElementById('displayCharacter').textContent = this.currentCharacter;
+        document.getElementById('displayCharacter').textContent = charToIntroduce;
         
         // Show its Morse pattern
-        const morsePattern = this.getAlphabets().charToMorse(this.currentCharacter);
+        const morsePattern = this.getAlphabets().charToMorse(charToIntroduce);
         document.getElementById('morsePattern').textContent = morsePattern;
         
         // Update challenge text
-        document.getElementById('challengeText').textContent = `Learning new character: ${this.currentCharacter}`;
+        document.getElementById('challengeText').textContent = `Learning new character: ${charToIntroduce}`;
         document.getElementById('userInput').textContent = '';
         
-        // Play the character 5 times
-        let playCount = 0;
+        // Get the stop button
+        const stopButton = document.getElementById('stopLessonBtn');
         
-        const playNextCharacter = () => {
-            if (playCount >= 5) {
-                // Move to practice mode after introduction
-                this.newCharIntroduction = false;
-                this.generatePracticeGroups();
-                this.startNextGroup();
-                return;
+        // Create a handler function for the stop button
+        const stopHandler = () => {
+            console.log("Stop button clicked during introduction");
+            this.shouldStop = true;
+            
+            // Ensure tone is stopped immediately
+            if (this.app.morseAudio) {
+                this.app.morseAudio.stopTone();
             }
-            
-            // Play the character
-            this.playMorseCharacter(this.currentCharacter);
-            
-            // Increment counter
-            playCount++;
-            
-            // Schedule next play with appropriate delay
-            setTimeout(playNextCharacter, 2000);
         };
         
-        // Start playing
-        playNextCharacter();
+        // Add the event listener
+        stopButton.addEventListener('click', stopHandler);
+        
+        // Use an IIFE to handle the async sequence with proper cleanup
+        (async () => {
+            try {
+                console.log(`Starting introduction for character: ${charToIntroduce}`);
+                
+                // Play the character 5 times with proper delays
+                for (let i = 0; i < 5; i++) {
+                    // Check if we should stop
+                    if (this.shouldStop || !this.lessonActive) {
+                        console.log("Introduction stopped early");
+                        break;
+                    }
+                    
+                    console.log(`Playing character ${charToIntroduce}, iteration ${i + 1}/5`);
+                    
+                    // Ensure any previous audio is completely stopped
+                    if (this.app.morseAudio) {
+                        this.app.morseAudio.stopTone();
+                        // Small delay to ensure clean audio separation
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                    
+                    // Play the character
+                    if (this.shouldStop || !this.lessonActive) break;
+                    
+                    try {
+                        await this.playMorseCharacter(charToIntroduce);
+                    } catch (err) {
+                        console.error("Error playing character:", err);
+                    }
+                    
+                    // Wait between plays (only if not the last one and not stopping)
+                    if (i < 4 && !this.shouldStop && this.lessonActive) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+                
+                // Move to next character if not stopped
+                if (!this.shouldStop && this.lessonActive) {
+                    console.log(`Character ${charToIntroduce} introduction complete`);
+                    this.currentIntroductionIndex++;
+                    
+                    // Brief pause between character introductions
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Continue with next character
+                    this.continueCharacterIntroduction();
+                }
+            } catch (error) {
+                console.error("Error in character introduction:", error);
+            } finally {
+                // Always clean up
+                console.log(`Cleaning up after introducing ${charToIntroduce}`);
+                stopButton.removeEventListener('click', stopHandler);
+                
+                // Ensure audio is stopped
+                if (this.app.morseAudio) {
+                    this.app.morseAudio.stopTone();
+                }
+            }
+        })();
     }
     
     /**
      * Generate practice groups based on current characters
      */
     generatePracticeGroups() {
+        console.log("Generating practice groups");
         this.sequenceGroups = [];
+        
+        // Check if we have valid characters to use
+        if (!this.currentCharacters || this.currentCharacters.length === 0) {
+            console.warn("No current characters available, defaulting to K and M");
+            this.currentCharacters = ['K', 'M'];
+        }
+        
+        console.log(`Current characters: ${this.currentCharacters.join(', ')}`);
+        console.log(`Learned characters: ${this.learnedCharacters.join(', ') || 'none'}`);
         
         // Generate 10 groups of 5 characters each
         for (let i = 0; i < 10; i++) {
@@ -265,15 +423,38 @@ export class MorseTrainer {
             // If we're introducing a new character, include it in each group
             // and fill the rest with random characters from learned ones
             if (this.newCharIntroduction) {
+                console.log(`New character introduction for ${this.currentCharacter}`);
                 // Add the new character in a random position
                 const position = Math.floor(Math.random() * 5);
                 
-                for (let j = 0; j < 5; j++) {
-                    if (j === position) {
-                        group += this.currentCharacter;
-                    } else {
-                        const randomIndex = Math.floor(Math.random() * this.learnedCharacters.length);
-                        group += this.learnedCharacters[randomIndex];
+                // Make sure we have learned characters before using them
+                if (this.learnedCharacters.length === 0) {
+                    // If no learned characters yet, use K and M
+                    const fallbackChars = ['K', 'M'];
+                    const fallbackCharsWithoutCurrent = fallbackChars.filter(c => c !== this.currentCharacter);
+                    
+                    for (let j = 0; j < 5; j++) {
+                        if (j === position) {
+                            group += this.currentCharacter;
+                        } else {
+                            // Use K or M as fallback
+                            if (fallbackCharsWithoutCurrent.length > 0) {
+                                const fbIndex = Math.floor(Math.random() * fallbackCharsWithoutCurrent.length);
+                                group += fallbackCharsWithoutCurrent[fbIndex];
+                            } else {
+                                group += 'K'; // Default to K if nothing else available
+                            }
+                        }
+                    }
+                } else {
+                    // Use learned characters to fill the rest
+                    for (let j = 0; j < 5; j++) {
+                        if (j === position) {
+                            group += this.currentCharacter;
+                        } else {
+                            const randomIndex = Math.floor(Math.random() * this.learnedCharacters.length);
+                            group += this.learnedCharacters[randomIndex];
+                        }
                     }
                 }
             } 
@@ -287,6 +468,8 @@ export class MorseTrainer {
             
             this.sequenceGroups.push(group);
         }
+        
+        console.log("Generated groups:", this.sequenceGroups);
     }
     
     /**
@@ -727,7 +910,12 @@ export class MorseTrainer {
      * Stop the current lesson
      */
     stopLesson() {
+        console.log("Stopping lesson");
+        
+        // Set all the state flags to stop
         this.lessonActive = false;
+        this.shouldStop = true;
+        this.isIntroducing = false;
         
         // Stop any audio playback
         if (this.app.morseAudio) {
@@ -743,6 +931,16 @@ export class MorseTrainer {
         // Reset display
         document.getElementById('challengeText').textContent = 'Lesson stopped';
         document.getElementById('userInput').textContent = '';
+        
+        // Show start button, hide stop button
+        document.getElementById('startLessonBtn').classList.remove('hidden');
+        document.getElementById('stopLessonBtn').classList.add('hidden');
+        
+        // Wait a bit before allowing restart
+        setTimeout(() => {
+            console.log("Ready for restart");
+            this.isTraining = false;
+        }, 500);
     }
     
     /**
@@ -750,33 +948,72 @@ export class MorseTrainer {
      * @param {string} sequence - The sequence to play
      */
     playMorseSequence(sequence) {
-        if (!this.app.morseAudio) return;
+        if (!this.app.morseAudio) {
+            console.error("morseAudio not available");
+            return;
+        }
+        
+        if (!sequence || sequence.length === 0) {
+            console.error("Empty sequence provided to playMorseSequence");
+            return;
+        }
+        
+        console.log(`Playing sequence: '${sequence}'`);
+        
+        // Validate the sequence contains only valid characters
+        for (let i = 0; i < sequence.length; i++) {
+            const char = sequence[i];
+            if (!char.match(/[A-Za-z0-9]/)) {
+                console.warn(`Invalid character in sequence at position ${i}: '${char}'`);
+                // Replace with K as fallback
+                sequence = sequence.substring(0, i) + 'K' + sequence.substring(i + 1);
+            }
+        }
         
         // Convert the sequence to Morse code
         const alphabets = this.getAlphabets();
         let morseSequence = '';
         
         for (const char of sequence) {
-            morseSequence += alphabets.charToMorse(char) + ' ';
+            const morse = alphabets.charToMorse(char);
+            if (morse) {
+                morseSequence += morse + ' ';
+            } else {
+                console.warn(`No Morse code found for character: '${char}'`);
+                // Use K's Morse code as fallback
+                morseSequence += '-.- ';
+            }
         }
         
-        // Play the Morse code
-        this.app.morseAudio.playMorseCode(morseSequence, this.wpm, this.farnsworthWpm);
+        if (morseSequence.trim().length === 0) {
+            console.error("Empty Morse sequence generated");
+            return;
+        }
+        
+        console.log(`Playing Morse sequence: ${morseSequence}`);
+        
+        try {
+            // Play the Morse code
+            this.app.morseAudio.playMorseCode(morseSequence, this.wpm, this.farnsworthWpm);
+        } catch (error) {
+            console.error("Error playing Morse sequence:", error);
+        }
     }
     
     /**
      * Play a single Morse character
      * @param {string} char - The character to play
+     * @returns {Promise} - Resolves when the character playback is complete
      */
     playMorseCharacter(char) {
-        if (!this.app.morseAudio) return;
+        if (!this.app.morseAudio) return Promise.resolve();
         
         // Convert the character to Morse code
         const alphabets = this.getAlphabets();
         const morseChar = alphabets.charToMorse(char);
         
-        // Play the Morse code
-        this.app.morseAudio.playMorseCode(morseChar, this.wpm, this.farnsworthWpm);
+        // Play the Morse code and return the promise
+        return this.app.morseAudio.playMorseCode(morseChar, this.wpm, this.farnsworthWpm);
     }
     
     /**
