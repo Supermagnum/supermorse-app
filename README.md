@@ -1,3 +1,8 @@
+
+##  !Debugging in progress!! Not ready yet!!
+
+
+
 # SuperMorse App
 
 A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
