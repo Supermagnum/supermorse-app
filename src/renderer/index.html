@@ -221,6 +221,59 @@
                                     <span class="label">Email:</span> <span id="settingsEmail"></span>
                                 </p>
                             </div>
+
+                            <div class="form-group">
+                                <label for="themeSelect">Application Theme</label>
+                                <select id="themeSelect">
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="high-contrast">High Contrast</option>
+                                </select>
+                                <p class="hint">Choose your preferred application theme</p>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <h3>Morse Key Settings</h3>
+                            
+                            <div class="form-group">
+                                <label for="keyModeSelect">Morse Key Type</label>
+                                <select id="keyModeSelect">
+                                    <option value="S">Straight Key</option>
+                                    <option value="P">Single Paddle</option>
+                                    <option value="A">Iambic Mode A (Curtis A)</option>
+                                    <option value="B">Iambic Mode B</option>
+                                </select>
+                                <p class="hint">Select the type of Morse key you are using with the Arduino</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="arduinoPortSelect">Arduino Port</label>
+                                <div class="port-selection">
+                                    <select id="arduinoPortSelect">
+                                        <option value="">Select port...</option>
+                                    </select>
+                                    <button id="refreshPortsBtn" class="btn btn-small">
+                                        <i class="fas fa-sync"></i> Refresh
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <h3>Morse Audio Settings</h3>
+                            
+                            <div class="form-group">
+                                <label for="settingsToneFrequency">Tone Frequency (Hz)</label>
+                                <input type="range" id="settingsToneFrequency" min="400" max="1000" step="10" value="600">
+                                <p class="hint">Adjust the frequency of the Morse code tones</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="settingsMorseSpeed">Morse Speed (WPM)</label>
+                                <input type="range" id="settingsMorseSpeed" min="5" max="30" step="1" value="13">
+                                <p class="hint">Set the words-per-minute speed for Morse code</p>
+                            </div>
                         </div>
                         
                         <div class="settings-group">
@@ -252,6 +305,7 @@
                                         <span>Disconnected</span>
                                     </div>
                                 </div>
+                                
                                 
                                 <div class="form-group">
                                     <label for="preferredBand">Preferred HF Band</label>
@@ -401,6 +455,11 @@
     </div>
 
     <!-- Scripts -->
+    <!-- Tone.js library for audio synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <!-- Alphabets script for Morse code conversions -->
+    <script src="../../alphabets.js"></script>
+    <!-- Main application script -->
     <script src="js/app.js" type="module"></script>
 </body>
 </html>

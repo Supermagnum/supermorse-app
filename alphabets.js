@@ -3,7 +3,7 @@
  * Contains Morse code mappings for different character sets
  */
 
-const ALPHABETS = (function() {
+window.ALPHABETS = (function() {
     // International standard Morse code (letters and numbers)
     const internationalMorse = {
         'A': '.-',

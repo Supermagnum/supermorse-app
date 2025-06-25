@@ -1,7 +1,11 @@
-SuperMorse Installation Log - on. 25. juni 00:52:05 +0200 2025
+SuperMorse Installation Log - on. 25. juni 02:12:59 +0200 2025
 Node.js found: v18.19.1
 npm found: 9.2.0
 Required system packages installed
-Created supermorse group
-Created supermorse user
-Failed to install npm dependencies
+npm dependencies installed
+Application built successfully
+Installation directory created
+Application installed from dist/linux-unpacked
+Data directories created
+No run-tests.sh script found
+Desktop shortcut created

@@ -18,6 +18,10 @@ export class MorseAudio {
         // Timing parameters based on Paris standard
         this.unitLength = 60 / (50 * 13); // Base timing unit in seconds (at 13 WPM)
         
+        // Playback state
+        this.isPlaying = false;
+        this.cancelPlayback = false;
+        
         // Initialize Tone.js components
         this.initToneComponents();
     }
@@ -88,51 +92,129 @@ export class MorseAudio {
      * @returns {Promise} - Resolves when the tone is complete
      */
     playTone(frequency, duration) {
-        return new Promise((resolve) => {
-            // Set frequency if provided
-            if (frequency) {
-                this.setFrequency(frequency);
-            }
-            
-            // Start the oscillator if it's not already started
-            if (this.oscillator && this.oscillator.state !== 'started') {
-                this.oscillator.start();
-            }
-            
-            // Use the envelope to shape the tone
-            if (this.envelope) {
-                this.envelope.triggerAttack();
-                
-                // Schedule the release
-                setTimeout(() => {
-                    this.envelope.triggerRelease();
-                    
-                    // Wait for release to complete before resolving
-                    setTimeout(() => {
-                        resolve();
-                    }, 10);
-                }, duration);
-            } else {
-                // Fallback if envelope isn't available
-                setTimeout(() => {
-                    this.stopTone();
+        return new Promise(async (resolve) => {
+            try {
+                // Check if playback has been canceled
+                if (this.cancelPlayback) {
+                    console.log("Playback canceled before tone start");
                     resolve();
+                    return;
+                }
+                
+                // Set frequency
+                const freq = frequency || this.frequency;
+                console.log(`Creating fresh oscillator at ${freq}Hz for ${duration}ms`);
+                
+                // COMPLETELY NEW APPROACH: Create a new oscillator for each tone
+                // First stop and disconnect any existing oscillator/envelope
+                if (this.oscillator) {
+                    if (this.oscillator.state === 'started') {
+                        this.oscillator.stop();
+                    }
+                    this.oscillator.disconnect();
+                }
+                
+                if (this.envelope) {
+                    this.envelope.disconnect();
+                }
+                
+                // Create new oscillator and envelope for this tone
+                const newOscillator = new Tone.Oscillator({
+                    type: 'sine',
+                    frequency: freq,
+                    volume: this.volume
+                }).toDestination();
+                
+                const newEnvelope = new Tone.AmplitudeEnvelope({
+                    attack: 0.005,
+                    decay: 0.001,
+                    sustain: 1,
+                    release: 0.005
+                }).connect(newOscillator.output);
+                
+                // Store references
+                this.oscillator = newOscillator;
+                this.envelope = newEnvelope;
+                
+                // Start the oscillator
+                console.log("Starting fresh oscillator");
+                newOscillator.start();
+                
+                // Wait a small amount of time to ensure oscillator is started
+                await new Promise(r => setTimeout(r, 10));
+                
+                // Trigger attack for a clean start
+                console.log("Triggering envelope attack");
+                newEnvelope.triggerAttack();
+                
+                // Schedule the release after the duration
+                setTimeout(async () => {
+                    try {
+                        // Check if playback was canceled during tone
+                        if (this.cancelPlayback) {
+                            console.log("Playback canceled during tone");
+                            newEnvelope.triggerRelease();
+                            setTimeout(() => {
+                                newOscillator.stop();
+                                resolve();
+                            }, 20);
+                            return;
+                        }
+                        
+                        // Release the envelope
+                        console.log("Tone complete, releasing envelope");
+                        newEnvelope.triggerRelease();
+                        
+                        // Small delay to allow release to complete, then stop the oscillator
+                        await new Promise(r => setTimeout(r, 50));
+                        
+                        if (newOscillator.state === 'started') {
+                            newOscillator.stop();
+                        }
+                        
+                        resolve();
+                    } catch (err) {
+                        console.error("Error in tone release:", err);
+                        resolve();
+                    }
                 }, duration);
+            } catch (err) {
+                console.error("Error in playTone:", err);
+                resolve();
             }
         });
     }
     
     /**
-     * Stop any currently playing tone
+     * Stop any currently playing tone and cancel ongoing playback
      */
     stopTone() {
+        // Set the cancel flag to interrupt any ongoing playback
+        this.cancelPlayback = true;
+        this.isPlaying = false;
+        
+        // Trigger envelope release to silence the tone
         if (this.envelope) {
             this.envelope.triggerRelease();
         }
         
+        // Force stop the oscillator if it's running
         if (this.oscillator && this.oscillator.state === 'started') {
-            // We don't actually stop the oscillator to avoid clicks
-            // Just use the envelope to silence it
+            // Use a short timeout to avoid clicks
+            setTimeout(() => {
+                this.oscillator.stop();
+            }, 50);
+        }
+    }
+    
+    /**
+     * Temporarily silence the tone without canceling playback
+     * Used for pauses between Morse code elements
+     */
+    silenceTone() {
+        // Only trigger envelope release without setting cancel flags
+        if (this.envelope) {
+            this.envelope.triggerRelease();
         }
     }
     
@@ -177,69 +259,175 @@ export class MorseAudio {
      * @param {string} morseCode - The Morse code sequence to play (.-. .- etc.)
      * @param {number} wpm - Words per minute
      * @param {number} farnsworthWpm - Farnsworth character speed (optional)
-     * @returns {Promise} - Resolves when the sequence is complete
+     * @returns {Promise} - Resolves when the sequence is complete or canceled
      */
     async playMorseCode(morseCode, wpm = 13, farnsworthWpm = null) {
+        console.log(`**** STARTING: Playing Morse code: ${morseCode} at ${wpm} WPM ****`);
+        
+        // Validate the input
+        if (!morseCode || morseCode.trim() === '') {
+            console.warn('Empty Morse code sequence provided');
+            return Promise.resolve();
+        }
+        
+        // Reset state before starting new playback
+        console.log("Resetting playback state flags");
+        this.isPlaying = true;
+        this.cancelPlayback = false;
+        
         // Calculate timing based on WPM
         this.calculateTiming(wpm, farnsworthWpm);
+        console.log(`Calculated timing: dit=${this.ditLength}s, dah=${this.dahLength}s`);
         
         // Clean up the Morse code
         const cleanCode = morseCode.trim().replace(/\s+/g, ' ');
+        console.log(`Cleaned Morse code: "${cleanCode}"`);
         
-        // Start the oscillator
-        if (this.oscillator && this.oscillator.state !== 'started') {
-            this.oscillator.start();
-        }
-        
-        // Play each character
-        const characters = cleanCode.split(' ');
-        
-        for (let i = 0; i < characters.length; i++) {
-            const character = characters[i];
+        try {
+            // Completely reinitialize audio for clean start
+            console.log("Resetting audio system for clean playback");
             
-            // Play each element (dit/dah) in the character
-            for (let j = 0; j < character.length; j++) {
-                const element = character[j];
-                
-                if (element === '.') {
-                    // Play dit
-                    await this.playTone(this.frequency, this.ditLength * 1000);
-                } else if (element === '-') {
-                    // Play dah
-                    await this.playTone(this.frequency, this.dahLength * 1000);
+            // First stop any existing oscillator
+            if (this.oscillator) {
+                if (this.oscillator.state === 'started') {
+                    console.log("Stopping existing oscillator");
+                    this.oscillator.stop();
+                    // Wait long enough for full stop
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 }
                 
-                // Add intra-character space (except after the last element)
-                if (j < character.length - 1) {
-                    await this.silence(this.intraCharSpace * 1000);
+                // Start with a fresh oscillator
+                console.log("Starting fresh oscillator");
+                this.oscillator.start();
+                
+                // Brief delay to ensure oscillator is fully started
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } else {
+                console.warn("No oscillator available");
+                return Promise.resolve();
+            }
+            
+            // Play each character
+            const characters = cleanCode.split(' ');
+            console.log(`Ready to play ${characters.length} character groups`);
+            
+            for (let i = 0; i < characters.length; i++) {
+                // Check for cancellation
+                if (this.cancelPlayback) {
+                    console.log("Playback canceled before character group");
+                    return;
+                }
+                
+                const character = characters[i];
+                console.log(`Playing character group ${i+1}/${characters.length}: "${character}"`);
+                
+                // Skip empty characters
+                if (!character) {
+                    console.log("Skipping empty character");
+                    continue;
+                }
+                
+                // Play each element (dit/dah) in the character
+                for (let j = 0; j < character.length; j++) {
+                    // Check for cancellation
+                    if (this.cancelPlayback) {
+                        console.log("Playback canceled before element");
+                        return;
+                    }
+                    
+                    const element = character[j];
+                    
+                    if (element === '.') {
+                        // Play dit
+                        console.log(`Playing dit ${j+1}/${character.length} (${this.ditLength * 1000}ms)`);
+                        try {
+                            await this.playTone(this.frequency, this.ditLength * 1000);
+                        } catch (err) {
+                            console.error("Error playing dit:", err);
+                        }
+                    } else if (element === '-') {
+                        // Play dah
+                        console.log(`Playing dah ${j+1}/${character.length} (${this.dahLength * 1000}ms)`);
+                        try {
+                            await this.playTone(this.frequency, this.dahLength * 1000);
+                        } catch (err) {
+                            console.error("Error playing dah:", err);
+                        }
+                    } else {
+                        console.warn(`Unknown element: "${element}"`);
+                    }
+                    
+                    // Check for cancellation
+                    if (this.cancelPlayback) {
+                        console.log("Playback canceled after element");
+                        return;
+                    }
+                    
+                    // Add intra-character space (except after the last element)
+                    if (j < character.length - 1) {
+                        console.log(`Intra-character silence (${this.intraCharSpace * 1000}ms)`);
+                        await this.silence(this.intraCharSpace * 1000);
+                    }
+                }
+                
+                // Check for cancellation
+                if (this.cancelPlayback) {
+                    console.log("Playback canceled after character");
+                    return;
+                }
+                
+                // Add inter-character space (except after the last character)
+                if (i < characters.length - 1) {
+                    console.log(`Inter-character silence (${this.interCharSpace * 1000}ms)`);
+                    await this.silence(this.interCharSpace * 1000);
                 }
             }
             
-            // Add inter-character space (except after the last character)
-            if (i < characters.length - 1) {
-                await this.silence(this.interCharSpace * 1000);
+            console.log("**** COMPLETED: Morse code playback finished successfully ****");
+        } catch (error) {
+            console.error('Error during Morse code playback:', error);
+        } finally {
+            // Always clean up
+            this.isPlaying = false;
+            
+            // Add a small delay before stopping to ensure clean completion
+            if (!this.cancelPlayback) {
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
+            
+            this.stopTone();
         }
-        
-        // Make sure oscillator is silent when done
-        this.stopTone();
     }
     
     /**
-     * Pause for a specified duration
+    /**
+     * Silence for a specified duration
      * @param {number} duration - Duration in milliseconds
      * @returns {Promise} - Resolves after the duration
      */
     silence(duration) {
         return new Promise((resolve) => {
-            // Ensure tone is stopped
-            this.stopTone();
+            // Check if playback has been canceled
+            if (this.cancelPlayback) {
+                resolve();
+                return;
+            }
+            
+            // Only silence the tone without canceling playback
+            this.silenceTone();
             
             // Wait for the specified duration
-            setTimeout(resolve, duration);
+            setTimeout(() => {
+                // Check again if playback has been canceled
+                if (this.cancelPlayback) {
+                    resolve();
+                    return;
+                }
+                
+                resolve();
+            }, duration);
         });
     }
-    
     /**
      * Play a character as Morse code
      * @param {string} char - The character to play

@@ -103,7 +103,7 @@ const char* REGIONAL_MORSE[] = {
 
 // Regional character mapping (index in REGIONAL_MORSE array to ASCII representation)
 const char REGIONAL_CHARS[] = {
-  'Æ', 'Ø', 'Å', 'Ð', 'Þ', 'Ü', 'ß', 'É', 'È', 'Ç', 'À', 'Ñ', 'Á', 'Í', 'Ó', 'Ç', 'Ś', 'Ź', 'Ž'
+  'Æ', 'Ø', 'Å', 'Ð', 'Þ', 'Ü', 'ß', 'É', 'È', 'Ç', 'À', 'Ñ', 'Á', 'Í', 'Ó', 'Ć', 'Ś', 'Ź', 'Ž'
 };
 
 // Prosigns
@@ -494,8 +494,8 @@ char decodeMorse(String morseSequence) {
   }
   
   // Check regional characters
-  for (int i = 0; i < sizeof(REGIONAL_CHARS); i++) {
-    if (i < sizeof(REGIONAL_MORSE) / sizeof(REGIONAL_MORSE[0]) && 
+  for (int i = 0; i < sizeof(REGIONAL_CHARS) / sizeof(REGIONAL_CHARS[0]); i++) {
+    if (i < sizeof(REGIONAL_MORSE) / sizeof(REGIONAL_MORSE[0]) &&
         morseSequence.equals(REGIONAL_MORSE[i])) {
       return REGIONAL_CHARS[i];
     }
