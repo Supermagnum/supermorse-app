@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build output
+dist/
+build/
+out/
+release/
+*.exe
+*.dmg
+*.zip
+*.AppImage
+
+# Runtime data
+data/
+data/users/
+data/progress/
+data/stats/
+
+# Logs
+logs/
+*.log
+supermorse_install.log
+supermorse_uninstall.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment configurations
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# SSL/TLS Certificates (except templates)
+cert/*.pem
+cert/*.key
+cert/*.crt
+# If you need to keep templates, use this instead:
+# cert/*
+# !cert/README.md
+# !cert/template.*
+
+# IDE specific files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+.DS_Store
+.directory
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
