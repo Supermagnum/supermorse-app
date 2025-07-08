@@ -1,8 +1,3 @@
-
-##  !Debugging in progress!! Not ready yet!!
-
-
-
 # SuperMorse App
 
 A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
@@ -96,6 +91,27 @@ Other Arduino's are supported.
 • 3-conductor wire
 
 • Any computer with USB ports, screen, and keyboard
+
+## Arduino Pin Configuration
+
+The Arduino firmware supports multiple Morse key types. Here's how to connect your key:
+
+### Pin Assignments
+- **Pin 2** - Straight key input or Paddle dot contact
+- **Pin 3** - Paddle dash contact
+
+### Connection Instructions
+1. **For a straight key**: Connect your key to pin 2 and ground
+2. **For a paddle key**: Connect the dot paddle to pin 2, dash paddle to pin 3, and common to ground
+
+All input pins use internal pull-up resistors, so keys should connect to ground when pressed. The software can be configured to operate in different modes:
+
+- Straight key mode
+- Single paddle mode
+- Iambic paddle mode A (Curtis A)
+- Iambic paddle mode B
+
+You can switch between these modes in the application settings or by sending commands via the serial interface.
 
 ## Screenshots
 

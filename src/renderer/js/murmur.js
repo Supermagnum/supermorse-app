@@ -15,6 +15,7 @@ export class MurmurInterface {
         this.currentBand = null;
         this.stations = [];
         this.serverAddress = '';
+        this.isAdmin = false; // Flag to track admin status
         
         // Audio settings
         this.audioOutputEnabled = true; // Audio output is enabled so users can hear sounds
@@ -82,9 +83,14 @@ export class MurmurInterface {
             if (this.isConnected) {
                 document.getElementById('connectMurmurBtn').classList.add('hidden');
                 document.getElementById('disconnectMurmurBtn').classList.remove('hidden');
+                
+                // Check admin status after connecting
+                this.checkAdminStatus();
             } else {
                 document.getElementById('disconnectMurmurBtn').classList.add('hidden');
                 document.getElementById('connectMurmurBtn').classList.remove('hidden');
+                this.isAdmin = false; // Reset admin status when disconnected
+                this.updateAdminUI(); // Update admin UI elements
             }
             
             // Show error if any
@@ -104,6 +110,7 @@ export class MurmurInterface {
             // Convert users to stations format
             this.stations = users.map(user => ({
                 callsign: user.name,
+                id: user.id || 0,
                 locator: user.channel || 'Unknown',
                 muted: user.mute || user.selfMute,
                 deafened: user.deaf || user.selfDeaf
@@ -209,6 +216,130 @@ export class MurmurInterface {
     }
     
     /**
+     * Check if the current user has admin privileges
+     * This queries the server for user metadata to determine admin status
+     */
+    async checkAdminStatus() {
+        if (!this.isConnected) return;
+        
+        try {
+            // Query server for user metadata through IPC
+            const userInfo = await window.electronAPI.getMumbleUserInfo();
+            
+            if (userInfo.success && userInfo.metadata) {
+                // Check if isAdmin flag is set to true
+                this.isAdmin = userInfo.metadata.isAdmin === 'true' || userInfo.metadata.isAdmin === true;
+                console.log('Admin status:', this.isAdmin);
+                
+                // Update UI based on admin status
+                this.updateAdminUI();
+                
+                // Update stations list to show admin actions
+                this.updateStationsList();
+            }
+        } catch (error) {
+            console.error('Error checking admin status:', error);
+            this.isAdmin = false;
+        }
+    }
+    
+    /**
+     * Update UI elements based on admin status
+     */
+    updateAdminUI() {
+        // Show/hide admin controls based on admin status
+        const adminControls = document.getElementById('adminControls');
+        if (adminControls) {
+            if (this.isAdmin) {
+                adminControls.classList.remove('hidden');
+            } else {
+                adminControls.classList.add('hidden');
+            }
+        } else if (this.isAdmin) {
+            // Create admin controls if they don't exist and user is admin
+            this.createAdminUI();
+        }
+    }
+    
+    /**
+     * Create admin UI elements if they don't exist
+     */
+    createAdminUI() {
+        // Get the container for admin controls
+        const container = document.querySelector('.murmur-controls');
+        if (!container) return;
+        
+        // Check if admin controls already exist
+        if (document.getElementById('adminControls')) return;
+        
+        // Create admin controls container
+        const adminControls = document.createElement('div');
+        adminControls.id = 'adminControls';
+        adminControls.className = 'admin-controls';
+        
+        // Create header
+        const header = document.createElement('h3');
+        header.textContent = 'Admin Controls';
+        adminControls.appendChild(header);
+        
+        // Add note that these controls are only visible to admins
+        const note = document.createElement('p');
+        note.className = 'admin-note';
+        note.textContent = 'These controls are only visible to server administrators.';
+        adminControls.appendChild(note);
+        
+        // Add info about banning users
+        const banInfo = document.createElement('p');
+        banInfo.textContent = 'To ban a user, select them from the stations list and click the "Ban" button.';
+        adminControls.appendChild(banInfo);
+        
+        // Add container to the page
+        container.appendChild(adminControls);
+    }
+    
+    /**
+     * Ban a user from the server
+     * @param {Object} user - The user to ban
+     */
+    async banUser(user) {
+        if (!this.isConnected || !this.isAdmin) {
+            this.app.showModal('Permission Denied', 'You must be an admin to ban users.');
+            return;
+        }
+        
+        try {
+            // Confirm ban action
+            const confirmBan = confirm(`Are you sure you want to ban ${user.callsign}?`);
+            if (!confirmBan) return;
+            
+            // Send ban request via IPC
+            const result = await window.electronAPI.banMumbleUser(user.id);
+            
+            if (result.success) {
+                // Show success message
+                this.app.showModal('User Banned', `Successfully banned ${user.callsign} from the server.`);
+                
+                // Display system message
+                this.displayMessage({
+                    sender: 'System',
+                    content: `User ${user.callsign} has been banned from the server.`,
+                    time: new Date(),
+                    isSelf: false
+                });
+                
+                // Update stations list
+                this.updateStationsList();
+            } else {
+                // Show error
+                this.app.showModal('Ban Error', `Failed to ban user: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error banning user:', error);
+            this.app.showModal('Ban Error', `Failed to ban user: ${error.message}`);
+        }
+    }
+    
+    /**
      * Initialize the Murmur UI
      */
     initMurmurUI() {
@@ -231,6 +362,9 @@ export class MurmurInterface {
         
         // Populate channels dropdown
         this.updateChannelsDropdown();
+        
+        // Update admin UI if the user is an admin
+        this.updateAdminUI();
     }
     
     /**
@@ -536,8 +670,25 @@ export class MurmurInterface {
                 locator.className = 'locator';
                 locator.textContent = station.locator;
                 
+                const actionContainer = document.createElement('div');
+                actionContainer.className = 'station-actions';
+                
+                // Add ban button for admins
+                if (this.isAdmin) {
+                    const banButton = document.createElement('button');
+                    banButton.className = 'ban-button';
+                    banButton.innerHTML = '<i class="fas fa-ban"></i>';
+                    banButton.title = 'Ban User';
+                    banButton.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent station selection
+                        this.banUser(station);
+                    });
+                    actionContainer.appendChild(banButton);
+                }
+                
                 stationItem.appendChild(callsign);
                 stationItem.appendChild(locator);
+                stationItem.appendChild(actionContainer);
                 
                 // Add click handler to select station
                 stationItem.addEventListener('click', () => {
