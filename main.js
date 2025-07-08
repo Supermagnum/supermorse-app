@@ -499,6 +499,85 @@ ipcMain.handle('get-mumble-users', async () => {
   }
 });
 
+ipcMain.handle('get-mumble-user-info', async () => {
+  try {
+    if (!mumbleClient) {
+      return { success: false, error: 'Not connected to a Mumble server' };
+    }
+    
+    // Get current user
+    const currentUser = mumbleClient.user;
+    if (!currentUser) {
+      return { success: false, error: 'Current user not found' };
+    }
+    
+    // Get user metadata, including isAdmin flag
+    const metadata = {};
+    
+    // Check if user has metadata
+    if (currentUser.metadata) {
+      // Copy all metadata properties
+      Object.keys(currentUser.metadata).forEach(key => {
+        metadata[key] = currentUser.metadata[key];
+      });
+    }
+    
+    // Return user info with metadata
+    return { 
+      success: true, 
+      metadata: metadata,
+      userId: currentUser.id,
+      userName: currentUser.name
+    };
+  } catch (error) {
+    console.error('Error getting Mumble user info:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('ban-mumble-user', async (event, userId) => {
+  try {
+    if (!mumbleClient) {
+      return { success: false, error: 'Not connected to a Mumble server' };
+    }
+    
+    // Check if current user is admin
+    const currentUser = mumbleClient.user;
+    if (!currentUser || !currentUser.metadata || currentUser.metadata.isAdmin !== 'true') {
+      return { success: false, error: 'Permission denied: Admin privileges required' };
+    }
+    
+    // Find user to ban
+    const userToBan = mumbleClient.userById(userId);
+    if (!userToBan) {
+      return { success: false, error: `User with ID ${userId} not found` };
+    }
+    
+    // Ban the user
+    // Note: In a real implementation, this would use Mumble's API to ban the user
+    // The implementation depends on the specific Mumble server API
+    // For this example, we'll simulate a ban by disconnecting the user
+    try {
+      // Add user to ban list
+      if (mumbleClient.banUser) {
+        // Use the ban API if available
+        mumbleClient.banUser(userId, 'Banned by admin');
+      } else {
+        // Fallback method - kick the user
+        userToBan.kick('Banned by admin');
+      }
+      
+      return { success: true };
+    } catch (banError) {
+      console.error('Error banning user:', banError);
+      return { success: false, error: `Failed to ban user: ${banError.message}` };
+    }
+  } catch (error) {
+    console.error('Error banning Mumble user:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 /**
  * Disconnect from the Mumble server
  */

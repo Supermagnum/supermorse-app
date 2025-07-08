@@ -135,9 +135,29 @@ export class ArduinoInterface {
             return;
         }
         
-        // Handle debug output (dots and dashes)
+        // Process lines containing dots and dashes as Morse code input
         if (line.includes('.') || line.includes('-')) {
-            // This is just debug output of the Morse being decoded
+            // Only process if this appears to be Morse code (only dots, dashes, and spaces)
+            if (/^[.\- ]+$/.test(line)) {
+                // The Arduino is sending dots and dashes, we need to decode them
+                // Split by spaces to get individual characters
+                const morseCharacters = line.trim().split(' ');
+                
+                for (const morse of morseCharacters) {
+                    if (morse) {
+                        // Try to decode the Morse code to a character
+                        const char = window.ALPHABETS.morseToChar(morse);
+                        
+                        if (char) {
+                            console.log(`Decoded Morse "${morse}" to character "${char}"`);
+                            // Send the decoded character to the trainer
+                            if (this.app.trainer && this.app.trainer.lessonActive) {
+                                this.app.trainer.handleUserInput(char);
+                            }
+                        }
+                    }
+                }
+            }
             return;
         }
         
