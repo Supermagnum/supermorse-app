@@ -1,5 +1,8 @@
 # SuperMorse App
 
+# ⛔Under testing and debugging⛔
+Any help is appreciated.
+
 A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
 
 ## About SuperMorse
