@@ -90,7 +90,8 @@ cd supermorse-app
 • Seeeduino XIAO – The smallest compatible Arduino board,can fit into the morse key base.
 Other Arduino's are supported. 
 
-• Dual-paddle Morse key (other types also supported)
+• Dual-paddle Morse key recommended. 
+( other types also supported,but because their nature getting the timing/length of the dits or dahs can be challenging. A paddle is just two switches with a common ground. Easy find on the internet and 3D print,if you cant afford a real one )
 
 • Suitable USB cable
 
