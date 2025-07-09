@@ -3,6 +3,9 @@
 # ⛔Under testing and debugging⛔
 Any help is appreciated.
 
+Please read:
+https://github.com/Supermagnum/supermorse-app/blob/main/debug.md
+
 A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
 
 ## About SuperMorse
