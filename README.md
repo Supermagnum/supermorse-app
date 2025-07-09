@@ -4,7 +4,7 @@ A comprehensive Morse code tutor and HF communication application with Arduino i
 
 ## About SuperMorse
 
-SuperMorse is a modern implementation of the Koch method for learning Morse code, enhanced with features for physical key integration, visual feedback, and simulated HF communication. The application progressively unlocks features as you master Morse code elements, eventually enabling voice communication through a modified Murmur server.
+SuperMorse is a modern implementation of the Koch method for learning Morse code, enhanced with features for physical key integration, visual feedback, and simulated HF communication. The application progressively unlocks features as you master Morse code elements, eventually enabling morse communication through a modified Murmur server.
 
 ## The Koch Method
 
