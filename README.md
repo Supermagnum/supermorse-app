@@ -119,6 +119,9 @@ All input pins use internal pull-up resistors, so keys should connect to ground 
 
 You can switch between these modes in the application settings or by sending commands via the serial interface.
 
+# Arduino firmware:
+https://github.com/Supermagnum/supermorse-app/tree/main/arduino
+
 ## Screenshots
 
 Get a visual overview of the SuperMorse application:
