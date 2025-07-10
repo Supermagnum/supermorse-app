@@ -24,7 +24,6 @@ KeyMode currentKeyMode = STRAIGHT_KEY;
 const unsigned long DIT_THRESHOLD = 150;      // Maximum duration for a dit
 const unsigned long DAH_THRESHOLD = 450;      // Maximum duration for a dah
 const unsigned long ELEMENT_THRESHOLD = 200;  // Maximum time between elements within a character
-const unsigned long CHAR_THRESHOLD = 600;     // Maximum time between characters
 const unsigned long WORD_THRESHOLD = 1400;    // Maximum time between words
 const unsigned long DEBOUNCE_DELAY = 20;      // Debounce time in milliseconds to prevent contact bounce
 
