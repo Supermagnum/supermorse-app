@@ -1,5 +1,11 @@
 # SuperMorse App
 
+# ⛔Under testing and debugging⛔
+Any help is appreciated.
+
+Please read:
+https://github.com/Supermagnum/supermorse-app/blob/main/debug.md
+
 A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
 
 ## About SuperMorse
@@ -112,6 +118,9 @@ All input pins use internal pull-up resistors, so keys should connect to ground 
 - Iambic paddle mode B
 
 You can switch between these modes in the application settings or by sending commands via the serial interface.
+
+# Arduino firmware:
+https://github.com/Supermagnum/supermorse-app/tree/main/arduino
 
 ## Screenshots
 
