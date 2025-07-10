@@ -1,11 +1,5 @@
 # SuperMorse App
 
-# ⛔Under testing and debugging⛔
-Any help is appreciated.
-
-Please read:
-https://github.com/Supermagnum/supermorse-app/blob/main/debug.md
-
 A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
 
 ## About SuperMorse
@@ -90,8 +84,7 @@ cd supermorse-app
 • Seeeduino XIAO – The smallest compatible Arduino board,can fit into the morse key base.
 Other Arduino's are supported. 
 
-• Dual-paddle Morse key recommended. 
-( other types also supported,but because their nature getting the timing/length of the dits or dahs can be challenging. A paddle is just two switches with a common ground. Easy find on the internet and 3D print,if you cant afford a real one )
+• Dual-paddle Morse key (other types also supported)
 
 • Suitable USB cable
 
@@ -119,9 +112,6 @@ All input pins use internal pull-up resistors, so keys should connect to ground 
 - Iambic paddle mode B
 
 You can switch between these modes in the application settings or by sending commands via the serial interface.
-
-# Arduino firmware:
-https://github.com/Supermagnum/supermorse-app/tree/main/arduino
 
 ## Screenshots
 
