@@ -113,6 +113,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: path.join(__dirname, 'build/icons/icon.png'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -142,6 +143,11 @@ function createWindow() {
  * Initialize the application when Electron is ready
  */
 app.whenReady().then(() => {
+  // Set dock icon for macOS
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(path.join(__dirname, 'build/icons/icon.png'));
+  }
+  
   createWindow();
 
   // Create window if none exists when app is activated (macOS)

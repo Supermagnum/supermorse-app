@@ -95,7 +95,12 @@ export class MurmurInterface {
             
             // Show error if any
             if (status.error) {
-                this.app.showModal('Connection Error', `Failed to connect to Mumble server: ${status.error}`);
+                // Check if server is at capacity
+                if (status.error.includes('server is full') || status.error.includes('capacity') || status.error.includes('no slots') || status.error.includes('maximum users')) {
+                    this.app.showModal('Server Full', 'No free user slots at the moment, please study for the radio amateur exam, go for a walk or try again later.');
+                } else {
+                    this.app.showModal('Connection Error', `Failed to connect to Mumble server: ${status.error}`);
+                }
             }
             
             // Update stations list (will be empty if disconnected)
