@@ -84,16 +84,20 @@ export class AuthManager {
                 this.token = result.token;
                 localStorage.setItem('authToken', result.token);
                 
-                // Get user details from the token (in a real app, this would verify with the server)
-                // For now, we'll extract basic info from the token or use placeholders
-                const user = this.parseToken(result.token) || {
-                    id: 'user-' + Date.now(),
-                    username: username,
-                    name: result.user?.name || username
-                };
+                // Verify the token with the server and get user details
+                const verification = await window.electronAPI.verifyToken(result.token);
                 
-                // Update the current user
-                this.currentUser = user;
+                if (verification.valid) {
+                    // Use the verified user data from the server
+                    this.currentUser = verification.user;
+                } else {
+                    // If token verification fails, use data from login response as fallback
+                    this.currentUser = result.user || {
+                        id: 'user-' + Date.now(),
+                        username: username,
+                        name: result.user?.name || username
+                    };
+                }
                 
                 // Show the authenticated UI
                 this.app.showAuthenticatedUI(user);

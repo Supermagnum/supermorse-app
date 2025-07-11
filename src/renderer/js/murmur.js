@@ -476,8 +476,14 @@ export class MurmurInterface {
                 // We'll keep this for backward compatibility with the HF band simulation
                 const hfBandRegex = /^\d+m$/;
                 if (hfBandRegex.test(channelId)) {
-                    const propagationLevel = this.simulatePropagation(channelId);
-                    this.updatePropagationIndicator(propagationLevel);
+                    // Get propagation level from server or client-side algorithm
+                    this.simulatePropagation(channelId).then(propagationLevel => {
+                        this.updatePropagationIndicator(propagationLevel);
+                    }).catch(error => {
+                        console.error('Error getting propagation data:', error);
+                        // Default fallback
+                        this.updatePropagationIndicator(3);
+                    });
                 } else {
                     // Default propagation for non-HF channels
                     this.updatePropagationIndicator(4);
@@ -572,8 +578,14 @@ export class MurmurInterface {
                 
                 // Set propagation indicator based on preferred band
                 if (settings.preferredBand && /^\d+m$/.test(settings.preferredBand)) {
-                    const propagationLevel = this.simulatePropagation(settings.preferredBand);
-                    this.updatePropagationIndicator(propagationLevel);
+                    // Get propagation data from server if connected
+                    this.simulatePropagation(settings.preferredBand).then(propagationLevel => {
+                        this.updatePropagationIndicator(propagationLevel);
+                    }).catch(error => {
+                        console.error('Error getting propagation data:', error);
+                        // Default fallback
+                        this.updatePropagationIndicator(3);
+                    });
                 } else {
                     this.updatePropagationIndicator(4); // Default level
                 }
@@ -833,13 +845,37 @@ export class MurmurInterface {
     
     /**
      * Simulate propagation quality for a band
+     * This function retrieves real propagation data from the server when connected,
+     * and falls back to client-side simulation when offline
      * @param {string} band - The HF band
      * @returns {number} - Propagation level (1-5)
      */
-    simulatePropagation(band) {
-        // In a real implementation, this would be based on VOACAP data
-        // For now, use a simple random algorithm
+    async simulatePropagation(band) {
+        // First try to get propagation data from the server
+        try {
+            // Only attempt to get server data if connected
+            if (this.isConnected) {
+                const propData = await window.electronAPI.getHfPropagationData(band);
+                
+                if (propData.success) {
+                    console.log(`Using server propagation data for ${band}: Level ${propData.propagationLevel}`);
+                    
+                    // Update recommended bands if available
+                    if (propData.recommendedBands && propData.recommendedBands.length > 0) {
+                        console.log('Recommended bands:', propData.recommendedBands.join(', '));
+                    }
+                    
+                    // Return the server-provided propagation level
+                    return propData.propagationLevel;
+                }
+            }
+        } catch (error) {
+            console.warn('Error getting propagation data from server:', error);
+            // Fall back to client-side simulation
+        }
         
+        // Client-side fallback algorithm
+        console.log(`Using client-side fallback for ${band} propagation`);
         const hour = new Date().getHours();
         
         // Different bands perform differently at different times

@@ -56,6 +56,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMumbleUsers: () => ipcRenderer.invoke('get-mumble-users'),
   getMumbleUserInfo: () => ipcRenderer.invoke('get-mumble-user-info'),
   banMumbleUser: (userId) => ipcRenderer.invoke('ban-mumble-user', userId),
+  getHfPropagationData: (band) => ipcRenderer.invoke('get-hf-propagation-data', band),
   
   // Mumble events
   onMumbleMessage: (callback) => {
