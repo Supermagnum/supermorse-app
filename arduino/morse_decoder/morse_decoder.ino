@@ -3,13 +3,13 @@
  * Arduino firmware for detecting Morse code signals from a physical key
  * and sending dots and dashes to the browser via Serial
  * 
- * Modified for Xiao ESP32-C6 board
+ * Set up for Xiao ESP32-C6 board
  */
 
 // Pin definitions for Xiao ESP32-C6
 // On Xiao ESP32-C6, pins are labeled D0, D1, D2, etc.
 // But these correspond to different GPIO numbers in the ESP32-C6 chip
-// For this board, we're using physical pins D2 and D3 as confirmed by the user
+// For this board, we're using physical pins D2,D3 and GND
 
 // Map D2 and D3 pins to the correct GPIO numbers for Xiao ESP32-C6
 // D2 on Xiao ESP32-C6 is GPIO 2 (if it matches Arduino numbering)
@@ -36,8 +36,6 @@ const unsigned long DAH_THRESHOLD = 450;      // Maximum duration for a dah
 const unsigned long ELEMENT_THRESHOLD = 200;  // Maximum time between elements within a character
 const unsigned long WORD_THRESHOLD = 1400;    // Maximum time between words
 const unsigned long DEBOUNCE_DELAY = 20;      // Debounce time in milliseconds to prevent contact bounce
-
-// No Morse code mapping tables needed for sending only dots and dashes
 
 // State variables
 unsigned long keyDownTime = 0;
