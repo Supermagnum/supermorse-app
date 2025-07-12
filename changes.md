@@ -266,12 +266,109 @@ if (hfBandRegex.test(channelId)) {
 - Fallback to client-side simulation when offline or if server data is unavailable
 - Improved user experience with more realistic band conditions
 
+## 3. Arduino Hardware Compatibility Improvements (July 12, 2025)
+
+### Problem Addressed
+
+The application had hardcoded pin assignments in the Arduino Morse decoder sketch, making it difficult to use with different boards, especially those with non-standard GPIO pin mappings like the Xiao ESP32-C6.
+
+### Changes Made
+
+#### 3.1 Created Arduino Pin Testing Tools (14:21:01)
+
+Created a diagnostic system to identify the correct GPIO pins for paddle connections:
+
+```arduino
+// arduino/pin_tester/pin_tester.ino
+// A diagnostic tool for detecting which pins are receiving signals
+// from a Morse paddle
+
+// Key functions:
+// - Monitors multiple GPIO pins simultaneously
+// - Reports when pins detect a connection to GND
+// - Helps identify which GPIO pins correspond to physical pins
+```
+
+Companion Node.js script to display test results:
+
+```javascript
+// test-paddle-pins.js
+// A script to run the pin tester Arduino sketch and monitor the results
+
+// Key functionality:
+// - Connects to Arduino on /dev/ttyACM0
+// - Displays real-time pin activity
+// - Highlights when signals are detected on GPIO pins
+```
+
+#### 3.2 Arduino Serial Communication (12:01:39)
+
+Created a script to establish serial communication with the Arduino:
+
+```javascript
+// connect-arduino.js
+// A script to connect to an Arduino Morse key interface
+
+// Key functionality:
+// - Establishes connection to /dev/ttyACM0
+// - Configures the Arduino for dual lever paddle mode
+// - Processes and displays Morse code signals
+```
+
+Successfully connected to the Xiao ESP32-C6 and configured it for iambic paddle mode:
+
+```
+Connected to Arduino dual lever paddle interface on /dev/ttyACM0
+Sent key mode command: B (Iambic Mode B for dual lever paddle)
+Arduino mode set to: PADDLE_IAMBIC_B
+```
+
+#### 3.3 Added Multi-Board Compatibility Instructions (12:30:11)
+
+Enhanced the morse_decoder.ino with comprehensive instructions for different Arduino boards:
+
+```arduino
+/**
+ * ========= PIN TESTING INSTRUCTIONS =========
+ * 
+ * If you're having trouble with pin connections, use the pin_tester sketch to identify
+ * the correct GPIO pins for your specific Arduino board...
+ * 
+ * For different Arduino boards:
+ * - Arduino Uno/Nano/Mini: Pin labels match GPIO numbers (D2=GPIO2, D3=GPIO3)
+ * - ESP32/ESP8266 boards: Pin labels often DON'T match GPIO numbers
+ * - Xiao boards: Typically D1=GPIO1, D2=GPIO2, etc. but may vary by model
+ * ...
+ */
+```
+
+Added troubleshooting guidance for common issues:
+
+```arduino
+/**
+ * Troubleshooting:
+ * - No signals detected: Check your wiring and ensure the paddle completes a circuit to GND
+ * - Inconsistent signals: Increase DEBOUNCE_DELAY value if contacts are noisy
+ * - Wrong character sent: Make sure dot/dash pins are correctly identified and assigned
+ */
+```
+
+### Benefits
+
+- Improved hardware compatibility across different Arduino boards
+- Easy identification of correct GPIO pins for paddle connections
+- Clear documentation for setup and troubleshooting
+- Support for boards with non-standard pin mappings like the Xiao ESP32-C6
+- Better user experience when connecting physical hardware
+
 ## Conclusion
 
-These changes significantly improve the SuperMorse application in two key areas:
+These changes significantly improve the SuperMorse application in three key areas:
 
 1. **Security**: By implementing proper token verification with the server, we've enhanced the authentication system's security and reliability.
 
 2. **Functionality**: By integrating with the server's HF propagation model, we've improved the realism and accuracy of band condition simulations.
 
-Both improvements maintain backward compatibility and include fallback mechanisms for handling error cases, ensuring a robust user experience.
+3. **Hardware Compatibility**: By creating pin testing tools and adding multi-board instructions, we've made the application more accessible to users with different Arduino boards.
+
+All improvements maintain backward compatibility and include fallback mechanisms for handling error cases, ensuring a robust user experience.

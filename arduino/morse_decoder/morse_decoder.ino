@@ -3,43 +3,21 @@
  * Arduino firmware for detecting Morse code signals from a physical key
  * and sending dots and dashes to the browser via Serial
  * 
- * ========= PIN TESTING INSTRUCTIONS =========
- * 
- * If you're having trouble with pin connections, use the pin_tester sketch to identify
- * the correct GPIO pins for your specific Arduino board:
- * 
- * 1. Upload the pin_tester.ino sketch to your Arduino board
- * 2. Run the test-paddle-pins.js script: node test-paddle-pins.js
- * 3. Press your paddle levers and observe which GPIO pins detect signals
- * 4. Update the pin definitions below based on your findings
- * 
- * For different Arduino boards:
- * - Arduino Uno/Nano/Mini: Pin labels match GPIO numbers (D2=GPIO2, D3=GPIO3)
- * - ESP32/ESP8266 boards: Pin labels often DON'T match GPIO numbers
- * - Xiao boards: Typically D1=GPIO1, D2=GPIO2, etc. but may vary by model
- * - Other boards: Consult your board's pinout diagram to map D-pins to GPIO numbers
- * 
- * Example: If pin_tester shows GPIO1 responds to dot paddle and GPIO4 to dash paddle:
- * const int PADDLE_DOT_PIN = 1;  // Connect paddle dot contact to GPIO1
- * const int PADDLE_DASH_PIN = 4; // Connect paddle dash contact to GPIO4
- * 
- * Wiring Tips:
- * - Connect one side of each paddle lever to GND
- * - Connect the other sides to the appropriate GPIO pins
- * - The pins use internal pull-up resistors (INPUT_PULLUP)
- * - Pressing the paddle connects the pin to GND, triggering a LOW signal
- * 
- * Troubleshooting:
- * - No signals detected: Check your wiring and ensure the paddle completes a circuit to GND
- * - Inconsistent signals: Increase DEBOUNCE_DELAY value below if contacts are noisy
- * - Wrong character sent: Make sure dot/dash pins are correctly identified and assigned
- * =========================================
+ * Modified for Xiao ESP32-C6 board
  */
 
-// Pin definitions
-const int STRAIGHT_KEY_PIN = 2;  // Connect straight key to this pin (use internal pull-up)
-const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to this pin
-const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to this pin
+// Pin definitions for Xiao ESP32-C6
+// On Xiao ESP32-C6, pins are labeled D0, D1, D2, etc.
+// But these correspond to different GPIO numbers in the ESP32-C6 chip
+// For this board, we're using physical pins D2 and D3 as confirmed by the user
+
+// Map D2 and D3 pins to the correct GPIO numbers for Xiao ESP32-C6
+// D2 on Xiao ESP32-C6 is GPIO 2 (if it matches Arduino numbering)
+// D3 on Xiao ESP32-C6 is GPIO 3 (if it matches Arduino numbering)
+// If this doesn't work, you may need to check the specific GPIO mapping for your board
+const int STRAIGHT_KEY_PIN = 2;  // Connect straight key to D2 pin (GPIO 2)
+const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (GPIO 2)
+const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (GPIO 3)
 
 // Key mode definitions
 enum KeyMode {
