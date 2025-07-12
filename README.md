@@ -87,17 +87,18 @@ cd supermorse-app
   5. Murmur HF communication with simulated band conditions
  
 ## Needed Hardware
-• Seeeduino XIAO – The smallest compatible Arduino board,can fit into the morse key base.
-Other Arduino's are supported. 
-Note: Arduino Pro mini does not have a built in USB port.
 
-• Dual-paddle Morse key (other types also supported)
+• **Seeeduino XIAO** – The smallest compatible Arduino board. Can fit into the morse key base.
+  Other Arduino boards are also supported.
+  Note: Arduino Pro mini does not have a built in USB port.
 
-• Suitable USB cable
+• **Dual-paddle Morse key** (other types also supported)
 
-• 3-conductor wire
+• **Suitable USB cable**
 
-• Any computer with USB ports, screen, and keyboard
+• **3-conductor wire**
+
+• **Any computer** with USB ports, screen, and keyboard
 
 ## Arduino Pin Configuration
 
@@ -125,12 +126,18 @@ https://github.com/Supermagnum/supermorse-app/tree/main/arduino
 Arduino pinouts:
 https://github.com/Supermagnum/supermorse-app/tree/main/Arduino_variants_pinouts
 
-# Arduino pin tester tool:
-This helps determine the correct GPIO pins to use in the morse_decoder.ino sketch, If you are unsure if you have soldered correctly or some pins have died.
-https://github.com/Supermagnum/supermorse-app/blob/main/test-paddle-pins.js
-ttyACM0 in the test-paddle-pins.js might be other ports so it might need adjustment of the const portpath value.
-You will also need:
-https://github.com/Supermagnum/supermorse-app/blob/main/arduino/pin_tester/pin_tester.ino
+# Arduino Pin Tester Tool
+
+This helps determine the correct GPIO pins to use in the morse_decoder.ino sketch. Use this tool if:
+- You are unsure if you have soldered correctly
+- Some pins have stopped responding
+- You need to verify your Arduino configuration
+
+You will need these two files:
+- [test-paddle-pins.js](https://github.com/Supermagnum/supermorse-app/blob/main/test-paddle-pins.js) - JavaScript tester for pin detection
+- [pin_tester.ino](https://github.com/Supermagnum/supermorse-app/blob/main/arduino/pin_tester/pin_tester.ino) - Arduino sketch to interact with the tester
+
+**Note:** The default port in test-paddle-pins.js is `ttyACM0`. You might need to adjust the `const portpath` value if your Arduino connects on a different port.
 
 ## Screenshots
 
