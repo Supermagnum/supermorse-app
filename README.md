@@ -90,6 +90,7 @@ cd supermorse-app
 
 • **Seeeduino XIAO** – The smallest compatible Arduino board. Can fit into the morse key base.
   Other Arduino boards are also supported.
+  
   Note: Arduino Pro mini does not have a built in USB port.
 
 • **Dual-paddle Morse key** (other types also supported)
@@ -123,12 +124,14 @@ You can switch between these modes in the application settings or by sending com
 
 # Arduino firmware:
 https://github.com/Supermagnum/supermorse-app/tree/main/arduino
-Arduino pinouts:
+
+Arduino pinouts and board sizes
 https://github.com/Supermagnum/supermorse-app/tree/main/Arduino_variants_pinouts
 
 # Arduino Pin Tester Tool
-
-This helps determine the correct GPIO pins to use in the morse_decoder.ino sketch. Use this tool if:
+for the Xiao ESP32-C6
+This helps determine the correct GPIO
+pins to use in the morse_decoder.ino sketch. Use this tool if:
 - You are unsure if you have soldered correctly
 - Some pins have stopped responding
 - You need to verify your Arduino configuration
@@ -137,7 +140,8 @@ You will need these two files:
 - [test-paddle-pins.js](https://github.com/Supermagnum/supermorse-app/blob/main/test-paddle-pins.js) - JavaScript tester for pin detection
 - [pin_tester.ino](https://github.com/Supermagnum/supermorse-app/blob/main/arduino/pin_tester/pin_tester.ino) - Arduino sketch to interact with the tester
 
-**Note:** The default port in test-paddle-pins.js is `ttyACM0`. You might need to adjust the `const portpath` value if your Arduino connects on a different port.
+**Note:** The default port in test-paddle-pins.js is `ttyACM0`. 
+You might need to adjust the `const portpath` value if your Arduino connects on a different port.
 
 ## Screenshots
 
