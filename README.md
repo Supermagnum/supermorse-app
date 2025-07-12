@@ -121,6 +121,15 @@ You can switch between these modes in the application settings or by sending com
 
 # Arduino firmware:
 https://github.com/Supermagnum/supermorse-app/tree/main/arduino
+Arduino pinouts:
+https://github.com/Supermagnum/supermorse-app/tree/main/Arduino_variants_pinouts
+
+# Arduino pin tester tool:
+This helps determine the correct GPIO pins to use in the morse_decoder.ino sketch, If you are unsure if you have soldered correctly or some pins have died.
+https://github.com/Supermagnum/supermorse-app/blob/main/test-paddle-pins.js
+ttyACM0 in the test-paddle-pins.js might be other ports so it might need adjustment of the const portpath value.
+You will also need:
+https://github.com/Supermagnum/supermorse-app/blob/main/arduino/pin_tester/pin_tester.ino
 
 ## Screenshots
 

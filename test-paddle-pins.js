@@ -7,7 +7,7 @@
 
 const { SerialPort } = require('serialport');
 
-// Define port parameters
+// Define port parameters, ttyACM0 might be other ports so it might need adjustment of the const portpath value.
 const portPath = '/dev/ttyACM0';
 const baudRate = 9600;
 
