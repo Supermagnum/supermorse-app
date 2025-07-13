@@ -111,20 +111,17 @@ cd supermorse-app
  
 ## Needed Hardware
 
-• Seeeduino XIAO – The smallest compatible Arduino board. Can fit into the morse key base.
-• Seeeduino XIAO  ESP32-C6 boards
-• Arduino Micro boards
-• Arduino Nano boards
-  
-  Note: Arduino Pro mini does not have a built in USB port.
+- **Seeeduino XIAO** – The smallest compatible Arduino board. Can fit into the morse key base.
+- **Seeeduino XIAO ESP32-C6 boards**
+- **Arduino Micro boards**
+- **Arduino Nano boards**
 
-• **Dual-paddle Morse key** (other types also supported)
+Note: Arduino Pro mini does not have a built in USB port.
 
-• **Suitable USB cable**
-
-• **3-conductor wire**
-
-• **Any computer** with USB ports, screen, and keyboard
+- **Dual-paddle Morse key** (other types also supported)
+- **Suitable USB cable**
+- **3-conductor wire**
+- **Any computer** with USB ports, screen, and keyboard
 
 ## Arduino Pin Configuration
 
