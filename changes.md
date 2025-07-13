@@ -4,6 +4,74 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, and Arduino board support in the SuperMorse application.
 
+## 5. Xiao ESP32-C6 Yellow LED Pin Fix (July 13, 2025)
+
+### Problem Addressed
+
+The Xiao ESP32-C6 firmware was using LED_BUILTIN (Arduino pin 13) for the yellow diagnostic LED, which was incorrect for this board. Additionally, the LED was glowing constantly from boot because the pin logic wasn't properly configured for the board's active-LOW LED.
+
+### Changes Made
+
+#### 5.1 Updated Yellow LED Pin Assignment
+
+Changed the yellow LED pin assignment from LED_BUILTIN to GPIO15, which is the correct pin for the Xiao ESP32-C6 board:
+
+```arduino
+// Old implementation
+// LED_BUILTIN is Arduino pin 13, which is connected
+// to the Yellow LED on the Xiao PCB.
+
+// New implementation
+const int YELLOW_LED_PIN = 15;   // GPIO15 for the yellow LED on Xiao ESP32-C6
+```
+
+#### 5.2 Implemented Active-LOW LED Logic
+
+The yellow LED on the Xiao ESP32-C6 is wired in an active-LOW configuration (LOW turns it ON, HIGH turns it OFF), which needed to be reflected in the code:
+
+```arduino
+// Old implementation (LED stays on at boot)
+digitalWrite(LED_BUILTIN, LOW);  // Ensure LED starts off
+
+// New implementation (LED correctly stays off at boot)
+digitalWrite(YELLOW_LED_PIN, HIGH);  // Ensure LED starts off (LED is active-LOW)
+```
+
+The LED control logic was also inverted in other parts of the code:
+
+```arduino
+// In loop() function
+// Old implementation
+digitalWrite(LED_BUILTIN, LOW);
+
+// New implementation
+digitalWrite(YELLOW_LED_PIN, HIGH);  // HIGH turns the LED off (active-LOW)
+
+// In flashDiagnosticLED() function
+// Old implementation
+digitalWrite(LED_BUILTIN, HIGH);
+
+// New implementation
+digitalWrite(YELLOW_LED_PIN, LOW);  // LOW turns the LED on (active-LOW)
+```
+
+#### 5.3 Added Documentation About Active-LOW Configuration
+
+Added clear comments to explain the active-LOW configuration:
+
+```arduino
+// The Yellow LED on the Xiao PCB is connected to GPIO15.
+// This LED is wired in an active-LOW configuration (LOW turns it ON, HIGH turns it OFF).
+```
+
+### Benefits
+
+- Fixed yellow LED that was incorrectly glowing from boot
+- Proper diagnostic feedback only when paddle input is detected
+- Correct pin assignment for the Xiao ESP32-C6 board
+- Clear documentation about the LED's active-LOW configuration
+- Improved hardware diagnostic capabilities
+
 ## 4. Multi-Board Arduino Support (July 13, 2025 - 15:50)
 
 ### Problem Addressed
