@@ -1,5 +1,5 @@
 /**
- * morse_decoder.ino
+ * morse_decoder_Xiao_ESP32.ino
  * Arduino firmware for detecting Morse code signals from a physical key
  * and sending dots and dashes to the browser via Serial
  * 
