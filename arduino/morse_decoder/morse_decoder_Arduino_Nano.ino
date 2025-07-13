@@ -1,23 +1,20 @@
 /**
-* morse_decoder_Xiao_ESP32-C6.ino
+* morse_decoder_Arduino_Nano.ino
 * Arduino firmware for detecting Morse code signals from a physical key
 * and sending dots and dashes to the browser via Serial
 *
-* Set up for Xiao ESP32-C6 board
+* Set up for Arduino Nano board
 */
 
-// Pin definitions for Xiao ESP32-C6
-// On Xiao ESP32-C6, pins are labeled D0, D1, D2, etc.
-// But these correspond to different GPIO numbers in the ESP32-C6 chip
-// For this board, we're using physical pins D2,D3 and GND.
+// Pin definitions for Arduino Nano
+// On Arduino Nano, pins are labeled D0, D1, D2, etc.
+// These directly correspond to their GPIO numbers
+// For this board, we're using physical pins D2, D3 and GND.
 // LED_BUILTIN is Arduino pin 13, which is connected
-// to the Yellow LED on the Xiao PCB.  On any input on the two input pins,
+// to the built-in LED on the Nano PCB.  On any input on the two input pins,
 // flash this led for 0.5 second as it will work as a built in diagnosis tool.
 
-// Map D2 and D3 pins to the correct GPIO numbers for Xiao ESP32-C6
-// D2 on Xiao ESP32-C6 is GPIO 2 (if it matches Arduino numbering)
-// D3 on Xiao ESP32-C6 is GPIO 3 (if it matches Arduino numbering)
-// If this doesn't work, you may need to check the specific GPIO mapping for your board
+// Arduino Nano uses standard pin numbering
 const int STRAIGHT_KEY_PIN = 2;  // Connect straight key to D2 pin (GPIO 2)
 const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (GPIO 2)
 const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (GPIO 3)

@@ -2,7 +2,83 @@
 
 ## Overview
 
-This document details the implementation changes made to improve authentication security and HF propagation data retrieval in the SuperMorse application.
+This document details the implementation changes made to improve authentication security, HF propagation data retrieval, and Arduino board support in the SuperMorse application.
+
+## 4. Multi-Board Arduino Support (July 13, 2025 - 15:50)
+
+### Problem Addressed
+
+The original morse decoder sketch was primarily designed for the Xiao ESP32-C6 board, limiting compatibility with other popular Arduino boards like the Arduino Micro and Nano.
+
+### Changes Made
+
+#### 4.1 Added Support for Arduino Micro
+
+Created a specialized version of the morse decoder sketch for Arduino Micro:
+
+```arduino
+// arduino/morse_decoder/morse_decoder_Arduino_Micro.ino
+/**
+* morse_decoder_Arduino_Micro.ino
+* Arduino firmware for detecting Morse code signals from a physical key
+* and sending dots and dashes to the browser via Serial
+*
+* Set up for Arduino Micro board
+*/
+```
+
+This version includes proper pin mappings and LED diagnostic features optimized for the Arduino Micro's hardware configuration.
+
+#### 4.2 Added Support for Arduino Nano
+
+Created a specialized version of the morse decoder sketch for Arduino Nano:
+
+```arduino
+// arduino/morse_decoder/morse_decoder_Arduino_Nano.ino
+/**
+* morse_decoder_Arduino_Nano.ino
+* Arduino firmware for detecting Morse code signals from a physical key
+* and sending dots and dashes to the browser via Serial
+*
+* Set up for Arduino Nano board
+*/
+```
+
+This version is configured for the Arduino Nano's pin layout and includes the LED diagnostic feature.
+
+#### 4.3 Enhanced LED Diagnostic Functionality
+
+Added visual diagnostic feedback across all board versions:
+
+```arduino
+// LED diagnostic variables
+bool ledIsOn = false;            // Tracks if the diagnostic LED is currently on
+unsigned long ledOffTime = 0;    // Time when the LED should be turned off
+const unsigned long LED_FLASH_DURATION = 500;  // LED flash duration in milliseconds (0.5 seconds)
+
+/**
+ * Flash the built-in LED for diagnostic purposes
+ * Called when input is detected on either input pin
+ */
+void flashDiagnosticLED() {
+  // Only start a new flash if the LED is currently off
+  if (!ledIsOn) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    ledIsOn = true;
+    ledOffTime = millis() + LED_FLASH_DURATION;
+  }
+}
+```
+
+This diagnostic feature flashes the onboard LED for 0.5 seconds whenever input is detected on either paddle pin, providing visual confirmation that the hardware is working properly.
+
+### Benefits
+
+- Expanded hardware compatibility to include Arduino Micro and Nano boards
+- Visual diagnostic feedback for easier troubleshooting
+- Consistent paddle interface experience across different Arduino models
+- Improved accessibility for users with different hardware
+- Clear board-specific documentation and configuration
 
 ## 1. Token Verification Implementation
 

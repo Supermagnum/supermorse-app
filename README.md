@@ -146,15 +146,21 @@ All input pins use internal pull-up resistors, so keys should connect to ground 
 You can switch between these modes in the application settings or by sending commands via the serial interface.
 
 # Arduino firmware:
-https://github.com/Supermagnum/supermorse-app/tree/main/arduino
+The SuperMorse app supports multiple Arduino boards. Choose the appropriate firmware for your board:
+
+- [Xiao ESP32-C6](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder.ino) - For Seeeduino XIAO ESP32-C6 boards
+- [Arduino Micro](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Micro.ino) - For Arduino Micro boards
+- [Arduino Nano](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Nano.ino) - For Arduino Nano boards
+
+Each version includes built-in LED diagnostic feedback that flashes the onboard LED when input is detected.
 
 Arduino pinouts and board sizes
 https://github.com/Supermagnum/supermorse-app/tree/main/Arduino_variants_pinouts
 
 # Arduino Pin Tester Tool
-for the Xiao ESP32-C6
+For Arduino boards (Xiao ESP32-C6, Arduino Micro, Arduino Nano)
 This helps determine the correct GPIO
-pins to use in the morse_decoder.ino sketch. Use this tool if:
+pins to use in the morse decoder sketches. Use this tool if:
 - You are unsure if you have soldered correctly
 - Some pins have stopped responding
 - You need to verify your Arduino configuration
