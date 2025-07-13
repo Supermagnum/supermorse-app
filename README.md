@@ -41,8 +41,7 @@ It is located here.
 https://github.com/Supermagnum/Supermorse-server
 
 ## Installation
-⛔These scripts may be potentially unsafe, they haven't been audited!
-The Linux one adds a third party repository and it's key to the package manager. It's not a thing that should be done automatically. It might be unsafe!⛔
+⛔These scripts may be potentially unsafe, they haven't been audited!⛔
 
 Electron apps are built for distribution, they are cross-platform and include everything needed to run on the target operating system.
 
