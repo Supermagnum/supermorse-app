@@ -1,6 +1,7 @@
 # SuperMorse App
 
 # ⛔Under testing and debugging⛔
+⛔These scripts and code  may be potentially unsafe, they haven't been audited!⛔
 Any help is appreciated.
 
 Please read bug report:
@@ -40,6 +41,7 @@ It is located here.
 https://github.com/Supermagnum/Supermorse-server
 
 ## Installation
+⛔These scripts may be potentially unsafe, they haven't been audited!⛔
 
 ### Linux (Ubuntu)
 ```bash
