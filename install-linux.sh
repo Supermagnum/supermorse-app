@@ -53,11 +53,12 @@ else
   log "Node.js not found. Installing..."
 
   
-  # Add NodeSource repository and install Node.js
-  #This is potentially unsafe, unknown package source!
-  sudo apt-get update
-  curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-  sudo apt-get install -y nodejs
+ # Update package index
+sudo apt update
+
+# Install Node.js and npm from official Ubuntu repositories
+sudo apt install nodejs npm
+
   
   if command_exists node; then
     NODE_VERSION=$(node -v)
