@@ -40,10 +40,29 @@ All user data, progress tracking, and settings are stored in plain JSON files in
 It is located here.
 https://github.com/Supermagnum/Supermorse-server
 
+## Distribution
+
+SuperMorse is built using Electron, which provides significant advantages for distribution:
+
+### Cross-Platform Compatibility
+- **One Codebase, Multiple Platforms**: The same application code runs on Windows, macOS, and Linux
+- **Native-Like Experience**: Users get a consistent experience that feels native to their operating system
+- **Automatic Updates**: Built-in mechanisms for keeping the application up-to-date
+
+### Self-Contained Packages
+- **No External Dependencies**: All required libraries and runtimes are bundled in the application package
+- **No Installation Prerequisites**: Users don't need to install Node.js, npm, or other dependencies
+- **Simplified Deployment**: The application works immediately after installation without additional setup
+
+### Packaging Benefits
+- **Optimized Binaries**: Application is packaged into optimized binaries for each target platform
+- **Resource Bundling**: All resources (HTML, CSS, JavaScript, images) are bundled into the application
+- **Security Sandboxing**: Application runs in a controlled environment with configurable permissions
+
+SuperMorse leverages these capabilities to provide a seamless installation experience across all supported operating systems. When you download a distributed version of SuperMorse, everything needed to run the application is included in the package.
+
 ## Installation
 ⛔These scripts may be potentially unsafe, they haven't been audited!⛔
-
-Electron apps are built for distribution, they are cross-platform and include everything needed to run on the target operating system.
 
 ### Linux (Ubuntu)
 ```bash
