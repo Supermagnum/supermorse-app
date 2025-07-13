@@ -2,6 +2,8 @@
 
 # ⛔Under testing and debugging⛔
 
+For a detailed changelog of all project modifications, see [changes.md](https://github.com/Supermagnum/supermorse-app/blob/main/changes.md).
+
 Any help is appreciated.
 
 Please read bug report:
@@ -147,7 +149,7 @@ You can switch between these modes in the application settings or by sending com
 # Arduino firmware:
 The SuperMorse app supports multiple Arduino boards. Choose the appropriate firmware for your board:
 
-- [Xiao ESP32-C6](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder.ino) - For Seeeduino XIAO ESP32-C6 boards
+- [Xiao ESP32-C6](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_ESP32-C6/morse_decoder_Xiao_ESP32-C6.ino) - For Seeeduino XIAO ESP32-C6 boards
 - [Arduino Micro](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Micro.ino) - For Arduino Micro boards
 - [Arduino Nano](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Nano.ino) - For Arduino Nano boards
 
