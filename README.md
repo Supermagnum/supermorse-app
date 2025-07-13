@@ -1,7 +1,9 @@
 # SuperMorse App
 
 # ⛔Under testing and debugging⛔
+
 ⛔These scripts and code  may be potentially unsafe, they haven't been audited!⛔
+
 Any help is appreciated.
 
 Please read bug report:
