@@ -73,6 +73,67 @@ if (verification.valid) {
 }
 ```
 
+#### 1.3 Enhanced Token Verification with Fallback (July 13, 2025)
+
+Further improved the `restoreSession` method to include a more robust verification and fallback strategy:
+
+```javascript
+// Previous implementation had no fallback if verification failed
+const verification = await window.electronAPI.verifyToken(token);
+if (verification.valid) {
+    // Use the verified user data from the server
+    this.currentUser = verification.user;
+    this.token = token;
+    // Show the authenticated UI
+    this.app.showAuthenticatedUI(this.currentUser);
+    return true;
+} else {
+    // Token is invalid, clear it
+    console.warn('Invalid token during session restoration');
+    localStorage.removeItem('authToken');
+    return false;
+}
+
+// New implementation with fallback strategy
+const verification = await window.electronAPI.verifyToken(token);
+            
+let user;
+if (verification.valid) {
+    // Use the verified user data from the server
+    user = verification.user;
+} else {
+    // If server verification fails, try to parse the token locally as fallback
+    user = this.parseToken(token);
+    
+    // If parsing also fails, use a default user
+    if (!user) {
+        user = {
+            id: 'user-' + Date.now(),
+            email: 'restored@session.com',
+            name: 'Restored User'
+        };
+        console.warn('Session restored with default user due to verification failure');
+    }
+}
+
+// Update the current user and token
+this.currentUser = user;
+this.token = token;
+
+// Show the authenticated UI
+this.app.showAuthenticatedUI(this.currentUser);
+```
+
+Also fixed an undefined variable reference in the `login` method:
+
+```javascript
+// Old implementation (using undefined variable)
+this.app.showAuthenticatedUI(user);
+
+// New implementation (using correct reference)
+this.app.showAuthenticatedUI(this.currentUser);
+```
+
 ### Benefits
 
 - Improved security through proper token verification

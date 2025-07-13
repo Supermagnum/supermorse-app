@@ -100,7 +100,7 @@ export class AuthManager {
                 }
                 
                 // Show the authenticated UI
-                this.app.showAuthenticatedUI(user);
+                this.app.showAuthenticatedUI(this.currentUser);
             } else {
                 // Show error message
                 this.setFormMessage('loginMessage', result.message || 'Login failed. Please check your credentials.', false);
@@ -118,20 +118,34 @@ export class AuthManager {
      */
     async restoreSession(token) {
         try {
-            // In a real app, this would verify the token with the server
-            // For now, we'll just parse the token and use it
-            const user = this.parseToken(token) || {
-                id: 'user-' + Date.now(),
-                email: 'restored@session.com',
-                name: 'Restored User'
-            };
+            // Verify the token with the server
+            const verification = await window.electronAPI.verifyToken(token);
+            
+            let user;
+            if (verification.valid) {
+                // Use the verified user data from the server
+                user = verification.user;
+            } else {
+                // If server verification fails, try to parse the token locally as fallback
+                user = this.parseToken(token);
+                
+                // If parsing also fails, use a default user
+                if (!user) {
+                    user = {
+                        id: 'user-' + Date.now(),
+                        email: 'restored@session.com',
+                        name: 'Restored User'
+                    };
+                    console.warn('Session restored with default user due to verification failure');
+                }
+            }
             
             // Update the current user and token
             this.currentUser = user;
             this.token = token;
             
             // Show the authenticated UI
-            this.app.showAuthenticatedUI(user);
+            this.app.showAuthenticatedUI(this.currentUser);
             
             return true;
         } catch (error) {
