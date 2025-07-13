@@ -1,10 +1,10 @@
 /**
-* morse_decoder_Xiao_ESP32-C6.ino
-* Arduino firmware for detecting Morse code signals from a physical key
-* and sending dots and dashes to the browser via Serial
-*
-* Set up for Xiao ESP32-C6 board
-*/
+ * morse_decoder_Xiao_ESP32-C6.ino
+ * Arduino firmware for detecting Morse code signals from a physical key
+ * and sending dots and dashes to the browser via Serial
+ *
+ * Set up for Xiao ESP32-C6 board
+ */
 
 // Pin definitions for Xiao ESP32-C6
 // On Xiao ESP32-C6, pins are labeled D0, D1, D2, etc.
