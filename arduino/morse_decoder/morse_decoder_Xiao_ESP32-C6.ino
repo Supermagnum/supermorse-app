@@ -10,9 +10,10 @@
 // On Xiao ESP32-C6, pins are labeled D0, D1, D2, etc.
 // But these correspond to different GPIO numbers in the ESP32-C6 chip
 // For this board, we're using physical pins D2,D3 and GND.
-// LED_BUILTIN is Arduino pin 13, which is connected
-// to the Yellow LED on the Xiao PCB.  On any input on the two input pins,
-// flash this led for 0.5 second as it will work as a built in diagnosis tool.
+// The Yellow LED on the Xiao PCB is connected to GPIO15.
+// This LED is wired in an active-LOW configuration (LOW turns it ON, HIGH turns it OFF).
+// On any input on the two input pins, flash this LED for 0.5 second
+// as it will work as a built in diagnostic tool.
 
 // Map D2 and D3 pins to the correct GPIO numbers for Xiao ESP32-C6
 // D2 on Xiao ESP32-C6 is GPIO 2 (if it matches Arduino numbering)
@@ -21,6 +22,7 @@
 const int STRAIGHT_KEY_PIN = 2;  // Connect straight key to D2 pin (GPIO 2)
 const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (GPIO 2)
 const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (GPIO 3)
+const int YELLOW_LED_PIN = 15;   // GPIO15 for the yellow LED on Xiao ESP32-C6
 
 // Key mode definitions
 enum KeyMode {
@@ -74,8 +76,8 @@ void setup() {
   pinMode(PADDLE_DASH_PIN, INPUT_PULLUP);
   
   // Set up LED pin as output for diagnostic feedback
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);  // Ensure LED starts off
+  pinMode(YELLOW_LED_PIN, OUTPUT);
+  digitalWrite(YELLOW_LED_PIN, HIGH);  // Ensure LED starts off (LED is active-LOW)
   
   // Wait for serial connection to be established
   while (!Serial) {
@@ -113,7 +115,7 @@ void loop() {
   
   // Check if it's time to turn off the diagnostic LED
   if (ledIsOn && millis() >= ledOffTime) {
-    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(YELLOW_LED_PIN, HIGH);  // HIGH turns the LED off (active-LOW)
     ledIsOn = false;
   }
 }
@@ -125,7 +127,7 @@ void loop() {
 void flashDiagnosticLED() {
   // Only start a new flash if the LED is currently off
   if (!ledIsOn) {
-    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(YELLOW_LED_PIN, LOW);  // LOW turns the LED on (active-LOW)
     ledIsOn = true;
     ledOffTime = millis() + LED_FLASH_DURATION;
   }
