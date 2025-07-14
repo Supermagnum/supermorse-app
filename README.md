@@ -110,8 +110,7 @@ cd supermorse-app
   1. International Morse code
   2. Prosigns
   3. Special characters
-  4. Regional Morse code variations
-  5. Murmur HF communication with simulated band conditions
+  4. Regional Morse code variations and Murmur HF communication with simulated band conditions.
  
 ## Needed Hardware
 
