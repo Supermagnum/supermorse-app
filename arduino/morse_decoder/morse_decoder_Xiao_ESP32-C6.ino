@@ -54,7 +54,7 @@ bool lastKeyState = HIGH;             // Previous reading from the input pin
 bool ledIsOn = false;                   // Tracks if the diagnostic LED is currently on
 bool inputActive = false;               // Flag to track if any input is currently active
 unsigned long ledBlinkTime = 0;         // Next time to toggle the LED
-const unsigned long BLINK_INTERVAL = 100;  // Toggle LED every 100ms (fast blink)
+const unsigned long BLINK_INTERVAL = 500 ;  // Toggle LED every 100ms (fast blink)
 
 // Iambic keyer state
 bool dotMemory = false;
