@@ -152,6 +152,7 @@ You can switch between these modes in the application settings or by sending com
 The SuperMorse app supports multiple Arduino boards. Choose the appropriate firmware for your board:
 
 - [Xiao ESP32-C6](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_ESP32-C6/morse_decoder_Xiao_ESP32-C6.ino) - For Seeeduino XIAO ESP32-C6 boards
+- [Xiao SAMD21](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_SAMD21.ino) - For Seeeduino XIAO SAMD21 boards, sometimes called Seeeduino XIAO.
 - [Arduino Micro](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Micro.ino) - For Arduino Micro boards
 - [Arduino Nano](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Nano.ino) - For Arduino Nano boards
 
@@ -161,7 +162,7 @@ Arduino pinouts and board sizes
 https://github.com/Supermagnum/supermorse-app/tree/main/Arduino_variants_pinouts
 
 # Arduino Pin Tester Tool
-For Arduino boards (Xiao ESP32-C6, Arduino Micro, Arduino Nano)
+For Arduino boards (Xiao ESP32-C6, Xiao SAMD21, Arduino Micro, Arduino Nano)
 This helps determine the correct GPIO
 pins to use in the morse decoder sketches. Use this tool if:
 - You are unsure if you have soldered correctly
