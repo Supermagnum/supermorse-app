@@ -4,6 +4,80 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, and Arduino board support in the SuperMorse application.
 
+## 7. Multi-Board Pin Testing and Mapping Corrections (July 14, 2025)
+
+### Problem Addressed
+
+The pin mapping for Xiao ESP32-C6 contained an error where D3 was incorrectly mapped to GPIO3 instead of GPIO21. Additionally, the pin tester tool only supported the ESP32-C6 board, limiting its usefulness for users with different Arduino boards.
+
+### Changes Made
+
+#### 7.1 Corrected ESP32-C6 Pin Mapping
+
+Fixed the pin mapping in the morse_decoder_Xiao_ESP32-C6.ino file:
+
+```arduino
+// Old implementation
+// D3 on Xiao ESP32-C6 is GPIO 3 (if it matches Arduino numbering)
+const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (GPIO 3)
+
+// New implementation
+// D3 on Xiao ESP32-C6 is GPIO 21
+const int PADDLE_DASH_PIN = 21;  // Connect paddle dash contact to D3 pin (GPIO 21)
+```
+
+#### 7.2 Added SAMD21 Support
+
+Created a new morse decoder sketch specifically for the Xiao SAMD21 board:
+
+```arduino
+/**
+ * morse_decoder_Xiao_SAMD21.ino
+ * Arduino firmware for detecting Morse code signals from a physical key
+ * and sending dots and dashes to the browser via Serial
+ *
+ * Set up for Xiao SAMD21 board
+ */
+
+// For SAMD21, D2 is digital pin 2
+// For SAMD21, D3 is digital pin 3
+const int STRAIGHT_KEY_PIN = 2;  // Connect straight key to D2 pin (digital pin 2)
+const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (digital pin 2)
+const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (digital pin 3)
+```
+
+#### 7.3 Enhanced Pin Tester Tool
+
+Expanded the pin_tester.ino to support all four board types:
+
+```arduino
+// Board type enum with support for all boards
+enum BoardType {
+  ESP32_C6,
+  SAMD21,
+  ARDUINO_MICRO,
+  ARDUINO_NANO
+};
+
+// Added pin definitions for each board type
+// ESP32-C6: D0-D10 = GPIO 0, 1, 2, 21, 22, 23, 16, 18, 20, 19, 17
+// SAMD21, Micro, Nano: D0-D10 = digital pins 0-10
+
+// Added board selection commands
+Serial.println("'e' - Switch to ESP32-C6 board mode");
+Serial.println("'s' - Switch to SAMD21 board mode");
+Serial.println("'m' - Switch to Arduino Micro board mode");
+Serial.println("'n' - Switch to Arduino Nano board mode");
+```
+
+### Benefits
+
+- Correctly maps D3 to GPIO21 on ESP32-C6 boards for proper paddle connectivity
+- Provides dedicated support for Xiao SAMD21 board with appropriate pin mappings
+- Unified pin testing tool that works with all supported Arduino boards
+- Interactive board selection to easily test different hardware configurations
+- Improved user experience with better diagnostics across all supported hardware
+
 ## 6. Continuous LED Blinking During Input Detection (July 14, 2025)
 
 ### Problem Addressed
