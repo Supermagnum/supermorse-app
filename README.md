@@ -124,9 +124,6 @@ cd supermorse-app
 - **Seeeduino XIAO ESP32-C6 boards**
 - **Arduino Micro boards**
 - **Arduino Nano boards**
-
-Note: Arduino Pro mini does not have a built in USB port.
-
 - **Dual-paddle Morse key** (other types also supported)
 - **Suitable USB cable**
 - **3-conductor wire**
