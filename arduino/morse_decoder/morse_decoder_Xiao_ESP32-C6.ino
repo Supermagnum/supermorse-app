@@ -12,8 +12,7 @@
 // For this board, we're using physical pins D2,D3 and GND.
 // The Yellow LED on the Xiao PCB is connected to GPIO15.
 // This LED is wired in an active-LOW configuration (LOW turns it ON, HIGH turns it OFF).
-// On any input on the two input pins, flash this LED for 0.5 second
-// as it will work as a built in diagnostic tool.
+// On any input on the two input pins, blink this led when the input is active.
 
 // Map D2 and D3 pins to the correct GPIO numbers for Xiao ESP32-C6
 // D2 on Xiao ESP32-C6 is GPIO 2 (if it matches Arduino numbering)
