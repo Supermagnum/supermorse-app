@@ -4,6 +4,112 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, and Arduino board support in the SuperMorse application.
 
+## 6. Continuous LED Blinking During Input Detection (July 14, 2025)
+
+### Problem Addressed
+
+The Arduino firmware was only flashing the diagnostic LED briefly (for 500ms) when input was initially detected, which made it difficult to confirm when input was being actively detected over longer periods.
+
+### Changes Made
+
+#### 6.1 Implemented Continuous LED Blinking
+
+Modified the firmware to continuously blink the LED as long as any input is detected:
+
+```arduino
+// LED diagnostic variables - Old implementation
+bool ledIsOn = false;            // Tracks if the diagnostic LED is currently on
+unsigned long ledOffTime = 0;    // Time when the LED should be turned off
+const unsigned long LED_FLASH_DURATION = 500;  // LED flash duration in milliseconds (0.5 seconds)
+
+// LED diagnostic variables - New implementation
+bool ledIsOn = false;                   // Tracks if the diagnostic LED is currently on
+bool inputActive = false;               // Flag to track if any input is currently active
+unsigned long ledBlinkTime = 0;         // Next time to toggle the LED
+const unsigned long BLINK_INTERVAL = 100;  // Toggle LED every 100ms (fast blink)
+```
+
+#### 6.2 Updated Input Handling Logic
+
+Replaced the single flash mechanism with a continuous blinking system:
+
+```arduino
+// Old implementation in loop()
+// Check if it's time to turn off the diagnostic LED
+if (ledIsOn && millis() >= ledOffTime) {
+  digitalWrite(LED_BUILTIN, LOW);
+  ledIsOn = false;
+}
+
+// New implementation in loop()
+// Handle LED blinking when input is active
+if (inputActive) {
+  // Check if it's time to toggle the LED
+  if (millis() >= ledBlinkTime) {
+    // Toggle the LED
+    ledIsOn = !ledIsOn;
+    digitalWrite(LED_BUILTIN, ledIsOn ? HIGH : LOW);
+    // Set next toggle time
+    ledBlinkTime = millis() + BLINK_INTERVAL;
+  }
+} else if (ledIsOn) {
+  // If no input is active but LED is on, turn it off
+  digitalWrite(LED_BUILTIN, LOW);
+  ledIsOn = false;
+}
+```
+
+#### 6.3 Updated Input Detection Functions
+
+Changed the input detection to set and clear the `inputActive` flag:
+
+```arduino
+// Old implementation
+void flashDiagnosticLED() {
+  // Only start a new flash if the LED is currently off
+  if (!ledIsOn) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    ledIsOn = true;
+    ledOffTime = millis() + LED_FLASH_DURATION;
+  }
+}
+
+// New implementation
+void setInputActive() {
+  inputActive = true;
+}
+```
+
+Added code to clear the `inputActive` flag when input stops:
+
+```arduino
+// Key release detected
+if (!keyIsDown && keyWasDown) {
+  // ... existing code ...
+  
+  // Clear input active flag when key is released
+  inputActive = false;
+}
+```
+
+#### 6.4 ESP32-C6 Active-LOW LED Support
+
+Made appropriate adjustments for the ESP32-C6's active-LOW LED configuration:
+
+```arduino
+// Toggle the LED - note that for ESP32-C6 the LED is active-LOW
+ledIsOn = !ledIsOn;
+digitalWrite(YELLOW_LED_PIN, ledIsOn ? LOW : HIGH);
+```
+
+### Benefits
+
+- Visual confirmation of input detection throughout the entire duration of key presses
+- Enhanced feedback for users to confirm their hardware is working correctly
+- Clearer indication of when the Arduino is receiving signals
+- Consistent behavior across all supported Arduino board variants
+- The LED is properly turned off when no input is detected, preventing battery drain and confusion
+
 ## 5. Xiao ESP32-C6 Yellow LED Pin Fix (July 13, 2025)
 
 ### Problem Addressed

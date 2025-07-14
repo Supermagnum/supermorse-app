@@ -52,9 +52,10 @@ unsigned long lastDebounceTime = 0;   // The last time the key state was toggled
 bool lastKeyState = HIGH;             // Previous reading from the input pin
 
 // LED diagnostic variables
-bool ledIsOn = false;            // Tracks if the diagnostic LED is currently on
-unsigned long ledOffTime = 0;    // Time when the LED should be turned off
-const unsigned long LED_FLASH_DURATION = 500;  // LED flash duration in milliseconds (0.5 seconds)
+bool ledIsOn = false;                   // Tracks if the diagnostic LED is currently on
+bool inputActive = false;               // Flag to track if any input is currently active
+unsigned long ledBlinkTime = 0;         // Next time to toggle the LED
+const unsigned long BLINK_INTERVAL = 100;  // Toggle LED every 100ms (fast blink)
 
 // Iambic keyer state
 bool dotMemory = false;
@@ -113,24 +114,29 @@ void loop() {
     lastElementTime = 0; // Reset to prevent continuous spaces
   }
   
-  // Check if it's time to turn off the diagnostic LED
-  if (ledIsOn && millis() >= ledOffTime) {
+  // Handle LED blinking when input is active
+  if (inputActive) {
+    // Check if it's time to toggle the LED
+    if (millis() >= ledBlinkTime) {
+      // Toggle the LED - note that for ESP32-C6 the LED is active-LOW
+      ledIsOn = !ledIsOn;
+      digitalWrite(YELLOW_LED_PIN, ledIsOn ? LOW : HIGH);
+      // Set next toggle time
+      ledBlinkTime = millis() + BLINK_INTERVAL;
+    }
+  } else if (ledIsOn) {
+    // If no input is active but LED is on, turn it off
     digitalWrite(YELLOW_LED_PIN, HIGH);  // HIGH turns the LED off (active-LOW)
     ledIsOn = false;
   }
 }
 
 /**
- * Flash the built-in LED for diagnostic purposes
+ * Set the input active flag for LED blinking
  * Called when input is detected on either input pin
  */
-void flashDiagnosticLED() {
-  // Only start a new flash if the LED is currently off
-  if (!ledIsOn) {
-    digitalWrite(YELLOW_LED_PIN, LOW);  // LOW turns the LED on (active-LOW)
-    ledIsOn = true;
-    ledOffTime = millis() + LED_FLASH_DURATION;
-  }
+void setInputActive() {
+  inputActive = true;
 }
 
 /**
@@ -185,8 +191,8 @@ void handleStraightKey() {
       keyDownTime = millis();
       keyWasDown = true;
       
-      // Flash the diagnostic LED
-      flashDiagnosticLED();
+      // Set input active to trigger LED blinking
+      setInputActive();
     }
     
     // Key release detected
@@ -205,6 +211,9 @@ void handleStraightKey() {
       
       lastElementTime = keyUpTime;
       keyWasDown = false;
+      
+      // Clear input active flag when key is released
+      inputActive = false;
     }
   }
   
@@ -235,8 +244,8 @@ void handleSinglePaddle() {
       keyDownTime = millis();
       keyWasDown = true;
       
-      // Flash the diagnostic LED
-      flashDiagnosticLED();
+      // Set input active to trigger LED blinking
+      setInputActive();
     }
     
     // Key release detected
@@ -255,6 +264,9 @@ void handleSinglePaddle() {
       
       lastElementTime = keyUpTime;
       keyWasDown = false;
+      
+      // Clear input active flag when key is released
+      inputActive = false;
     }
   }
   
@@ -290,12 +302,13 @@ void handleIambicPaddleModeA() {
       squeezeReleased = true;
     }
     
-    // If either paddle is pressed now but wasn't before, flash the diagnostic LED
+    // If either paddle is pressed now but wasn't before, set input active
     if ((dotPressed || dashPressed) && !(keyWasDown)) {
-      flashDiagnosticLED();
+      setInputActive();
       keyWasDown = true;
     } else if (!dotPressed && !dashPressed) {
       keyWasDown = false;
+      inputActive = false;
     }
     
     // If we're not currently sending an element
@@ -403,12 +416,13 @@ void handleIambicPaddleModeB() {
     bool dotPressed = dotKeyState == LOW;
     bool dashPressed = dashKeyState == LOW;
     
-    // If either paddle is pressed now but wasn't before, flash the diagnostic LED
+    // If either paddle is pressed now but wasn't before, set input active
     if ((dotPressed || dashPressed) && !(keyWasDown)) {
-      flashDiagnosticLED();
+      setInputActive();
       keyWasDown = true;
     } else if (!dotPressed && !dashPressed) {
       keyWasDown = false;
+      inputActive = false;
     }
     
     // Store paddle states in memory for proper iambic behavior

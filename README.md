@@ -63,8 +63,10 @@ SuperMorse is built using Electron, which provides significant advantages for di
 
 SuperMorse leverages these capabilities to provide a seamless installation experience across all supported operating systems. When you download a distributed version of SuperMorse, everything needed to run the application is included in the package.
 
-## Installation
+## Installation (For Building From Source)
 ⛔These scripts may be potentially unsafe, they haven't been audited!⛔
+
+**Note:** These installation steps are only necessary if you want to build the application from source. If you're using the distributed version of SuperMorse, it already contains everything needed to run the application.
 
 ### Linux (Ubuntu)
 ```bash
