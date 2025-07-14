@@ -88,6 +88,12 @@ cd supermorse-app
 .\install-windows.bat
 ```
 
+### running the app in debug mode:
+To run the SuperMorse app in debug mode, use the following command:
+
+npm run dev
+
+
 ### macOS
 ```bash
 # Clone the repository
