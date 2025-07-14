@@ -11,8 +11,8 @@
 // These directly correspond to their GPIO numbers
 // For this board, we're using physical pins D2, D3 and GND.
 // LED_BUILTIN is Arduino pin 13, which is connected
-// to the built-in LED on the Micro PCB.  On any input on the two input pins,
-// flash this led for 0.5 second as it will work as a built in diagnosis tool.
+// to the built-in LED on the Micro PCB.
+// On any input on the two input pins, blink this led when the input is active.
 
 // Arduino Micro uses standard pin numbering
 const int STRAIGHT_KEY_PIN = 2;  // Connect straight key to D2 pin (GPIO 2)
