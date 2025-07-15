@@ -15,6 +15,7 @@ A comprehensive Morse code tutor and HF communication application with Arduino i
 
 SuperMorse is a modern implementation of the Koch method for learning Morse code, enhanced with features for physical key integration, visual feedback, and simulated HF communication. The application progressively unlocks features as you master Morse code elements, eventually enabling morse communication through a modified Murmur server.
 
+
 ## The Koch Method
 
 The Koch method, named after German psychologist Ludwig Koch from Technische Hochschule, Braunschweig, in 1931, uses the full target speed from the outset but begins with just two characters. Once strings containing those two characters can be copied with 90% accuracy, an additional character is added, and so on until the full character set is mastered.
@@ -38,9 +39,72 @@ SuperMorse uses simple JSON files for all data storage:
 
 All user data, progress tracking, and settings are stored in plain JSON files in the `data` directory.
 
-## Modified Mumble server.
-It is located here.
-https://github.com/Supermagnum/Supermorse-server
+## Screenshots
+
+Get a visual overview of the SuperMorse application:
+
+- [Login Screen](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/login.jpeg) - User authentication interface
+- [Progress Tracking](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/progress.jpeg) - Track your Morse code learning progress
+- [Settings Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/settings.jpeg) - Configure your learning experience
+- [Training Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/training.jpeg) - Morse code learning and practice
+- [Murmur Communication](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/murmur.jpeg) - HF communication feature
+
+## Features
+
+- Progressive Morse code learning using the Koch method (starting with K and M)
+- User authentication with username/password and email registration
+- Session tracking with 30-minute lessons and break recommendations
+- Configurable sinusoidal tone with adjustable frequency
+- Arduino integration for physical Morse key input
+- Detailed progress tracking and statistics
+- Progressive unlocking of character sets and features:
+  1. International Morse code
+  2. Prosigns
+  3. Special characters
+  4. Regional Morse code variations and Murmur HF communication with simulated band conditions.
+ 
+## Needed Hardware
+One of these:
+- **Seeeduino XIAO** – The smallest compatible Arduino board. Can fit into the morse key base.
+- **Seeeduino XIAO ESP32-C6 boards**
+- **Arduino Micro boards**
+- **Arduino Nano boards**
+- **Dual-paddle Morse key** (other types also supported)
+- **Suitable USB cable**
+- **3-conductor wire**
+- **Any computer** with USB ports, screen, and keyboard 
+
+## Arduino Pin Configuration
+
+The Arduino firmware supports multiple Morse key types. Here's how to connect your key:
+
+### Pin Assignments
+- **Pin 2** - Straight key input or Paddle dot contact
+- **Pin 3** - Paddle dash contact
+
+### Connection Instructions
+1. **For a straight key**: Connect your key to pin 2 and ground
+2. **For a paddle key**: Connect the dot paddle to pin 2, dash paddle to pin 3, and common to ground
+
+All input pins use internal pull-up resistors, so keys should connect to ground when pressed. The software can be configured to operate in different modes:
+
+- Straight key mode
+- Single paddle mode
+- Iambic paddle mode A (Curtis A)
+- Iambic paddle mode B
+
+You can switch between these modes in the application settings or by sending commands via the serial interface.
+
+# Arduino firmware:
+The SuperMorse app supports multiple Arduino boards. Choose the appropriate firmware for your board:
+
+- [Xiao ESP32-C6](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_ESP32-C6/morse_decoder_Xiao_ESP32-C6.ino) - For Seeeduino XIAO ESP32-C6 boards
+- [Xiao SAMD21](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_SAMD21.ino) - For Seeeduino XIAO SAMD21 boards, sometimes called Seeeduino XIAO.
+- [Arduino Micro](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Micro.ino) - For Arduino Micro boards
+- [Arduino Nano](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Nano.ino) - For Arduino Nano boards
+
+Each version includes built-in LED diagnostic feedback that flashes the onboard LED when input is detected.
+
 
 ## Distribution
 
@@ -63,10 +127,16 @@ SuperMorse is built using Electron, which provides significant advantages for di
 
 SuperMorse leverages these capabilities to provide a seamless installation experience across all supported operating systems. When you download a distributed version of SuperMorse, everything needed to run the application is included in the package.
 
+## Modified Mumble server.
+It is located here.
+https://github.com/Supermagnum/Supermorse-server
+
 ## Installation (For Building From Source)
+
+**Note:** These installation steps are only necessary if you want to build the application from source. If you're using the distributed version of SuperMorse, it already contains everything needed to run the application, that does not include the server.
+
 ⛔These scripts may be potentially unsafe, they haven't been audited!⛔
 
-**Note:** These installation steps are only necessary if you want to build the application from source. If you're using the distributed version of SuperMorse, it already contains everything needed to run the application.
 
 ### Linux (Ubuntu)
 ```bash
@@ -104,62 +174,6 @@ cd supermorse-app
 ./install-mac.sh
 ```
 
-## Features
-
-- Progressive Morse code learning using the Koch method (starting with K and M)
-- User authentication with username/password and email registration
-- Session tracking with 30-minute lessons and break recommendations
-- Configurable sinusoidal tone with adjustable frequency
-- Arduino integration for physical Morse key input
-- Detailed progress tracking and statistics
-- Progressive unlocking of character sets and features:
-  1. International Morse code
-  2. Prosigns
-  3. Special characters
-  4. Regional Morse code variations and Murmur HF communication with simulated band conditions.
- 
-## Needed Hardware
-
-- **Seeeduino XIAO** – The smallest compatible Arduino board. Can fit into the morse key base.
-- **Seeeduino XIAO ESP32-C6 boards**
-- **Arduino Micro boards**
-- **Arduino Nano boards**
-- **Dual-paddle Morse key** (other types also supported)
-- **Suitable USB cable**
-- **3-conductor wire**
-- **Any computer** with USB ports, screen, and keyboard
-
-## Arduino Pin Configuration
-
-The Arduino firmware supports multiple Morse key types. Here's how to connect your key:
-
-### Pin Assignments
-- **Pin 2** - Straight key input or Paddle dot contact
-- **Pin 3** - Paddle dash contact
-
-### Connection Instructions
-1. **For a straight key**: Connect your key to pin 2 and ground
-2. **For a paddle key**: Connect the dot paddle to pin 2, dash paddle to pin 3, and common to ground
-
-All input pins use internal pull-up resistors, so keys should connect to ground when pressed. The software can be configured to operate in different modes:
-
-- Straight key mode
-- Single paddle mode
-- Iambic paddle mode A (Curtis A)
-- Iambic paddle mode B
-
-You can switch between these modes in the application settings or by sending commands via the serial interface.
-
-# Arduino firmware:
-The SuperMorse app supports multiple Arduino boards. Choose the appropriate firmware for your board:
-
-- [Xiao ESP32-C6](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_ESP32-C6/morse_decoder_Xiao_ESP32-C6.ino) - For Seeeduino XIAO ESP32-C6 boards
-- [Xiao SAMD21](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_SAMD21.ino) - For Seeeduino XIAO SAMD21 boards, sometimes called Seeeduino XIAO.
-- [Arduino Micro](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Micro.ino) - For Arduino Micro boards
-- [Arduino Nano](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Nano.ino) - For Arduino Nano boards
-
-Each version includes built-in LED diagnostic feedback that flashes the onboard LED when input is detected.
-
 Arduino pinouts and board sizes
 https://github.com/Supermagnum/supermorse-app/tree/main/Arduino_variants_pinouts
 
@@ -178,24 +192,6 @@ You will need these two files:
 **Note:** The default port in test-paddle-pins.js is `ttyACM0`. 
 You might need to adjust the `const portpath` value if your Arduino connects on a different port.
 
-## Screenshots
-
-Get a visual overview of the SuperMorse application:
-
-- [Login Screen](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/login.jpeg) - User authentication interface
-- [Progress Tracking](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/progress.jpeg) - Track your Morse code learning progress
-- [Settings Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/settings.jpeg) - Configure your learning experience
-- [Training Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/training.jpeg) - Morse code learning and practice
-- [Murmur Communication](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/murmur.jpeg) - HF communication feature
-
-## Learning Progression
-
-1. Start with K and M characters at full target speed (13 WPM default)
-2. Achieve 90% accuracy to unlock new characters
-3. 30-minute sessions with break recommendations for optimal learning
-4. Progress to full international Morse code, prosigns, and special characters
-5. Unlock regional character sets after mastering the standard sets
-6. Finally unlock Murmur HF communication features for simulated radio communication
 
 ## Testing User Creation Functionality
 
