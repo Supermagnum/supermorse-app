@@ -1,6 +1,6 @@
 /**
  * pin_tester.ino
- * A diagnostic tool for Arduino boards to detect which pins 
+ * A diagnostic tool for Arduino boards to detect which pins
  * are receiving signals from a morse paddle
  * 
  * This helps determine the correct GPIO pins to use in the morse_decoder.ino sketch
@@ -25,8 +25,8 @@ BoardType currentBoard = ESP32_C6;
 #define NUM_PINS_NANO 11
 
 // Define the GPIO pins to test for ESP32-C6
-// Pins are mapped: D0-D10 = GPIO 0, 1, 2, 21, 22, 23, 16, 18, 20, 19, 17
-int pinsToTestESP32C6[NUM_PINS_ESP32C6] = {0, 1, 2, 21, 22, 23, 16, 18, 20, 19, 17};
+// Pins are mapped: D0-D10 = GPIO 8, 9, 10, 11, 12, 13, 14, 6, 5, 4, 7
+int pinsToTestESP32C6[NUM_PINS_ESP32C6] = {8, 9, 10, 11, 12, 13, 14, 6, 5, 4, 7};
 
 // Define the GPIO pins to test for SAMD21
 // For SAMD21, pins D0-D10 map directly to digital pins 0-10
@@ -148,17 +148,17 @@ void setup() {
   Serial.println("=== ESP32-C6 Pin Mapping ===");
   Serial.println("GPIO Pin | Label | Function");
   Serial.println("-------------------------");
-  Serial.println("GPIO 0   | D0    | BOOT (might not work reliably)");
-  Serial.println("GPIO 1   | D1    | TX");
-  Serial.println("GPIO 2   | D2    | ");
-  Serial.println("GPIO 21  | D3    | ");
-  Serial.println("GPIO 22  | D4    | ");
-  Serial.println("GPIO 23  | D5    | ");
-  Serial.println("GPIO 16  | D6    | ");
-  Serial.println("GPIO 18  | D7    | ");
-  Serial.println("GPIO 20  | D8    | ");
-  Serial.println("GPIO 19  | D9    | ");
-  Serial.println("GPIO 17  | D10   | ");
+  Serial.println("GPIO 8   | D0    | ");
+  Serial.println("GPIO 9   | D1    | ");
+  Serial.println("GPIO 10  | D2    | ");
+  Serial.println("GPIO 11  | D3    | ");
+  Serial.println("GPIO 12  | D4    | ");
+  Serial.println("GPIO 13  | D5    | ");
+  Serial.println("GPIO 14  | D6    | ");
+  Serial.println("GPIO 6   | D7    | ");
+  Serial.println("GPIO 5   | D8    | ");
+  Serial.println("GPIO 4   | D9    | ");
+  Serial.println("GPIO 7   | D10   | ");
   
   Serial.println("\n=== SAMD21 Pin Mapping ===");
   Serial.println("GPIO Pin | Label | Function");
