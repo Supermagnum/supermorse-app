@@ -2,12 +2,6 @@
 
 # ⛔Under testing and debugging⛔
 
-For a detailed changelog of all project modifications, see [changes.md](https://github.com/Supermagnum/supermorse-app/blob/main/changes.md).
-
-Any help is appreciated.
-
-Please read bug report:
-https://github.com/Supermagnum/supermorse-app/blob/main/debug.md
 
 A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
 
@@ -135,7 +129,15 @@ https://github.com/Supermagnum/Supermorse-server
 
 **Note:** These installation steps are only necessary if you want to build the application from source. If you're using the distributed version of SuperMorse, it already contains everything needed to run the application, that does not include the server.
 
-⛔These scripts may be potentially unsafe, they haven't been audited!⛔
+For a detailed changelog of all project modifications, see [changes.md](https://github.com/Supermagnum/supermorse-app/blob/main/changes.md).
+
+Any help is appreciated.
+
+Please read bug report:
+https://github.com/Supermagnum/supermorse-app/blob/main/debug.md
+
+
+⛔These scripts may be potentially unsafe, they haven't been fully  audited!⛔
 
 
 ### Linux (Ubuntu)
