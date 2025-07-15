@@ -4,6 +4,80 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, and Arduino board support in the SuperMorse application.
 
+## 9. Xiao ESP32-C6 GPIO Pin Mapping Correction (July 15, 2025)
+
+### Problem Addressed
+
+The GPIO pin mappings for the Xiao ESP32-C6 board were incorrectly configured in both the pin_tester.ino and morse_decoder_Xiao_ESP32-C6.ino files. This caused the Arduino to not respond correctly to paddle inputs because it was monitoring the wrong GPIO pins.
+
+### Changes Made
+
+#### 9.1 Updated pin_tester.ino GPIO Mappings
+
+Corrected the GPIO pin mappings for the Xiao ESP32-C6 board:
+
+```arduino
+// Old implementation
+// Pins are mapped: D0-D10 = GPIO 0, 1, 2, 21, 22, 23, 16, 18, 20, 19, 17
+int pinsToTestESP32C6[NUM_PINS_ESP32C6] = {0, 1, 2, 21, 22, 23, 16, 18, 20, 19, 17};
+
+// New implementation
+// Pins are mapped: D0-D10 = GPIO 8, 9, 10, 11, 12, 13, 14, 6, 5, 4, 7
+int pinsToTestESP32C6[NUM_PINS_ESP32C6] = {8, 9, 10, 11, 12, 13, 14, 6, 5, 4, 7};
+```
+
+Also updated the pin mapping documentation in the serial output:
+
+```arduino
+// Old implementation
+Serial.println("GPIO 0   | D0    | BOOT (might not work reliably)");
+Serial.println("GPIO 1   | D1    | TX");
+Serial.println("GPIO 2   | D2    | ");
+Serial.println("GPIO 21  | D3    | ");
+// etc.
+
+// New implementation
+Serial.println("GPIO 8   | D0    | ");
+Serial.println("GPIO 9   | D1    | ");
+Serial.println("GPIO 10  | D2    | ");
+Serial.println("GPIO 11  | D3    | ");
+// etc.
+```
+
+#### 9.2 Updated morse_decoder_Xiao_ESP32-C6.ino GPIO Mappings
+
+Changed the paddle input pin assignments to match the correct GPIO mappings:
+
+```arduino
+// Old implementation
+// D2 on Xiao ESP32-C6 is GPIO 2
+// D3 on Xiao ESP32-C6 is GPIO 21
+const int STRAIGHT_KEY_PIN = 2;  // Connect straight key to D2 pin (GPIO 2)
+const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (GPIO 2)
+const int PADDLE_DASH_PIN = 21;  // Connect paddle dash contact to D3 pin (GPIO 21)
+
+// New implementation
+// D2 on Xiao ESP32-C6 is GPIO 10
+// D3 on Xiao ESP32-C6 is GPIO 11
+const int STRAIGHT_KEY_PIN = 10;  // Connect straight key to D2 pin (GPIO 10)
+const int PADDLE_DOT_PIN = 10;    // Connect paddle dot contact to D2 pin (GPIO 10)
+const int PADDLE_DASH_PIN = 11;   // Connect paddle dash contact to D3 pin (GPIO 11)
+```
+
+Also added comprehensive pin mapping documentation in the comments:
+
+```arduino
+// Pins are mapped: D0-D10 = GPIO 8, 9, 10, 11, 12, 13, 14, 6, 5, 4, 7
+```
+
+### Benefits
+
+- Fixed the non-responsive paddle inputs on the Xiao ESP32-C6 board
+- Correct GPIO pin mappings ensure proper detection of paddle signals
+- Improved pin mapping documentation for future reference
+- Consistent pin mappings across all related files
+- Paddle signal detection now works correctly with the updated pin assignments
+
 ## 7. Multi-Board Pin Testing and Mapping Corrections (July 14, 2025)
 
 ### Problem Addressed

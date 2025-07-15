@@ -15,12 +15,12 @@
 // On any input on the two input pins, blink this led when the input is active.
 
 // Map D2 and D3 pins to the correct GPIO numbers for Xiao ESP32-C6
-// D2 on Xiao ESP32-C6 is GPIO 2
-// D3 on Xiao ESP32-C6 is GPIO 21
-// If this doesn't work, you may need to check the specific GPIO mapping for your board
-const int STRAIGHT_KEY_PIN = 2;  // Connect straight key to D2 pin (GPIO 2)
-const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (GPIO 2)
-const int PADDLE_DASH_PIN = 21;  // Connect paddle dash contact to D3 pin (GPIO 21)
+// D2 on Xiao ESP32-C6 is GPIO 10
+// D3 on Xiao ESP32-C6 is GPIO 11
+// Pins are mapped: D0-D10 = GPIO 8, 9, 10, 11, 12, 13, 14, 6, 5, 4, 7
+const int STRAIGHT_KEY_PIN = 10;  // Connect straight key to D2 pin (GPIO 10)
+const int PADDLE_DOT_PIN = 10;    // Connect paddle dot contact to D2 pin (GPIO 10)
+const int PADDLE_DASH_PIN = 11;   // Connect paddle dash contact to D3 pin (GPIO 11)
 const int YELLOW_LED_PIN = 15;   // GPIO15 for the yellow LED on Xiao ESP32-C6
 
 // Key mode definitions
@@ -54,7 +54,7 @@ bool lastKeyState = HIGH;             // Previous reading from the input pin
 bool ledIsOn = false;                   // Tracks if the diagnostic LED is currently on
 bool inputActive = false;               // Flag to track if any input is currently active
 unsigned long ledBlinkTime = 0;         // Next time to toggle the LED
-const unsigned long BLINK_INTERVAL = 500 ;  // Toggle LED every 100ms (fast blink)
+const unsigned long BLINK_INTERVAL = 100 ;  // Toggle LED every 100ms (fast blink)
 
 // Iambic keyer state
 bool dotMemory = false;
