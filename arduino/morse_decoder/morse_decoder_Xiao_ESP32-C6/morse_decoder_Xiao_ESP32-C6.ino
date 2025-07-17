@@ -42,7 +42,7 @@ const unsigned long DIT_THRESHOLD = 150;      // Maximum duration for a dit
 const unsigned long DAH_THRESHOLD = 450;      // Maximum duration for a dah
 const unsigned long ELEMENT_THRESHOLD = 200;  // Maximum time between elements within a character
 const unsigned long WORD_THRESHOLD = 1400;    // Maximum time between words
-const unsigned long DEBOUNCE_DELAY = 20;      // Debounce time in milliseconds to prevent contact bounce
+const unsigned long DEBOUNCE_DELAY = 150;     // Debounce time in milliseconds to prevent contact bounce
 
 // State variables
 unsigned long keyDownTime = 0;
@@ -51,6 +51,8 @@ unsigned long lastElementTime = 0;
 bool keyWasDown = false;
 char lastSentElement = '\0';  // Tracks the last element sent (either '.' or '-')
 unsigned long lastDebounceTime = 0;   // The last time the key state was toggled
+unsigned long lastSignalTime = 0;     // The last time a signal was sent
+const unsigned long SIGNAL_REPEAT_DELAY = 300; // Minimum time between signals (ms)
 bool lastKeyState = HIGH;             // Previous reading from the input pin
 
 // LED diagnostic variables
@@ -148,10 +150,11 @@ void loop() {
   bool dotPinPressed = digitalRead(PADDLE_DOT_PIN) == LOW;
   bool dashPinPressed = digitalRead(PADDLE_DASH_PIN) == LOW;
   
-  // Immediate LED pulse for each new input
-  if (dotPinPressed || dashPinPressed) {
+  // Immediate LED pulse for each new input, if enough time has passed since last signal
+  if ((dotPinPressed || dashPinPressed) && (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
     // Start a new LED pulse for this input
     startLedPulse();
+    lastSignalTime = millis(); // Update last signal time
     
     // Send Morse signals immediately - completely separated from debug
     if (dotPinPressed) {
@@ -470,8 +473,9 @@ void handleIambicPaddleModeA() {
   // Save the dot state for next comparison (we'll just use this one for debounce)
   lastKeyState = dotKeyState;
   
-  // Only process if states are stable
-  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
+  // Only process if states are stable and enough time has passed since last signal
+  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
+      (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
     bool dotPressed = dotKeyState == LOW;
     bool dashPressed = dashKeyState == LOW;
     
@@ -484,6 +488,7 @@ void handleIambicPaddleModeA() {
   if ((dotPressed || dashPressed) && !(keyWasDown)) {
     startLedPulse();
     keyWasDown = true;
+    lastSignalTime = millis(); // Update last signal time
     
     // First send Morse output - completely separated
     if (dotPressed) {
@@ -628,8 +633,9 @@ void handleIambicPaddleModeB() {
   // Save the dot state for next comparison (we'll just use this one for debounce)
   lastKeyState = dotKeyState;
   
-  // Only process if states are stable
-  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
+  // Only process if states are stable and enough time has passed since last signal
+  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
+      (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
     bool dotPressed = dotKeyState == LOW;
     bool dashPressed = dashKeyState == LOW;
     
@@ -637,7 +643,8 @@ void handleIambicPaddleModeB() {
     if ((dotPressed || dashPressed) && !(keyWasDown)) {
       startLedPulse();
       keyWasDown = true;
-    } 
+      lastSignalTime = millis(); // Update last signal time
+    }
     // If both paddles are released, check if we should turn off LED
     else if (!dotPressed && !dashPressed && keyWasDown) {
       keyWasDown = false;
