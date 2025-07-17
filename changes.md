@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document details the implementation changes made to improve authentication security, HF propagation data retrieval, and Arduino board support in the SuperMorse application.
+This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
 ## 10. Removed Pin Tester and Fixed Xiao ESP32-C6 Decoder (July 17, 2025)
 
