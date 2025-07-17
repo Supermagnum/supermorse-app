@@ -39,11 +39,13 @@ const unsigned long DAH_THRESHOLD = 450;      // Maximum duration for a dah
 const unsigned long ELEMENT_THRESHOLD = 200;  // Maximum time between elements within a character
 const unsigned long WORD_THRESHOLD = 1400;    // Maximum time between words
 const unsigned long DEBOUNCE_DELAY = 20;      // Debounce time in milliseconds to prevent contact bounce
+const unsigned long SIGNAL_REPEAT_DELAY = 300; // Minimum time between signals to prevent multiple signals from a single press
 
 // State variables
 unsigned long keyDownTime = 0;
 unsigned long keyUpTime = 0;
 unsigned long lastElementTime = 0;
+unsigned long lastSignalTime = 0;     // Tracks when the last signal was sent
 bool keyWasDown = false;
 char lastSentElement = '\0';  // Tracks the last element sent (either '.' or '-')
 unsigned long lastDebounceTime = 0;   // The last time the key state was toggled
@@ -180,7 +182,9 @@ void handleStraightKey() {
   }
   
   // Only act on the state change if it's been stable for longer than the debounce delay
-  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
+  // and enough time has passed since the last signal
+  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
+      (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
     // If the key state has changed and is stable
     bool keyIsDown = currentKeyState == LOW;
     
@@ -202,9 +206,11 @@ void handleStraightKey() {
       if (pressDuration <= DIT_THRESHOLD) {
         Serial.print(".");
         lastSentElement = '.';
+        lastSignalTime = millis(); // Record when this signal was sent
       } else if (pressDuration <= DAH_THRESHOLD) {
         Serial.print("-");
         lastSentElement = '-';
+        lastSignalTime = millis(); // Record when this signal was sent
       }
       
       lastElementTime = keyUpTime;
@@ -233,7 +239,9 @@ void handleSinglePaddle() {
   }
   
   // Only act on the state change if it's been stable for longer than the debounce delay
-  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
+  // and enough time has passed since the last signal
+  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
+      (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
     // If the key state has changed and is stable
     bool dotIsDown = currentKeyState == LOW;
     
@@ -255,9 +263,11 @@ void handleSinglePaddle() {
       if (pressDuration <= DIT_THRESHOLD) {
         Serial.print(".");
         lastSentElement = '.';
+        lastSignalTime = millis(); // Record when this signal was sent
       } else if (pressDuration <= DAH_THRESHOLD) {
         Serial.print("-");
         lastSentElement = '-';
+        lastSignalTime = millis(); // Record when this signal was sent
       }
       
       lastElementTime = keyUpTime;
@@ -290,8 +300,9 @@ void handleIambicPaddleModeA() {
   // Save the dot state for next comparison (we'll just use this one for debounce)
   lastKeyState = dotKeyState;
   
-  // Only process if states are stable
-  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
+  // Only process if states are stable and enough time has passed since the last signal
+  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
+      (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
     bool dotPressed = dotKeyState == LOW;
     bool dashPressed = dashKeyState == LOW;
     
@@ -317,6 +328,7 @@ void handleIambicPaddleModeA() {
         Serial.print(".");
         currentIambicElement = '.';
         lastSentElement = '.';  // Record the element we just sent
+        lastSignalTime = millis(); // Record when this signal was sent
         iambicTimer = millis() + DIT_THRESHOLD;  // Set timer for dot duration
         elementComplete = false;
         dotMemory = false;  // Clear dot memory
@@ -325,6 +337,7 @@ void handleIambicPaddleModeA() {
         Serial.print("-");
         currentIambicElement = '-';
         lastSentElement = '-';  // Record the element we just sent
+        lastSignalTime = millis(); // Record when this signal was sent
         iambicTimer = millis() + DAH_THRESHOLD;  // Set timer for dash duration
         elementComplete = false;
         dashMemory = false;  // Clear dash memory
@@ -333,6 +346,7 @@ void handleIambicPaddleModeA() {
         Serial.print(".");
         currentIambicElement = '.';
         lastSentElement = '.';  // Record the element we just sent
+        lastSignalTime = millis(); // Record when this signal was sent
         iambicTimer = millis() + DIT_THRESHOLD;  // Set timer for dot duration
         elementComplete = false;
       } else if (dashPressed) {
@@ -340,6 +354,7 @@ void handleIambicPaddleModeA() {
         Serial.print("-");
         currentIambicElement = '-';
         lastSentElement = '-';  // Record the element we just sent
+        lastSignalTime = millis(); // Record when this signal was sent
         iambicTimer = millis() + DAH_THRESHOLD;  // Set timer for dash duration
         elementComplete = false;
       }
@@ -409,8 +424,9 @@ void handleIambicPaddleModeB() {
   // Save the dot state for next comparison (we'll just use this one for debounce)
   lastKeyState = dotKeyState;
   
-  // Only process if states are stable
-  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
+  // Only process if states are stable and enough time has passed since the last signal
+  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
+      (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
     bool dotPressed = dotKeyState == LOW;
     bool dashPressed = dashKeyState == LOW;
     
@@ -435,6 +451,7 @@ void handleIambicPaddleModeB() {
         Serial.print(".");
         currentIambicElement = '.';
         lastSentElement = '.';  // Record the element we just sent
+        lastSignalTime = millis(); // Record when this signal was sent
         iambicTimer = millis() + DIT_THRESHOLD;  // Set timer for dot duration
         dotMemory = false;  // Clear dot memory
       } else if (dashMemory) {
@@ -442,6 +459,7 @@ void handleIambicPaddleModeB() {
         Serial.print("-");
         currentIambicElement = '-';
         lastSentElement = '-';  // Record the element we just sent
+        lastSignalTime = millis(); // Record when this signal was sent
         iambicTimer = millis() + DAH_THRESHOLD;  // Set timer for dash duration
         dashMemory = false;  // Clear dash memory
       }

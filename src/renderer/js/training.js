@@ -31,7 +31,7 @@ export class MorseTrainer {
         
         // Speed settings
         this.wpm = 13; // Words per minute
-        this.farnsworthWpm = 8; // Character spacing WPM
+        this.farnsworthWpm = 13; // Character spacing WPM for speeds <= 18 WPM
         
         // Progress tracking
         this.learnedCharacters = [];
@@ -1027,7 +1027,7 @@ export class MorseTrainer {
         if (wpm > 18) {
             this.farnsworthWpm = wpm;
         } else {
-            this.farnsworthWpm = Math.min(wpm, 10);
+            this.farnsworthWpm = Math.min(wpm, 13); // Minimum 13 WPM
         }
     }
 }

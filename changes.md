@@ -4,6 +4,291 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, and Arduino board support in the SuperMorse application.
 
+## 12. Added Volume Control to Settings (July 17, 2025)
+
+### Problem Addressed
+
+The application lacked a way for users to adjust the audio volume of the Morse code sounds, requiring them to use system volume controls instead. This made it difficult to balance the Morse code volume with other applications or to quickly adjust volume during practice sessions.
+
+### Changes Made
+
+#### 12.1 Added Volume Control to SettingsManager
+
+Added volume property to the SettingsManager class to store and retrieve the user's preferred volume setting:
+
+```javascript
+// Old implementation
+constructor() {
+  this.settings = {
+    toneFrequency: 600,
+    morseSpeed: 13
+  };
+}
+
+// New implementation
+constructor() {
+  this.settings = {
+    toneFrequency: 600,
+    morseSpeed: 13,
+    volume: -10 // Default volume in decibels (-40 to 0)
+  };
+}
+```
+
+Added volume to the settings load, save, and apply methods:
+
+```javascript
+applySettings() {
+  // Apply settings to the application
+  if (window.morseTrainer) {
+    window.morseTrainer.setToneFrequency(this.settings.toneFrequency);
+    window.morseTrainer.setSpeed(this.settings.morseSpeed);
+    
+    // Apply volume setting to the morse audio
+    if (window.morseTrainer.morseAudio) {
+      window.morseTrainer.morseAudio.setVolume(this.settings.volume);
+    }
+  }
+}
+```
+
+#### 12.2 Added Volume Slider to Settings UI
+
+Added a volume slider to the Morse Audio Settings section in index.html:
+
+```html
+<div class="settings-row">
+  <label for="settingsVolume">Volume</label>
+  <div class="slider-container">
+    <input type="range" id="settingsVolume" min="0" max="100" step="1" value="75">
+    <span id="settingsVolumeValue">75%</span>
+  </div>
+</div>
+```
+
+#### 12.3 Added Volume Control Event Handling
+
+Implemented event handlers in app.js to update the volume in real-time and save the setting:
+
+```javascript
+// Add event listener for volume slider
+document.getElementById('settingsVolume').addEventListener('input', function(e) {
+  const volumePercent = parseInt(e.target.value);
+  document.getElementById('settingsVolumeValue').textContent = volumePercent + '%';
+  
+  // Convert percentage (0-100) to decibels (-40 to 0)
+  // -40dB is near silence, 0dB is maximum volume
+  const volumeDb = -40 + (volumePercent * 0.4);
+  
+  // Update audio in real-time
+  if (window.morseTrainer && window.morseTrainer.morseAudio) {
+    window.morseTrainer.morseAudio.setVolume(volumeDb);
+  }
+});
+
+// Add volume to settings save
+document.getElementById('saveSettingsBtn').addEventListener('click', function() {
+  // Get values from form
+  const toneFrequency = parseInt(document.getElementById('settingsToneFrequency').value);
+  const morseSpeed = parseInt(document.getElementById('settingsMorseSpeed').value);
+  const volumePercent = parseInt(document.getElementById('settingsVolume').value);
+  
+  // Convert percentage to decibels
+  const volumeDb = -40 + (volumePercent * 0.4);
+  
+  // Save settings
+  window.settingsManager.saveSettings({
+    toneFrequency: toneFrequency,
+    morseSpeed: morseSpeed,
+    volume: volumeDb
+  });
+  
+  // Display confirmation
+  document.getElementById('settingsSavedMsg').style.display = 'block';
+  setTimeout(() => {
+    document.getElementById('settingsSavedMsg').style.display = 'none';
+  }, 2000);
+});
+```
+
+### Benefits
+
+- Users can adjust the volume of Morse code sounds directly within the application
+- Volume setting is persisted between sessions
+- Real-time volume adjustment provides immediate feedback
+- Volume can be balanced independently of system volume
+- Improved user experience, especially during extended practice sessions
+
+## 10. Improved Debounce and Signal Handling for Arduino Firmware (July 17, 2025)
+
+### Problems Addressed
+
+The Arduino firmware for Morse decoding had two significant issues:
+1. The pin tester code was causing Arduino boards to drop their connection
+2. When a paddle was clicked once, it would register multiple signals (especially dashes), likely due to inadequate debounce handling
+
+### Changes Made
+
+#### 10.1 Removed Problematic Pin Tester
+
+Removed pin tester as it was causing connection issues:
+- Removed references to pin_tester.ino
+- Removed references to test-paddle-pins.js
+- Updated documentation to remove mentions of the pin tester
+
+#### 10.2 Added Signal Repeat Delay to Prevent Multiple Signals
+
+Added a delay mechanism to prevent a single paddle press from generating multiple signals across all Arduino board variants:
+
+```arduino
+// Added to all Arduino variants (ESP32-C6, SAMD21, Micro, Nano)
+// Timing constants
+const unsigned long DEBOUNCE_DELAY = 20;      // Debounce time to prevent contact bounce
+const unsigned long SIGNAL_REPEAT_DELAY = 300; // Minimum time between signals to prevent multiple signals from a single press
+
+// State variables
+unsigned long lastSignalTime = 0;     // Tracks when the last signal was sent
+```
+
+Modified all paddle handler methods to check this signal repeat delay:
+
+```arduino
+// Old implementation
+if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
+  // Process paddle signal
+}
+
+// New implementation
+if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
+    (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
+  // Process paddle signal
+}
+```
+
+Updated signal sending code to track when signals are sent:
+
+```arduino
+// When sending a dot
+Serial.print(".");
+lastSentElement = '.';
+lastSignalTime = millis(); // Record when this signal was sent
+
+// When sending a dash
+Serial.print("-");
+lastSentElement = '-';
+lastSignalTime = millis(); // Record when this signal was sent
+```
+
+#### 10.3 Fixed ESP32-C6 Missing Functions
+
+Added the missing `setInputActive()` and `setInputInactive()` functions that were causing compilation errors:
+
+```arduino
+/**
+ * Set input as active - turns on LED and sets inputActive flag
+ */
+void setInputActive() {
+  startLedPulse();  // This function already turns on LED and sets inputActive to true
+}
+
+/**
+ * Set input as inactive - turns off LED and clears inputActive flag
+ */
+void setInputInactive() {
+  digitalWrite(YELLOW_LED_PIN, HIGH);  // HIGH turns the LED off (active-LOW)
+  ledIsOn = false;
+  inputActive = false;
+}
+```
+
+### Benefits
+
+- Dramatically improved reliability by preventing multiple signals from a single paddle press
+- Consistent behavior across all Arduino board variants (ESP32-C6, SAMD21, Micro, Nano)
+- Better user experience with more accurate Morse code detection
+- More predictable paddle response, especially important for high-speed operation
+- Fixed compilation errors that were preventing the decoder from working properly
+
+## 11. Enforced Minimum Morse Speed of 13 WPM (July 17, 2025)
+
+### Problem Addressed
+
+The application was allowing users to set the Morse code speed as low as 5 WPM, which is below the standard minimum speed needed for effective training and real-world operation. Learning at speeds that are too slow can create habits that are difficult to overcome when transitioning to standard speeds used in actual communications.
+
+### Changes Made
+
+#### 11.1 Updated HTML Speed Sliders
+
+Modified both speed sliders in the HTML to enforce a minimum value of 13 WPM:
+
+```html
+<!-- Old implementation in training section -->
+<input type="range" id="morseSpeed" min="5" max="30" step="1" value="13">
+
+<!-- New implementation in training section -->
+<input type="range" id="morseSpeed" min="13" max="30" step="1" value="13">
+
+<!-- Old implementation in settings section -->
+<input type="range" id="settingsMorseSpeed" min="5" max="30" step="1" value="13">
+
+<!-- New implementation in settings section -->
+<input type="range" id="settingsMorseSpeed" min="13" max="30" step="1" value="13">
+```
+
+#### 11.2 Updated Initial Farnsworth Speed in MorseTrainer
+
+Modified the initial Farnsworth WPM value in the MorseTrainer class constructor:
+
+```javascript
+// Old implementation
+// Speed settings
+this.wpm = 13; // Words per minute
+this.farnsworthWpm = 8; // Character spacing WPM
+
+// New implementation
+// Speed settings
+this.wpm = 13; // Words per minute
+this.farnsworthWpm = 13; // Character spacing WPM for speeds <= 18 WPM
+```
+
+#### 11.3 Modified setSpeed Method to Enforce Minimum Speed
+
+Updated the setSpeed method in the MorseTrainer class to ensure the Farnsworth speed never goes below 13 WPM:
+
+```javascript
+// Old implementation
+setSpeed(wpm) {
+    this.wpm = wpm;
+    
+    // Adjust Farnsworth speed if needed
+    if (wpm > 18) {
+        this.farnsworthWpm = wpm;
+    } else {
+        this.farnsworthWpm = Math.min(wpm, 10);
+    }
+}
+
+// New implementation
+setSpeed(wpm) {
+    this.wpm = wpm;
+    
+    // Adjust Farnsworth speed if needed
+    if (wpm > 18) {
+        this.farnsworthWpm = wpm;
+    } else {
+        this.farnsworthWpm = Math.min(wpm, 13); // Minimum 13 WPM
+    }
+}
+```
+
+### Benefits
+
+- Ensures that all Morse code practice and training occurs at speeds that are effective for learning and real-world application
+- Prevents users from developing habits at ineffectively slow speeds that are difficult to overcome later
+- Creates a consistent experience that matches standard Morse code speeds used in amateur radio and other communications
+- Helps users develop proper timing and rhythm necessary for effective Morse code communication
+- Maintains consistency between the UI controls and the underlying code implementation
+
 ## 10. Removed Pin Tester and Fixed Xiao ESP32-C6 Decoder (July 17, 2025)
 
 ### Problems Addressed

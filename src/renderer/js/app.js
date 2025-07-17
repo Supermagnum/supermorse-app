@@ -171,6 +171,14 @@ class SuperMorseApp {
             this.trainer.setSpeed(speed);
         });
         
+        // Volume adjustment in training section
+        document.getElementById('settingsVolume')?.addEventListener('input', (e) => {
+            const volumePercent = parseInt(e.target.value);
+            // Convert percentage (0-100) to dB (-40 to 0)
+            const volumeDb = -40 + (volumePercent / 100 * 40);
+            this.morseAudio.setVolume(volumeDb);
+        });
+        
         // Test tone button
         document.getElementById('playToneBtn').addEventListener('click', () => {
             const frequency = parseInt(document.getElementById('toneFrequency').value);
@@ -181,15 +189,20 @@ class SuperMorseApp {
         document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
             const toneFrequency = parseInt(document.getElementById('settingsToneFrequency').value);
             const morseSpeed = parseInt(document.getElementById('settingsMorseSpeed').value);
+            const volumePercent = parseInt(document.getElementById('settingsVolume').value);
             const arduinoPort = document.getElementById('arduinoPortSelect').value;
             const keyMode = document.getElementById('keyModeSelect').value;
             const theme = document.getElementById('themeSelect').value;
             const maidenheadLocator = document.getElementById('maidenheadLocator').value;
             const preferredBand = document.getElementById('preferredBand').value;
             
+            // Convert volume percentage to dB
+            const volume = -40 + (volumePercent / 100 * 40);
+            
             await this.settings.saveSettings({
                 toneFrequency,
                 morseSpeed,
+                volume,
                 arduinoPort,
                 keyMode,
                 theme,
@@ -389,6 +402,14 @@ class SuperMorseApp {
         document.getElementById('murmurSettingsUnlocked').classList.remove('hidden');
         document.getElementById('murmurLocked').classList.add('hidden');
         document.getElementById('murmurUnlocked').classList.remove('hidden');
+        
+        // Set up Murmur volume control
+        document.getElementById('volumeControl')?.addEventListener('input', (e) => {
+            const volumePercent = parseInt(e.target.value);
+            // Convert percentage (0-100) to dB (-40 to 0)
+            const volumeDb = -40 + (volumePercent / 100 * 40);
+            this.morseAudio.setVolume(volumeDb);
+        });
         
         // Initialize Murmur interface
         this.murmur.initialize();

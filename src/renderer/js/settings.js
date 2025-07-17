@@ -13,6 +13,7 @@ export class SettingsManager {
         this.settings = {
             toneFrequency: 600,
             morseSpeed: 13,
+            volume: -10, // Default volume in dB
             arduinoPort: '',
             keyMode: 'S', // S = Straight key, P = Paddle, A = Iambic A, B = Iambic B
             theme: 'light',
@@ -74,9 +75,10 @@ export class SettingsManager {
         // Apply theme
         this.setTheme(this.settings.theme);
         
-        // Apply tone frequency
+        // Apply tone frequency and volume
         if (this.app.morseAudio) {
             this.app.morseAudio.setFrequency(this.settings.toneFrequency);
+            this.app.morseAudio.setVolume(this.settings.volume);
         }
         
         // Apply morse speed
@@ -87,6 +89,14 @@ export class SettingsManager {
         // Update UI elements with current settings
         document.getElementById('toneFrequency').value = this.settings.toneFrequency;
         document.getElementById('frequencyValue').textContent = this.settings.toneFrequency;
+        
+        // Update volume slider if it exists
+        const volumeSlider = document.getElementById('settingsVolume');
+        if (volumeSlider) {
+            // Convert dB value to percentage for slider (from -40dB to 0dB)
+            const volumePercent = Math.round(((this.settings.volume + 40) / 40) * 100);
+            volumeSlider.value = volumePercent;
+        }
         
         document.getElementById('morseSpeed').value = this.settings.morseSpeed;
         document.getElementById('speedValue').textContent = this.settings.morseSpeed;
@@ -106,6 +116,7 @@ export class SettingsManager {
         // Set form values from current settings
         document.getElementById('settingsToneFrequency').value = this.settings.toneFrequency;
         document.getElementById('settingsMorseSpeed').value = this.settings.morseSpeed;
+        document.getElementById('settingsVolume').value = Math.round(((this.settings.volume + 40) / 40) * 100); // Convert dB to percentage
         document.getElementById('keyModeSelect').value = this.settings.keyMode;
         document.getElementById('themeSelect').value = this.settings.theme;
         
