@@ -4,6 +4,56 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, and Arduino board support in the SuperMorse application.
 
+## 10. Removed Pin Tester and Fixed Xiao ESP32-C6 Decoder (July 17, 2025)
+
+### Problem Addressed
+
+The pin tester code was causing Arduino boards to drop their connection, likely due to code freezing during execution. Additionally, the morse decoder for Xiao ESP32-C6 was experiencing crashes and very slow response to paddle inputs.
+
+### Changes Made
+
+#### 10.1 Removed Problematic Pin Tester
+
+Removed the pin tester functionality which was causing connectivity issues:
+- Removed references to pin_tester.ino
+- Removed references to test-paddle-pins.js
+- Updated documentation to remove mentions of the pin tester
+
+#### 10.2 Fixed Morse Decoder for Xiao ESP32-C6
+
+Added the missing `setInputActive()` and `setInputInactive()` functions that were causing compilation errors:
+
+```arduino
+/**
+ * Set input as active - turns on LED and sets inputActive flag
+ */
+void setInputActive() {
+  startLedPulse();  // This function already turns on LED and sets inputActive to true
+}
+
+/**
+ * Set input as inactive - turns off LED and clears inputActive flag
+ */
+void setInputInactive() {
+  digitalWrite(YELLOW_LED_PIN, HIGH);  // HIGH turns the LED off (active-LOW)
+  ledIsOn = false;
+  inputActive = false;
+}
+```
+
+These functions were being called but not defined, causing compile errors and preventing the decoder from working properly.
+
+#### 10.3 Corrected Input Pins for XIAO ESP32-C6
+
+Verified and corrected the input pin configuration for the Xiao ESP32-C6 board.
+
+### Benefits
+
+- Improved stability by removing code that was causing connection drops
+- Fixed compilation errors in the Xiao ESP32-C6 morse decoder
+- Improved responsiveness to paddle inputs
+- More reliable operation across all supported Arduino boards
+
 ## 9. Xiao ESP32-C6 GPIO Pin Mapping Correction (July 15, 2025)
 
 ### Problem Addressed
