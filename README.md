@@ -179,22 +179,6 @@ cd supermorse-app
 Arduino pinouts and board sizes
 https://github.com/Supermagnum/supermorse-app/tree/main/Arduino_variants_pinouts
 
-# Arduino Pin Tester Tool
-For Arduino boards (Xiao ESP32-C6, Xiao SAMD21, Arduino Micro, Arduino Nano)
-This helps determine the correct GPIO
-pins to use in the morse decoder sketches. Use this tool if:
-- You are unsure if you have soldered correctly
-- Some pins have stopped responding
-- You need to verify your Arduino configuration
-
-You will need these two files:
-- [test-paddle-pins.js](https://github.com/Supermagnum/supermorse-app/blob/main/test-paddle-pins.js) - JavaScript tester for pin detection
-- [pin_tester.ino](https://github.com/Supermagnum/supermorse-app/blob/main/arduino/pin_tester/pin_tester.ino) - Arduino sketch to interact with the tester
-
-**Note:** The default port in test-paddle-pins.js is `ttyACM0`. 
-You might need to adjust the `const portpath` value if your Arduino connects on a different port.
-
-
 ## Testing User Creation Functionality
 
 To verify that the registration form can successfully create users:
