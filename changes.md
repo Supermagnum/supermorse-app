@@ -6,18 +6,20 @@ This document details the implementation changes made to improve authentication 
 
 ## 10. Removed Pin Tester and Fixed Xiao ESP32-C6 Decoder (July 17, 2025)
 
-### Problem Addressed
+### Problems Addressed
 
-The pin tester code was causing Arduino boards to drop their connection, likely due to code freezing during execution. Additionally, the morse decoder for Xiao ESP32-C6 was experiencing crashes and very slow response to paddle inputs.
+The pin tester code was causing Arduino boards to drop their connection, likely due to code freezing during execution.
+The bloody AI was not able to fix the pin tester ino code even if it tried multiple times, so that tester was removed.
+Additionally, the morse decoder for Xiao ESP32-C6 was experiencing crashes and very slow response to paddle inputs.
 
 ### Changes Made
 
 #### 10.1 Removed Problematic Pin Tester
 
-Removed the pin tester functionality which was causing connectivity issues:
+Removed  pin tester :
 - Removed references to pin_tester.ino
 - Removed references to test-paddle-pins.js
-- Updated documentation to remove mentions of the pin tester
+- Updated documentation to remove mentions of the pin tester.
 
 #### 10.2 Fixed Morse Decoder for Xiao ESP32-C6
 
