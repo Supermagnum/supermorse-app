@@ -4,6 +4,307 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
+## 15. Authentication Method Consistency Fix (July 19, 2025)
+
+### Problem Addressed
+
+After implementing the authentication security enhancements, a new issue was discovered: when users were logged in, closed the application, and reopened it, they remained authenticated but the Training, Progress, Settings, and Murmur HF UI elements were not visible. This happened because of an inconsistency in how authentication was checked throughout the application code.
+
+### Changes Made
+
+#### 15.1 Fixed Authentication Method Inconsistency
+
+The root cause was identified in the `updateNavigationVisibility()` method, which was using a non-existent `isLoggedIn()` method instead of the correct `isAuthenticated()` method that exists in the AuthManager class:
+
+```javascript
+// Old implementation with incorrect method
+updateNavigationVisibility() {
+    const isLoggedIn = this.authManager.isLoggedIn(); // This method doesn't exist
+    
+    // Get all restricted sidebar items
+    const restrictedItems = document.querySelectorAll('.sidebar-item[data-section="training"], .sidebar-item[data-section="progress"], .sidebar-item[data-section="settings"], .sidebar-item[data-section="murmur"]');
+    
+    // Update visibility based on login status
+    restrictedItems.forEach(item => {
+        item.style.display = isLoggedIn ? 'flex' : 'none';
+    });
+    
+    // Also hide Arduino section if not logged in
+    const arduinoSection = document.querySelector('.arduino-connection');
+    if (arduinoSection) {
+        arduinoSection.style.display = isLoggedIn ? 'block' : 'none';
+    }
+}
+
+// New implementation with correct method
+updateNavigationVisibility() {
+    const isAuthenticated = this.authManager.isAuthenticated(); // Using the correct method
+    
+    // Get all restricted sidebar items
+    const restrictedItems = document.querySelectorAll('.sidebar-item[data-section="training"], .sidebar-item[data-section="progress"], .sidebar-item[data-section="settings"], .sidebar-item[data-section="murmur"]');
+    
+    // Update visibility based on authentication status
+    restrictedItems.forEach(item => {
+        item.style.display = isAuthenticated ? 'flex' : 'none';
+    });
+    
+    // Also hide Arduino section if not authenticated
+    const arduinoSection = document.querySelector('.arduino-connection');
+    if (arduinoSection) {
+        arduinoSection.style.display = isAuthenticated ? 'block' : 'none';
+    }
+}
+```
+
+#### 15.2 Ensured Consistent Authentication Checks
+
+Verified that all other authentication checks in the application were consistently using the `isAuthenticated()` method from the AuthManager class, particularly in:
+
+- The `navigateTo()` method for access control
+- The `showAuthenticatedUI()` method when logging in
+- The `showLoginUI()` method when logging out
+- The `initApp()` method during application initialization
+
+### Benefits
+
+- Fixed the issue where UI elements weren't visible after application restart
+- Ensured consistent authentication checks throughout the application
+- Improved user experience by maintaining proper UI state across application sessions
+- Eliminated a silent failure that was caused by calling a non-existent method
+- Enhanced the robustness of the authentication security implementation
+
+## 14. Authentication Security Enhancement for UI Sections (July 19, 2025)
+
+### Problem Addressed
+
+The application was displaying and allowing access to Training, Progress, Settings, and Murmur HF sections to unauthenticated users. These features should only be accessible to properly authenticated users, creating a security vulnerability where unauthorized users could access functionality that should be restricted.
+
+### Changes Made
+
+#### 14.1 Added Authentication Checks to Navigation System
+
+Modified the `navigateTo()` method in app.js to verify authentication status before allowing access to restricted sections:
+
+```javascript
+navigateTo(section) {
+    // Check if user is trying to access a restricted section without being logged in
+    const restrictedSections = ['training', 'progress', 'settings', 'murmur'];
+    if (restrictedSections.includes(section) && !this.authManager.isLoggedIn()) {
+        // Redirect to login with a message
+        section = 'account';
+        alert('Authentication required to access this section.');
+    }
+    
+    // Hide all sections
+    const sections = document.querySelectorAll('.section');
+    sections.forEach(s => {
+        s.style.display = 'none';
+    });
+    
+    // Show the selected section
+    const selectedSection = document.getElementById(section + 'Section');
+    if (selectedSection) {
+        selectedSection.style.display = 'block';
+    }
+    
+    // Update active state in the sidebar
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    sidebarItems.forEach(item => {
+        item.classList.remove('active');
+    });
+    const activeSidebarItem = document.querySelector(`.sidebar-item[data-section="${section}"]`);
+    if (activeSidebarItem) {
+        activeSidebarItem.classList.add('active');
+    }
+    
+    // Update current section
+    this.currentSection = section;
+}
+```
+
+#### 14.2 Added Navigation Visibility Management
+
+Created a new method to update navigation visibility based on authentication status:
+
+```javascript
+updateNavigationVisibility() {
+    const isLoggedIn = this.authManager.isLoggedIn();
+    
+    // Get all restricted sidebar items
+    const restrictedItems = document.querySelectorAll('.sidebar-item[data-section="training"], .sidebar-item[data-section="progress"], .sidebar-item[data-section="settings"], .sidebar-item[data-section="murmur"]');
+    
+    // Update visibility based on login status
+    restrictedItems.forEach(item => {
+        item.style.display = isLoggedIn ? 'flex' : 'none';
+    });
+    
+    // Also hide Arduino section if not logged in
+    const arduinoSection = document.querySelector('.arduino-connection');
+    if (arduinoSection) {
+        arduinoSection.style.display = isLoggedIn ? 'block' : 'none';
+    }
+}
+```
+
+#### 14.3 Updated Application Lifecycle Methods
+
+Modified application initialization, login, and logout methods to properly update navigation visibility:
+
+```javascript
+// In initApp method
+initApp() {
+    // Set up navigation initially
+    this.updateNavigationVisibility();
+    
+    // Check for saved authentication
+    if (this.authManager.restoreSession()) {
+        // Session restored, auth manager will handle the UI update
+    } else {
+        // No valid session found, show login UI
+        this.showLoginUI();
+    }
+}
+
+// In showAuthenticatedUI method
+showAuthenticatedUI(user) {
+    // Update UI for authenticated user
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('userDisplay').textContent = user.name || user.username;
+    document.getElementById('authenticatedHeader').style.display = 'flex';
+    
+    // Update navigation visibility to show restricted sections
+    this.updateNavigationVisibility();
+    
+    // Navigate to the training section
+    this.navigateTo('training');
+}
+
+// In showLoginUI method
+showLoginUI() {
+    // Update UI for login screen
+    document.getElementById('authenticatedHeader').style.display = 'none';
+    
+    // Update navigation visibility to hide restricted sections
+    this.updateNavigationVisibility();
+    
+    // Navigate to the account section
+    this.navigateTo('account');
+}
+```
+
+### Benefits
+
+- Enhanced security by preventing unauthenticated users from accessing restricted functionality
+- Improved user interface clarity by only showing relevant navigation options based on authentication status
+- Better user experience with clear feedback when authentication is required
+- Proper encapsulation of authentication-dependent functionality
+- Consistent security model across the entire application
+- Prevention of potential unauthorized access to user data and settings
+
+## 13. Morse Key Emulator Implementation (July 19, 2025)
+
+### Problem Addressed
+
+Learning Morse code traditionally requires physical hardware (Arduino board and physical key), which can be a barrier to entry for new users. Additionally, there was no clear pathway for users who wanted to practice decoding Morse code without setting up physical hardware. The application also didn't emphasize that users need to be logged in to access training features, track progress, and change settings.
+
+### Changes Made
+
+#### 13.1 Created Morse Key Emulator Software
+
+Developed a complete software emulator in the `key-emulator` directory:
+
+```javascript
+// key-emulator/morse-learning-program.js
+/**
+ * A Node.js program that emulates a Morse code key for the Supermorse app,
+ * following the suggested learning order from alphabets.js and sending
+ * input via emulated serial communication.
+ */
+
+// Core features:
+// - Progressive learning following alphabets.js sequences
+// - Serial port emulation to interface with Supermorse
+// - Keyboard input detection with simultaneous key support for prosigns
+```
+
+The program includes special handling for prosigns as combinations of simultaneous keypresses:
+
+```javascript
+// Prosigns as key combinations
+const prosignKeyCombinations = {
+    'AR': ['a', 'r'],   // A+R pressed simultaneously
+    'SK': ['s', 'k'],   // S+K pressed simultaneously
+    'BT': ['b', 't'],   // B+T pressed simultaneously
+    'KN': ['k', 'n']    // K+N pressed simultaneously
+};
+```
+
+#### 13.2 Added Comprehensive Documentation
+
+Created a detailed README.md file with installation and usage instructions:
+
+```markdown
+# Morse Code Key Emulator
+
+A Node.js program that emulates a Morse code key for the Supermorse app,
+following the suggested learning order from alphabets.js and sending input
+via emulated serial communication.
+
+## Important: Authentication Required
+
+**Note**: The Supermorse app requires user authentication before you can
+access training features, track progress, or change settings.
+```
+
+The documentation clearly explains the authentication requirement and provides a complete workflow from login to using the emulator.
+
+#### 13.3 Added Package Management Support
+
+Created a package.json file to simplify dependency installation:
+
+```json
+{
+  "name": "morse-key-emulator",
+  "version": "1.0.0",
+  "description": "A Morse code key emulator for the Supermorse app with simultaneous key detection for prosigns",
+  "main": "morse-learning-program.js",
+  "dependencies": {
+    "serialport": "^10.5.0",
+    "keypress": "^0.2.1"
+  }
+}
+```
+
+#### 13.4 Updated Main README with Key Emulator Information
+
+Added information about the key emulator to the main README.md file:
+
+```markdown
+## Morse Key Emulator
+
+For those who want to practice Morse code reception without physical hardware,
+we provide a software-based [Morse Key Emulator](https://github.com/Supermagnum/supermorse-app/tree/main/key-emulator) that:
+
+- Follows the suggested learning order from alphabets.js
+- Supports simultaneous keypresses for prosigns (e.g., A+R for "end of message")
+- Emulates serial communication to interface with the app
+- Provides a progressive learning interface
+
+**Note**: You must be logged in to the Supermorse app to access training features,
+track progress, and change settings.
+```
+
+### Benefits
+
+- Removes the hardware barrier to entry for new users who want to learn Morse code
+- Provides a clear pathway for practicing Morse code reception without physical hardware
+- Emphasizes the authentication requirement to access training features
+- Supports simultaneous key detection for proper prosign implementation
+- Follows the optimal learning sequence from alphabets.js
+- Simplifies installation and setup with proper package management
+- Improves accessibility for users without specialized hardware
+- Maintains the educational integrity of the Koch method
+
 ## 12. Added Volume Control to Settings (July 17, 2025)
 
 ### Problem Addressed

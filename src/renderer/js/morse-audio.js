@@ -129,7 +129,7 @@ export class MorseAudio {
                     attack: 0.005,
                     decay: 0.001,
                     sustain: 1,
-                    release: 0.005
+                    release: 0.030  // Significantly increased release time to smooth out the end
                 }).connect(newOscillator.output);
                 
                 // Store references
@@ -165,10 +165,13 @@ export class MorseAudio {
                         console.log("Tone complete, releasing envelope");
                         newEnvelope.triggerRelease();
                         
-                        // Small delay to allow release to complete, then stop the oscillator
-                        await new Promise(r => setTimeout(r, 50));
+                        // Much longer delay to allow release to complete fully before stopping
+                        await new Promise(r => setTimeout(r, 120));
                         
                         if (newOscillator.state === 'started') {
+                            // Fade out volume before stopping to eliminate clicks
+                            newOscillator.volume.rampTo(-60, 0.05);
+                            await new Promise(r => setTimeout(r, 60));
                             newOscillator.stop();
                         }
                         
@@ -193,17 +196,31 @@ export class MorseAudio {
         this.cancelPlayback = true;
         this.isPlaying = false;
         
-        // Trigger envelope release to silence the tone
+        // Trigger envelope release with longer release time to silence the tone smoothly
         if (this.envelope) {
+            // Temporarily increase the release time to ensure smooth ending
+            const originalRelease = this.envelope.release;
+            this.envelope.release = 0.050; // 50ms release
             this.envelope.triggerRelease();
+            
+            // Restore original release time after triggering
+            setTimeout(() => {
+                this.envelope.release = originalRelease;
+            }, 100);
         }
         
         // Force stop the oscillator if it's running
         if (this.oscillator && this.oscillator.state === 'started') {
-            // Use a short timeout to avoid clicks
+            // Use a longer timeout and volume ramping to avoid clicks
             setTimeout(() => {
-                this.oscillator.stop();
-            }, 50);
+                // Fade out volume before stopping
+                this.oscillator.volume.rampTo(-60, 0.1);
+                
+                // Then stop after the fade
+                setTimeout(() => {
+                    this.oscillator.stop();
+                }, 120);
+            }, 60);
         }
     }
     
@@ -212,9 +229,17 @@ export class MorseAudio {
      * Used for pauses between Morse code elements
      */
     silenceTone() {
-        // Only trigger envelope release without setting cancel flags
+        // Trigger envelope release with smoother transition
         if (this.envelope) {
+            // Temporarily increase the release time to ensure smooth ending
+            const originalRelease = this.envelope.release;
+            this.envelope.release = 0.035; // 35ms release for silences between elements
             this.envelope.triggerRelease();
+            
+            // Restore original release time after a brief delay
+            setTimeout(() => {
+                this.envelope.release = originalRelease;
+            }, 50);
         }
     }
     

@@ -1,0 +1,23 @@
+{
+  "name": "morse-key-emulator",
+  "version": "1.0.0",
+  "description": "A Morse code key emulator for the Supermorse app with simultaneous key detection for prosigns",
+  "main": "morse-learning-program.js",
+  "scripts": {
+    "start": "node morse-learning-program.js"
+  },
+  "dependencies": {
+    "serialport": "^10.5.0",
+    "keypress": "^0.2.1"
+  },
+  "keywords": [
+    "morse",
+    "code",
+    "emulator",
+    "serial",
+    "supermorse",
+    "arduino"
+  ],
+  "author": "",
+  "license": "MIT"
+}
