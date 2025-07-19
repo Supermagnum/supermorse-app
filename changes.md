@@ -2,9 +2,12 @@
 
 ## Overview
 
-## July 19, 2025
+
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
+
+
+## July 19, 2025
 
 ## 16. Fixed Click Sound at End of Audio Elements )
 
@@ -153,7 +156,7 @@ Verified that all other authentication checks in the application were consistent
 - Eliminated a silent failure that was caused by calling a non-existent method
 - Enhanced the robustness of the authentication security implementation
 
-## 14. Authentication Security Enhancement for UI Sections (July 19, 2025)
+## 14. Authentication Security Enhancement for UI Sections
 
 ### Problem Addressed
 
@@ -385,7 +388,9 @@ track progress, and change settings.
 - Improves accessibility for users without specialized hardware
 - Maintains the educational integrity of the Koch method
 
-## 12. Added Volume Control to Settings (July 17, 2025)
+
+## July 17, 2025
+## 12. Added Volume Control to Settings
 
 ### Problem Addressed
 
@@ -500,7 +505,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', function() 
 - Volume can be balanced independently of system volume
 - Improved user experience, especially during extended practice sessions
 
-## 11. Enforced Minimum Morse Speed of 13 WPM (July 17, 2025)
+## 11. Enforced Minimum Morse Speed of 13 WPM
 
 ### Problem Addressed
 
@@ -580,7 +585,7 @@ setSpeed(wpm) {
 - Helps users develop proper timing and rhythm necessary for effective Morse code communication
 - Maintains consistency between the UI controls and the underlying code implementation
 
-## 10A. Improved Debounce and Signal Handling for Arduino Firmware (July 17, 2025)
+## 10A. Improved Debounce and Signal Handling for Arduino Firmware
 
 ### Problems Addressed
 
@@ -670,7 +675,7 @@ void setInputInactive() {
 - More predictable paddle response, especially important for high-speed operation
 - Fixed compilation errors that were preventing the decoder from working properly
 
-## 10B. Removed Pin Tester and Fixed Xiao ESP32-C6 Decoder (July 17, 2025)
+## 10B. Removed Pin Tester and Fixed Xiao ESP32-C6 Decoder
 
 ### Problems Addressed
 
@@ -796,7 +801,8 @@ Also added comprehensive pin mapping documentation in the comments:
 - Consistent pin mappings across all related files
 - Paddle signal detection now works correctly with the updated pin assignments
 
-## 7. Multi-Board Pin Testing and Mapping Corrections (July 14, 2025)
+## 7. Multi-Board Pin Testing and Mapping Corrections
+## July 14, 2025
 
 ### Problem Addressed
 
@@ -870,7 +876,7 @@ Serial.println("'n' - Switch to Arduino Nano board mode");
 - Interactive board selection to easily test different hardware configurations
 - Improved user experience with better diagnostics across all supported hardware
 
-## 6. Continuous LED Blinking During Input Detection (July 14, 2025)
+## 6. Continuous LED Blinking During Input Detection
 
 ### Problem Addressed
 
@@ -976,7 +982,8 @@ digitalWrite(YELLOW_LED_PIN, ledIsOn ? LOW : HIGH);
 - Consistent behavior across all supported Arduino board variants
 - The LED is properly turned off when no input is detected, preventing battery drain and confusion
 
-## 5. Xiao ESP32-C6 Yellow LED Pin Fix (July 13, 2025)
+## 5. Xiao ESP32-C6 Yellow LED Pin Fix
+## July 13, 2025
 
 ### Problem Addressed
 
@@ -1044,8 +1051,7 @@ Added clear comments to explain the active-LOW configuration:
 - Clear documentation about the LED's active-LOW configuration
 - Improved hardware diagnostic capabilities
 
-## 4. Multi-Board Arduino Support (July 13, 2025 - 15:50)
-
+## 4. Multi-Board Arduino Support
 ### Problem Addressed
 
 The original morse decoder sketch was primarily designed for the Xiao ESP32-C6 board, limiting compatibility with other popular Arduino boards like the Arduino Micro and Nano.
@@ -1189,7 +1195,7 @@ if (verification.valid) {
 }
 ```
 
-#### 1.3 Enhanced Token Verification with Fallback (July 13, 2025)
+#### 1.3 Enhanced Token Verification with Fallback
 
 Further improved the `restoreSession` method to include a more robust verification and fallback strategy:
 
@@ -1443,7 +1449,8 @@ if (hfBandRegex.test(channelId)) {
 - Fallback to client-side simulation when offline or if server data is unavailable
 - Improved user experience with more realistic band conditions
 
-## 3. Arduino Hardware Compatibility Improvements (July 12, 2025)
+## 3. Arduino Hardware Compatibility Improvements
+## July 12, 2025
 
 ### Problem Addressed
 
