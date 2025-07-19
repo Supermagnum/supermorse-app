@@ -70,7 +70,7 @@ One of these:
 
 ## Morse Key Emulator
 
-For those who want to practice Morse code reception without physical hardware, we provide a software-based [Morse Key Emulator](https://github.com/Supermagnum/supermorse-app/tree/main/key-emulator) that:
+For those who want to practice Morse code reception without physical hardware, there is  a software-based [Morse Key Emulator](https://github.com/Supermagnum/supermorse-app/tree/main/key-emulator) that:
 
 - Follows the suggested learning order from alphabets.js
 - Supports simultaneous keypresses for prosigns (e.g., A+R for "end of message")
