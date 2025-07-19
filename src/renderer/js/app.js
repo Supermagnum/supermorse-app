@@ -40,6 +40,9 @@ class SuperMorseApp {
         // Load settings
         await this.settings.loadSettings();
         
+        // Initial update of navigation visibility
+        this.updateNavigationVisibility();
+        
         // Check for saved authentication
         const savedAuth = localStorage.getItem('authToken');
         if (savedAuth) {
@@ -276,6 +279,18 @@ class SuperMorseApp {
      * @param {string} section - The section to navigate to
      */
     navigateTo(section) {
+        // Check if section requires authentication
+        const restrictedSections = ['training', 'progress', 'settings', 'murmur'];
+        if (restrictedSections.includes(section) && !this.auth.isAuthenticated()) {
+            // Show authentication required modal
+            this.showModal('Authentication Required', 
+                'You must be logged in to access this feature. Please log in or create an account.', 
+                null, null, 'OK', '');
+            
+            // Navigate to account section instead
+            section = 'account';
+        }
+        
         // Update active section in sidebar
         document.querySelectorAll('.sidebar nav ul li').forEach(item => {
             item.classList.remove('active');
@@ -304,6 +319,45 @@ class SuperMorseApp {
     }
     
     /**
+     * Update navigation visibility based on authentication status
+     * Controls which sections are accessible in the sidebar
+     */
+    updateNavigationVisibility() {
+        // Get all navigation items
+        const navItems = document.querySelectorAll('.sidebar nav ul li');
+        const isAuthenticated = this.auth.isAuthenticated();
+        
+        // Show/hide navigation items based on authentication
+        navItems.forEach(item => {
+            const section = item.getAttribute('data-section');
+            
+            // Account section is always visible
+            if (section === 'account') {
+                return;
+            }
+            
+            // Restricted sections are only visible when authenticated
+            if (['training', 'progress', 'settings', 'murmur'].includes(section)) {
+                if (isAuthenticated) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+            }
+        });
+        
+        // Show/hide Arduino connection status based on authentication
+        const arduinoStatus = document.querySelector('.arduino-status');
+        if (arduinoStatus) {
+            if (isAuthenticated) {
+                arduinoStatus.classList.remove('hidden');
+            } else {
+                arduinoStatus.classList.add('hidden');
+            }
+        }
+    }
+    
+    /**
      * Show the authenticated UI
      * @param {Object} user - The authenticated user object
      */
@@ -313,6 +367,9 @@ class SuperMorseApp {
         // Update UI elements
         document.getElementById('userInfoPanel').classList.remove('hidden');
         document.getElementById('userDisplayName').textContent = user.name;
+        
+        // Update navigation visibility
+        this.updateNavigationVisibility();
         
         // Navigate to training section
         this.navigateTo('training');
@@ -335,6 +392,9 @@ class SuperMorseApp {
         
         // Update UI elements
         document.getElementById('userInfoPanel').classList.add('hidden');
+        
+        // Update navigation visibility to hide restricted sections
+        this.updateNavigationVisibility();
         
         // Navigate to account section
         this.navigateTo('account');

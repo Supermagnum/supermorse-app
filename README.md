@@ -68,6 +68,19 @@ One of these:
 - **3-conductor wire**
 - **Any computer** with USB ports, screen, and keyboard 
 
+## Morse Key Emulator
+
+For those who want to practice Morse code reception without physical hardware, we provide a software-based [Morse Key Emulator](https://github.com/Supermagnum/supermorse-app/tree/main/key-emulator) that:
+
+- Follows the suggested learning order from alphabets.js
+- Supports simultaneous keypresses for prosigns (e.g., A+R for "end of message")
+- Emulates serial communication to interface with the app
+- Provides a progressive learning interface
+- This is mainly to make it easier for those willing in helping out with testing and debugging, will be integrated in the main app later.
+
+
+**Note**: You must be logged in to the Supermorse app to access training features, track progress, and change settings.
+
 ## Arduino Pin Configuration
 
 The Arduino firmware supports multiple Morse key types. Here's how to connect your key:
