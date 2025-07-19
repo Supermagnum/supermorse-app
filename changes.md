@@ -2,9 +2,89 @@
 
 ## Overview
 
+## July 19, 2025
+
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
-## 15. Authentication Method Consistency Fix (July 19, 2025)
+## 16. Fixed Click Sound at End of Audio Elements )
+
+### Problem Addressed
+
+User reported an audible click or pop sound at the end of each audio playback when using the Morse audio trainer. This click was occurring when the audio context abruptly ended the sound, creating a jarring experience during training sessions and making it difficult to focus on learning Morse code.
+
+### Changes Made
+
+#### 16.1 Implemented Audio Fade-out
+
+Modified the `stopTone` method in the MorseAudio class to add a short fade-out at the end of each tone:
+
+```javascript
+// Old implementation
+stopTone() {
+  if (this.oscillator) {
+    this.oscillator.stop();
+    this.oscillator = null;
+  }
+}
+
+// New implementation
+stopTone() {
+  if (this.oscillator) {
+    const now = this.audioContext.currentTime;
+    
+    // Add a very short fade-out to prevent the click sound
+    this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+    this.gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+    
+    // Stop the oscillator after the fade-out completes
+    this.oscillator.stop(now + 0.02);
+    this.oscillator = null;
+  }
+}
+```
+
+#### 16.2 Added Smooth Amplitude Envelope
+
+Enhanced the envelope handling for better audio transitions:
+
+```javascript
+playTone(frequency, duration) {
+  // Create oscillator and gain node if needed
+  if (!this.oscillator) {
+    this.oscillator = this.audioContext.createOscillator();
+    this.gainNode = this.audioContext.createGain();
+    
+    // Connect the nodes
+    this.oscillator.connect(this.gainNode);
+    this.gainNode.connect(this.audioContext.destination);
+    
+    // Set initial values
+    this.oscillator.type = 'sine';
+    this.oscillator.frequency.value = frequency;
+    
+    // Add a small attack (ramp up) to smooth the beginning
+    const now = this.audioContext.currentTime;
+    this.gainNode.gain.setValueAtTime(0, now);
+    this.gainNode.gain.linearRampToValueAtTime(this.volume, now + 0.005);
+    
+    // Start the oscillator
+    this.oscillator.start();
+  }
+  
+  // Schedule the stop with the new fade-out method
+  setTimeout(() => this.stopTone(), duration);
+}
+```
+
+### Benefits
+
+- Eliminated the distracting click sound at the end of each audio element
+- Improved overall audio quality during Morse code training
+- Reduced listener fatigue during extended practice sessions
+- More professional and polished audio experience
+- Better focus on learning the actual Morse code patterns rather than being distracted by audio artifacts
+
+## 15. Authentication Method Consistency Fix
 
 ### Problem Addressed
 
@@ -201,7 +281,7 @@ showLoginUI() {
 - Consistent security model across the entire application
 - Prevention of potential unauthorized access to user data and settings
 
-## 13. Morse Key Emulator Implementation (July 19, 2025)
+## 13. Morse Key Emulator Implementation
 
 ### Problem Addressed
 
@@ -420,96 +500,6 @@ document.getElementById('saveSettingsBtn').addEventListener('click', function() 
 - Volume can be balanced independently of system volume
 - Improved user experience, especially during extended practice sessions
 
-## 10. Improved Debounce and Signal Handling for Arduino Firmware (July 17, 2025)
-
-### Problems Addressed
-
-The Arduino firmware for Morse decoding had two significant issues:
-1. The pin tester code was causing Arduino boards to drop their connection
-2. When a paddle was clicked once, it would register multiple signals (especially dashes), likely due to inadequate debounce handling
-
-### Changes Made
-
-#### 10.1 Removed Problematic Pin Tester
-
-Removed pin tester as it was causing connection issues:
-- Removed references to pin_tester.ino
-- Removed references to test-paddle-pins.js
-- Updated documentation to remove mentions of the pin tester
-
-#### 10.2 Added Signal Repeat Delay to Prevent Multiple Signals
-
-Added a delay mechanism to prevent a single paddle press from generating multiple signals across all Arduino board variants:
-
-```arduino
-// Added to all Arduino variants (ESP32-C6, SAMD21, Micro, Nano)
-// Timing constants
-const unsigned long DEBOUNCE_DELAY = 20;      // Debounce time to prevent contact bounce
-const unsigned long SIGNAL_REPEAT_DELAY = 300; // Minimum time between signals to prevent multiple signals from a single press
-
-// State variables
-unsigned long lastSignalTime = 0;     // Tracks when the last signal was sent
-```
-
-Modified all paddle handler methods to check this signal repeat delay:
-
-```arduino
-// Old implementation
-if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
-  // Process paddle signal
-}
-
-// New implementation
-if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
-    (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
-  // Process paddle signal
-}
-```
-
-Updated signal sending code to track when signals are sent:
-
-```arduino
-// When sending a dot
-Serial.print(".");
-lastSentElement = '.';
-lastSignalTime = millis(); // Record when this signal was sent
-
-// When sending a dash
-Serial.print("-");
-lastSentElement = '-';
-lastSignalTime = millis(); // Record when this signal was sent
-```
-
-#### 10.3 Fixed ESP32-C6 Missing Functions
-
-Added the missing `setInputActive()` and `setInputInactive()` functions that were causing compilation errors:
-
-```arduino
-/**
- * Set input as active - turns on LED and sets inputActive flag
- */
-void setInputActive() {
-  startLedPulse();  // This function already turns on LED and sets inputActive to true
-}
-
-/**
- * Set input as inactive - turns off LED and clears inputActive flag
- */
-void setInputInactive() {
-  digitalWrite(YELLOW_LED_PIN, HIGH);  // HIGH turns the LED off (active-LOW)
-  ledIsOn = false;
-  inputActive = false;
-}
-```
-
-### Benefits
-
-- Dramatically improved reliability by preventing multiple signals from a single paddle press
-- Consistent behavior across all Arduino board variants (ESP32-C6, SAMD21, Micro, Nano)
-- Better user experience with more accurate Morse code detection
-- More predictable paddle response, especially important for high-speed operation
-- Fixed compilation errors that were preventing the decoder from working properly
-
 ## 11. Enforced Minimum Morse Speed of 13 WPM (July 17, 2025)
 
 ### Problem Addressed
@@ -590,7 +580,97 @@ setSpeed(wpm) {
 - Helps users develop proper timing and rhythm necessary for effective Morse code communication
 - Maintains consistency between the UI controls and the underlying code implementation
 
-## 10. Removed Pin Tester and Fixed Xiao ESP32-C6 Decoder (July 17, 2025)
+## 10A. Improved Debounce and Signal Handling for Arduino Firmware (July 17, 2025)
+
+### Problems Addressed
+
+The Arduino firmware for Morse decoding had two significant issues:
+1. The pin tester code was causing Arduino boards to drop their connection
+2. When a paddle was clicked once, it would register multiple signals (especially dashes), likely due to inadequate debounce handling
+
+### Changes Made
+
+#### 10A.1 Removed Problematic Pin Tester
+
+Removed pin tester as it was causing connection issues:
+- Removed references to pin_tester.ino
+- Removed references to test-paddle-pins.js
+- Updated documentation to remove mentions of the pin tester
+
+#### 10A.2 Added Signal Repeat Delay to Prevent Multiple Signals
+
+Added a delay mechanism to prevent a single paddle press from generating multiple signals across all Arduino board variants:
+
+```arduino
+// Added to all Arduino variants (ESP32-C6, SAMD21, Micro, Nano)
+// Timing constants
+const unsigned long DEBOUNCE_DELAY = 20;      // Debounce time to prevent contact bounce
+const unsigned long SIGNAL_REPEAT_DELAY = 300; // Minimum time between signals to prevent multiple signals from a single press
+
+// State variables
+unsigned long lastSignalTime = 0;     // Tracks when the last signal was sent
+```
+
+Modified all paddle handler methods to check this signal repeat delay:
+
+```arduino
+// Old implementation
+if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
+  // Process paddle signal
+}
+
+// New implementation
+if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
+    (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
+  // Process paddle signal
+}
+```
+
+Updated signal sending code to track when signals are sent:
+
+```arduino
+// When sending a dot
+Serial.print(".");
+lastSentElement = '.';
+lastSignalTime = millis(); // Record when this signal was sent
+
+// When sending a dash
+Serial.print("-");
+lastSentElement = '-';
+lastSignalTime = millis(); // Record when this signal was sent
+```
+
+#### 10A.3 Fixed ESP32-C6 Missing Functions
+
+Added the missing `setInputActive()` and `setInputInactive()` functions that were causing compilation errors:
+
+```arduino
+/**
+ * Set input as active - turns on LED and sets inputActive flag
+ */
+void setInputActive() {
+  startLedPulse();  // This function already turns on LED and sets inputActive to true
+}
+
+/**
+ * Set input as inactive - turns off LED and clears inputActive flag
+ */
+void setInputInactive() {
+  digitalWrite(YELLOW_LED_PIN, HIGH);  // HIGH turns the LED off (active-LOW)
+  ledIsOn = false;
+  inputActive = false;
+}
+```
+
+### Benefits
+
+- Dramatically improved reliability by preventing multiple signals from a single paddle press
+- Consistent behavior across all Arduino board variants (ESP32-C6, SAMD21, Micro, Nano)
+- Better user experience with more accurate Morse code detection
+- More predictable paddle response, especially important for high-speed operation
+- Fixed compilation errors that were preventing the decoder from working properly
+
+## 10B. Removed Pin Tester and Fixed Xiao ESP32-C6 Decoder (July 17, 2025)
 
 ### Problems Addressed
 
@@ -600,14 +680,14 @@ Additionally, the morse decoder for Xiao ESP32-C6 was experiencing crashes and v
 
 ### Changes Made
 
-#### 10.1 Removed Problematic Pin Tester
+#### 10B.1 Removed Problematic Pin Tester
 
 Removed  pin tester :
 - Removed references to pin_tester.ino
 - Removed references to test-paddle-pins.js
 - Updated documentation to remove mentions of the pin tester.
 
-#### 10.2 Fixed Morse Decoder for Xiao ESP32-C6
+#### 10B.2 Fixed Morse Decoder for Xiao ESP32-C6
 
 Added the missing `setInputActive()` and `setInputInactive()` functions that were causing compilation errors:
 
@@ -631,7 +711,7 @@ void setInputInactive() {
 
 These functions were being called but not defined, causing compile errors and preventing the decoder from working properly.
 
-#### 10.3 Corrected Input Pins for XIAO ESP32-C6
+#### 10B.3 Corrected Input Pins for XIAO ESP32-C6
 
 Verified and corrected the input pin configuration for the Xiao ESP32-C6 board.
 
