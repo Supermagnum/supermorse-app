@@ -2,7 +2,7 @@
 
 A Node.js program that emulates a Morse code key for the Supermorse app, following the suggested learning order from alphabets.js and sending input via emulated serial communication.
 
-> **Important Note**: This emulator is designed to help you learn how to receive Morse code (decode), not how to send using a physical Morse key. For proper keying technique, you should practice with an actual telegraph key.
+> **Important Note**: This emulator is designed to help you test the Supermorse app If you dont have a morse key. For proper learning , you should practice with an actual telegraph key.
 
 ## Features
 
