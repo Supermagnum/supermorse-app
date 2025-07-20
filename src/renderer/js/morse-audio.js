@@ -22,8 +22,16 @@ export class MorseAudio {
         this.isPlaying = false;
         this.cancelPlayback = false;
         
+        // Audio device settings
+        this.audioDevices = [];
+        this.selectedDevice = 'default';
+        this.sidetoneEnabled = true;
+        
         // Initialize Tone.js components
         this.initToneComponents();
+        
+        // Enumerate available audio devices
+        this.enumerateAudioDevices();
     }
     
     /**
@@ -59,6 +67,106 @@ export class MorseAudio {
         } catch (error) {
             console.error('Error initializing Tone.js components:', error);
         }
+    }
+    
+    /**
+     * Enumerate available audio output devices
+     */
+    async enumerateAudioDevices() {
+        try {
+            // Request permission to access media devices
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // Get list of all media devices
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            
+            // Filter to only audio output devices
+            const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+            
+            // Store the list of available devices
+            this.audioDevices = audioOutputs;
+            
+            console.log('Available audio output devices:', audioOutputs);
+            
+            // Populate the device selection dropdown
+            this.populateAudioDeviceSelect();
+            
+            return audioOutputs;
+        } catch (error) {
+            console.error('Error enumerating audio devices:', error);
+            return [];
+        }
+    }
+    
+    /**
+     * Get the list of available audio devices
+     * @returns {Promise<Array>} - Resolves with the list of audio output devices
+     */
+    async getAudioDevices() {
+        // If we already have devices, return them
+        if (this.audioDevices && this.audioDevices.length > 0) {
+            return this.audioDevices;
+        }
+        
+        // Otherwise, enumerate and return
+        return await this.enumerateAudioDevices();
+    }
+    
+    /**
+     * Populate the audio device selection dropdown
+     */
+    populateAudioDeviceSelect() {
+        const deviceSelect = document.getElementById('audioDeviceSelect');
+        if (!deviceSelect) return;
+        
+        // Clear existing options
+        deviceSelect.innerHTML = '';
+        
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = 'default';
+        defaultOption.text = 'Default Device';
+        deviceSelect.appendChild(defaultOption);
+        
+        // Add each available device
+        this.audioDevices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.text = device.label || `Device ${device.deviceId.substring(0, 5)}...`;
+            deviceSelect.appendChild(option);
+        });
+        
+        // Set the current value
+        deviceSelect.value = this.selectedDevice;
+    }
+    
+    /**
+     * Set the audio output device
+     * @param {string} deviceId - The device ID to use
+     */
+    setAudioDevice(deviceId) {
+        if (!deviceId) return;
+        
+        this.selectedDevice = deviceId;
+        console.log(`Audio output device set to: ${deviceId}`);
+        
+        // Update audio routing if possible
+        if (Tone.context && Tone.context.destination && typeof Tone.context.setSinkId === 'function') {
+            try {
+                Tone.context.setSinkId(deviceId);
+            } catch (error) {
+                console.error('Error setting audio output device:', error);
+            }
+        }
+    }
+    
+    /**
+     * Set whether sidetone is enabled
+     * @param {boolean} enabled - Whether sidetone is enabled
+     */
+    setSidetoneEnabled(enabled) {
+        this.sidetoneEnabled = enabled;
+        console.log(`Sidetone ${enabled ? 'enabled' : 'disabled'}`);
     }
     
     /**
@@ -502,6 +610,11 @@ export class MorseAudio {
      * @param {boolean} isKeyDown - Whether the key is down
      */
     generateSidetone(isKeyDown) {
+        // Check if sidetone is enabled
+        if (!this.sidetoneEnabled) {
+            return;
+        }
+        
         if (isKeyDown) {
             // Key is down, start tone
             if (this.oscillator && this.oscillator.state !== 'started') {

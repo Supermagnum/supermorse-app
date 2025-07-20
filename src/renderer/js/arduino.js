@@ -119,6 +119,23 @@ export class ArduinoInterface {
         
         console.log('Arduino:', line);
         
+        // Handle paddle press/release events for sidetone generation
+        if (line === 'left_paddle_pressed' || line === 'right_paddle_pressed') {
+            // Generate sidetone when paddle is pressed
+            if (this.app.morseAudio) {
+                this.app.morseAudio.generateSidetone(true);
+            }
+            return;
+        }
+        
+        if (line === 'left_paddle_released' || line === 'right_paddle_released') {
+            // Stop sidetone when paddle is released
+            if (this.app.morseAudio) {
+                this.app.morseAudio.generateSidetone(false);
+            }
+            return;
+        }
+        
         // Handle mode response
         if (line.startsWith('MODE:')) {
             const mode = line.substring(5);

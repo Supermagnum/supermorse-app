@@ -278,6 +278,26 @@
                                 <input type="range" id="settingsVolume" min="0" max="100" step="1" value="75">
                                 <p class="hint">Adjust the volume of the Morse code audio</p>
                             </div>
+                            
+                            <div class="form-group">
+                                <label for="audioDeviceSelect">Audio Output Device</label>
+                                <select id="audioDeviceSelect">
+                                    <option value="default">Default Device</option>
+                                </select>
+                                <button id="refreshAudioDevicesBtn" class="btn btn-small">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                                <p class="hint">Select which audio device to use for Morse audio output</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="sidetoneEnabled">Sidetone</label>
+                                <select id="sidetoneEnabled">
+                                    <option value="on">On</option>
+                                    <option value="off">Off</option>
+                                </select>
+                                <p class="hint">Enable/disable audio feedback when sending with Morse key</p>
+                            </div>
                         </div>
                         
                         <div class="settings-group">

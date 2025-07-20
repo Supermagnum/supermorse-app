@@ -19,7 +19,9 @@ export class SettingsManager {
             theme: 'light',
             maidenheadLocator: '',
             preferredBand: 'auto',
-            serverAddress: ''
+            serverAddress: '',
+            audioDevice: 'default', // Audio output device
+            sidetoneEnabled: 'on'    // Whether to play sidetone on key press
         };
     }
     
@@ -85,6 +87,15 @@ export class SettingsManager {
         if (this.app.morseAudio) {
             this.app.morseAudio.setFrequency(this.settings.toneFrequency);
             this.app.morseAudio.setVolume(this.settings.volume);
+            
+            // Apply audio device and sidetone settings
+            if (typeof this.app.morseAudio.setAudioDevice === 'function') {
+                this.app.morseAudio.setAudioDevice(this.settings.audioDevice);
+            }
+            
+            if (typeof this.app.morseAudio.setSidetoneEnabled === 'function') {
+                this.app.morseAudio.setSidetoneEnabled(this.settings.sidetoneEnabled === 'on');
+            }
         }
         
         // Apply morse speed
@@ -125,6 +136,19 @@ export class SettingsManager {
         document.getElementById('settingsVolume').value = Math.round(((this.settings.volume + 40) / 40) * 100); // Convert dB to percentage
         document.getElementById('keyModeSelect').value = this.settings.keyMode;
         document.getElementById('themeSelect').value = this.settings.theme;
+        
+        // Set audio device and sidetone settings
+        const audioDeviceSelect = document.getElementById('audioDeviceSelect');
+        const sidetoneToggle = document.getElementById('sidetoneToggle');
+        
+        if (audioDeviceSelect) {
+            // Populate audio devices dropdown
+            this.populateAudioDevices();
+        }
+        
+        if (sidetoneToggle) {
+            sidetoneToggle.value = this.settings.sidetoneEnabled;
+        }
         
         // Only set these if they're visible (Murmur unlocked)
         const maidenheadInput = document.getElementById('maidenheadLocator');
@@ -220,5 +244,41 @@ export class SettingsManager {
         // Format: 2 letters + 2 digits + optional 2 letters
         const regex = /^[A-R]{2}[0-9]{2}([A-X]{2})?$/i;
         return regex.test(locator);
+    }
+    
+    /**
+     * Populate the audio devices dropdown
+     * @returns {Promise} - Resolves when audio devices are loaded
+     */
+    async populateAudioDevices() {
+        const audioDeviceSelect = document.getElementById('audioDeviceSelect');
+        if (!audioDeviceSelect) return false;
+        
+        // Clear the current options
+        audioDeviceSelect.innerHTML = '<option value="default">Default Output Device</option>';
+        
+        try {
+            // Get the available audio devices from MorseAudio
+            const devices = await this.app.morseAudio.getAudioDevices();
+            
+            // Add each device to the dropdown
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.textContent = device.label || `Output Device ${device.deviceId}`;
+                
+                // Select the currently configured device
+                if (device.deviceId === this.settings.audioDevice) {
+                    option.selected = true;
+                }
+                
+                audioDeviceSelect.appendChild(option);
+            });
+            
+            return true;
+        } catch (error) {
+            console.error('Error loading audio devices:', error);
+            return false;
+        }
     }
 }
