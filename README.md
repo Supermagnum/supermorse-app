@@ -68,35 +68,23 @@ One of these:
 - **3-conductor wire**
 - **Any computer** with USB ports, screen, and keyboard 
 
-## Morse Key Emulator
-
-For those who want to practice Morse code reception without physical hardware, there is  a software-based [Morse Key Emulator](https://github.com/Supermagnum/supermorse-app/tree/main/key-emulator) that:
-
-- Follows the suggested learning order from alphabets.js
-- Supports simultaneous keypresses for prosigns (e.g., A+R for "end of message")
-- Emulates serial communication to interface with the app
-- Provides a progressive learning interface
-- This is mainly to make it easier for those willing in helping out with testing and debugging, will be integrated in the main app later.
 
 
 **Note**: You must be logged in to the Supermorse app to access training features, track progress, and change settings.
 
 ## Arduino Pin Configuration
 
-The Arduino firmware supports multiple Morse key types. Here's how to connect your key:
+The Arduino firmware supports iambic paddle keys. Here's how to connect your paddle:
 
 ### Pin Assignments
-- **Pin 2** - Straight key input or Paddle dot contact
+- **Pin 2** - Paddle dot contact
 - **Pin 3** - Paddle dash contact
 
 ### Connection Instructions
-1. **For a straight key**: Connect your key to pin 2 and ground
-2. **For a paddle key**: Connect the dot paddle to pin 2, dash paddle to pin 3, and common to ground
+Connect the dot paddle to pin 2, dash paddle to pin 3, and common to ground
 
-All input pins use internal pull-up resistors, so keys should connect to ground when pressed. The software can be configured to operate in different modes:
+All input pins use internal pull-up resistors, so paddles should connect to ground when pressed. The software supports two operating modes:
 
-- Straight key mode
-- Single paddle mode
 - Iambic paddle mode A (Curtis A)
 - Iambic paddle mode B
 

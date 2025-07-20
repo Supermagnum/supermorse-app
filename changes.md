@@ -6,6 +6,146 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
+## July 20, 2025
+
+## 21. Removed Straight Key and Single Paddle Modes
+
+### Problem Addressed
+
+When single paddle mode or straight key mode was set, the application still reacted as if a dual paddle was attached. This created confusion for users and inconsistent behavior, particularly in the UI where both paddles would show activity even when using modes designed for single input. These modes also increased code complexity and maintenance overhead across the Arduino firmware variants.
+
+### Changes Made
+
+#### 21.1 Removed Straight Key and Single Paddle Modes from Arduino Firmware
+
+Removed STRAIGHT_KEY and PADDLE_SINGLE from the KeyMode enum in all Arduino board variants:
+
+```arduino
+// Old implementation
+enum KeyMode {
+  STRAIGHT_KEY,     // Traditional straight key
+  PADDLE_SINGLE,    // Paddle used as a single lever
+  PADDLE_IAMBIC_A,  // Paddle used in iambic mode A (Curtis A - true implementation)
+  PADDLE_IAMBIC_B   // Paddle used in iambic mode B
+};
+
+// New implementation
+enum KeyMode {
+  PADDLE_IAMBIC_A,  // Paddle used in iambic mode A (Curtis A - true implementation)
+  PADDLE_IAMBIC_B   // Paddle used in iambic mode B
+};
+```
+
+Removed STRAIGHT_KEY_PIN constant and related pinMode calls:
+
+```arduino
+// Removed from all board variants
+const int STRAIGHT_KEY_PIN = 2;   // Connect straight key to D2 pin (GPIO 2)
+pinMode(STRAIGHT_KEY_PIN, INPUT_PULLUP);
+```
+
+Removed handleStraightKey() and handleSinglePaddle() functions from all Arduino board variants.
+
+Updated checkSerialCommands() to map legacy 'S' and 'P' commands to mode 'A' for backward compatibility:
+
+```arduino
+// Old implementation
+switch (cmd) {
+  case 'S': // Straight key mode
+    currentKeyMode = STRAIGHT_KEY;
+    Serial.println("MODE:STRAIGHT");
+    break;
+  case 'P': // Single paddle mode
+    currentKeyMode = PADDLE_SINGLE;
+    Serial.println("MODE:PADDLE_SINGLE");
+    break;
+  // ...
+}
+
+// New implementation
+switch (cmd) {
+  case 'S': // For backward compatibility, map to Iambic mode A
+  case 'P': // For backward compatibility, map to Iambic mode A
+  case 'A': // Iambic paddle mode A (Curtis A)
+    currentKeyMode = PADDLE_IAMBIC_A;
+    Serial.println("MODE:PADDLE_IAMBIC_A");
+    break;
+  // ...
+}
+```
+
+#### 21.2 Set Consistent Debounce Delay Across All Boards
+
+Updated the debounce delay to 200ms across all Arduino board variants for more consistent behavior:
+
+```arduino
+// Old implementation
+const unsigned long DEBOUNCE_DELAY = 20;      // Debounce time in milliseconds
+
+// New implementation 
+const unsigned long DEBOUNCE_DELAY = 200;     // Debounce time in milliseconds
+```
+
+#### 21.3 Updated Default Key Mode in UI Settings
+
+Modified settings.js to use 'A' (Iambic Mode A) as the default and handle legacy settings:
+
+```javascript
+// Old implementation
+keyMode: 'S', // S = Straight key, P = Paddle, A = Iambic A, B = Iambic B
+
+// New implementation
+keyMode: 'A', // A = Iambic A, B = Iambic B
+```
+
+Added code to handle legacy settings by converting 'S' and 'P' to 'A':
+
+```javascript
+// Handle legacy key modes
+if (this.settings.keyMode === 'S' || this.settings.keyMode === 'P') {
+    console.log(`Converting legacy key mode '${this.settings.keyMode}' to 'A'`);
+    this.settings.keyMode = 'A';
+}
+```
+
+#### 21.4 Removed Key Mode Options from HTML UI
+
+Updated the key mode selection dropdown in index.html to remove straight key and single paddle options:
+
+```html
+<!-- Old implementation -->
+<div class="form-group">
+    <label for="keyModeSelect">Morse Key Type</label>
+    <select id="keyModeSelect">
+        <option value="S">Straight Key</option>
+        <option value="P">Single Paddle</option>
+        <option value="A">Iambic Mode A (Curtis A)</option>
+        <option value="B">Iambic Mode B</option>
+    </select>
+    <p class="hint">Select the type of Morse key you are using with the Arduino</p>
+</div>
+
+<!-- New implementation -->
+<div class="form-group">
+    <label for="keyModeSelect">Iambic Paddle Mode</label>
+    <select id="keyModeSelect">
+        <option value="A">Iambic Mode A (Curtis A)</option>
+        <option value="B">Iambic Mode B</option>
+    </select>
+    <p class="hint">Select the iambic mode for your paddle</p>
+</div>
+```
+
+### Benefits
+
+- Streamlined code with fewer modes to maintain across all Arduino board variants
+- Eliminated confusing UI behavior where both paddles would show activity in single input modes
+- More consistent debounce behavior across all supported hardware
+- Reduced firmware complexity and binary size
+- Clearer focus on iambic paddle operation, which is the most common usage for Morse operators
+- Simplified user interface with only the most useful options presented
+- Maintained backward compatibility for existing users by automatically mapping legacy modes
+
 
 ## July 19, 2025
 
