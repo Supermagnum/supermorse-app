@@ -8,6 +8,320 @@ This document details the implementation changes made to improve authentication 
 
 ## July 20, 2025
 
+## 22. Added Audio Output Device Selection and Sidetone Feedback
+
+### Problem Addressed
+
+The application previously used the default system audio output device without allowing users to select specific speakers or headphones. This limited flexibility for users with multiple audio devices. Additionally, when using physical Morse keys or paddles, there was no audio feedback (sidetone) to hear what was being sent, making it difficult for users to confirm their keying.
+
+### Changes Made
+
+#### 22.1 Added Audio Output Device Selection
+
+Added the ability to enumerate and select available audio output devices:
+
+```javascript
+// In morse-audio.js
+constructor(app) {
+    this.app = app;
+    this.audioContext = null;
+    this.oscillator = null;
+    this.gainNode = null;
+    this.frequency = 600;
+    this.volume = -15;
+    this.audioDevices = [];
+    this.selectedDevice = null;
+    this.sidetoneEnabled = true;
+    
+    // Initialize the audio components
+    this.initAudioContext();
+    this.enumerateAudioDevices();
+}
+
+/**
+ * Enumerate available audio output devices
+ * @returns {Promise<void>}
+ */
+async enumerateAudioDevices() {
+    try {
+        // Request permission to access audio devices
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Get list of all media devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        
+        // Filter to just audio output devices
+        this.audioDevices = devices.filter(device => device.kind === 'audiooutput');
+        console.log('Available audio output devices:', this.audioDevices);
+        
+        // Set default device if none selected
+        if (!this.selectedDevice && this.audioDevices.length > 0) {
+            this.selectedDevice = this.audioDevices[0].deviceId;
+        }
+    } catch (error) {
+        console.error('Error enumerating audio devices:', error);
+    }
+}
+
+/**
+ * Get list of available audio devices for UI
+ * @returns {Array} List of audio output devices
+ */
+getAudioDevices() {
+    return this.audioDevices.map(device => ({
+        id: device.deviceId,
+        label: device.label || `Speaker ${device.deviceId.slice(0, 5)}...`
+    }));
+}
+```
+
+Added a method to set the selected audio device:
+
+```javascript
+/**
+ * Set the audio output device
+ * @param {string} deviceId - The device ID to use
+ * @returns {boolean} Success status
+ */
+setAudioDevice(deviceId) {
+    try {
+        // Store the selected device ID
+        this.selectedDevice = deviceId;
+        
+        // Reinitialize audio components to use the new device
+        this.initAudioContext();
+        
+        console.log(`Audio output device set to: ${deviceId}`);
+        return true;
+    } catch (error) {
+        console.error('Error setting audio device:', error);
+        return false;
+    }
+}
+```
+
+Updated the audio initialization to use the selected device:
+
+```javascript
+/**
+ * Initialize audio context and components
+ */
+initAudioContext() {
+    // Create new audio context if needed
+    if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    // Initialize components for the selected device
+    this.initToneComponents();
+}
+
+/**
+ * Initialize audio components for tone generation
+ */
+initToneComponents() {
+    try {
+        // Clean up existing components
+        if (this.gainNode) {
+            this.gainNode.disconnect();
+        }
+        if (this.oscillator) {
+            this.oscillator.disconnect();
+            this.oscillator = null;
+        }
+        
+        // Create gain node for volume control
+        this.gainNode = this.audioContext.createGain();
+        this.gainNode.gain.value = Math.pow(10, this.volume / 20); // Convert dB to linear
+        
+        // If we have a selected device, use it
+        if (this.selectedDevice) {
+            // For browsers that support setSinkId
+            if (typeof this.gainNode.context.destination.setSinkId === 'function') {
+                // Create an audio element to output to the selected device
+                const audio = new Audio();
+                audio.setSinkId(this.selectedDevice)
+                    .then(() => {
+                        const dest = this.audioContext.createMediaStreamDestination();
+                        this.gainNode.connect(dest);
+                        audio.srcObject = dest.stream;
+                        audio.play();
+                        console.log(`Audio routed to device: ${this.selectedDevice}`);
+                    })
+                    .catch(err => {
+                        console.warn('Failed to set audio output device:', err);
+                        // Fall back to default destination
+                        this.gainNode.connect(this.audioContext.destination);
+                    });
+            } else {
+                // If setSinkId is not supported, use default destination
+                console.warn('setSinkId not supported by this browser, using default audio output');
+                this.gainNode.connect(this.audioContext.destination);
+            }
+        } else {
+            // No device selected, use default
+            this.gainNode.connect(this.audioContext.destination);
+        }
+    } catch (error) {
+        console.error('Error initializing tone components:', error);
+        // Ensure we at least have a working audio output
+        if (this.gainNode) {
+            this.gainNode.connect(this.audioContext.destination);
+        }
+    }
+}
+```
+
+#### 22.2 Added UI Controls for Audio Device Selection
+
+Added a dropdown for audio device selection to the settings page:
+
+```html
+<!-- Audio Output Device Selection -->
+<div class="form-group">
+    <label for="audioDeviceSelect">Audio Output Device</label>
+    <select id="audioDeviceSelect">
+        <option value="">Default Device</option>
+        <!-- Will be populated with available devices -->
+    </select>
+    <p class="hint">Select which speaker or headphone to use for Morse audio</p>
+</div>
+```
+
+#### 22.3 Implemented Sidetone Functionality
+
+Added a sidetone toggle to the settings:
+
+```html
+<!-- Sidetone Toggle -->
+<div class="form-group">
+    <label>
+        <input type="checkbox" id="sidetoneEnabled" checked>
+        Enable Sidetone
+    </label>
+    <p class="hint">Hear audio feedback when sending with a physical key</p>
+</div>
+```
+
+Enhanced the MorseAudio class with sidetone functionality:
+
+```javascript
+/**
+ * Set sidetone enabled state
+ * @param {boolean} enabled - Whether sidetone is enabled
+ */
+setSidetoneEnabled(enabled) {
+    this.sidetoneEnabled = enabled;
+    console.log(`Sidetone ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+/**
+ * Generate sidetone when key is pressed/released
+ * @param {boolean} active - Whether the key is pressed
+ */
+generateSidetone(active) {
+    // Only generate sidetone if enabled
+    if (!this.sidetoneEnabled) return;
+    
+    if (active) {
+        // Key pressed - start tone
+        if (!this.oscillator) {
+            this.oscillator = this.audioContext.createOscillator();
+            this.oscillator.type = 'sine';
+            this.oscillator.frequency.setValueAtTime(this.frequency, this.audioContext.currentTime);
+            this.oscillator.connect(this.gainNode);
+            this.oscillator.start();
+        }
+    } else {
+        // Key released - stop tone
+        if (this.oscillator) {
+            // Add a very short fade-out to prevent the click sound
+            const now = this.audioContext.currentTime;
+            this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+            this.gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+            
+            // Stop the oscillator after the fade-out completes
+            this.oscillator.stop(now + 0.02);
+            this.oscillator = null;
+        }
+    }
+}
+```
+
+#### 22.4 Connected Paddle Events to Sidetone
+
+Updated arduino.js to call the sidetone generator when paddle events are detected:
+
+```javascript
+/**
+ * Process a complete line from the Arduino
+ * @param {string} line - The line to process
+ */
+processSerialLine(line) {
+    // Ignore empty lines
+    if (!line) return;
+    
+    console.log('Arduino:', line);
+    
+    // Handle paddle press/release events for sidetone generation
+    if (line === 'left_paddle_pressed' || line === 'right_paddle_pressed') {
+        // Generate sidetone when paddle is pressed
+        if (this.app.morseAudio) {
+            this.app.morseAudio.generateSidetone(true);
+        }
+        return;
+    }
+    
+    if (line === 'left_paddle_released' || line === 'right_paddle_released') {
+        // Stop sidetone when paddle is released
+        if (this.app.morseAudio) {
+            this.app.morseAudio.generateSidetone(false);
+        }
+        return;
+    }
+    
+    // Handle other messages...
+}
+```
+
+#### 22.5 Updated Settings Manager for Audio Preferences
+
+Enhanced the SettingsManager to save and load audio device and sidetone settings:
+
+```javascript
+// Default settings including audio device and sidetone
+this.settings = {
+    toneFrequency: 600,
+    morseSpeed: 13,
+    volume: -15,
+    audioDevice: '',
+    sidetoneEnabled: true
+};
+
+// Apply settings to components
+applySettings() {
+    // Apply audio settings
+    if (this.app.morseAudio) {
+        this.app.morseAudio.setFrequency(this.settings.toneFrequency);
+        this.app.morseAudio.setVolume(this.settings.volume);
+        this.app.morseAudio.setAudioDevice(this.settings.audioDevice);
+        this.app.morseAudio.setSidetoneEnabled(this.settings.sidetoneEnabled);
+    }
+    
+    // Apply other settings...
+}
+```
+
+### Benefits
+
+- Improved flexibility for users with multiple audio output devices
+- Better accessibility for users with hearing impairments who need specific audio devices
+- Real-time audio feedback when sending Morse code with physical keys or paddles
+- More natural and traditional Morse code operation with sidetone feedback
+- Enhanced learning experience with immediate auditory feedback during keying
+- Better separation of audio channels for users in multi-device setups
+- Ability to select dedicated audio devices for Morse practice
+
 ## 21. Removed Straight Key and Single Paddle Modes
 
 ### Problem Addressed

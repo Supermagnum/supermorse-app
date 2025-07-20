@@ -49,6 +49,8 @@ Get a visual overview of the SuperMorse application:
 - User authentication with username/password and email registration
 - Session tracking with 30-minute lessons and break recommendations
 - Configurable sinusoidal tone with adjustable frequency
+- Selectable audio output device for different speakers or headphones
+- Sidetone feedback to hear what you're sending with physical keys
 - Arduino integration for physical Morse key input
 - Detailed progress tracking and statistics
 - Progressive unlocking of character sets and features:
