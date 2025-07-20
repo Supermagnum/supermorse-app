@@ -17,28 +17,25 @@
 // For SAMD21, D2 is digital pin 2
 // For SAMD21, D3 is digital pin 3
 // If this doesn't work, you may need to check the specific GPIO mapping for your board
-const int STRAIGHT_KEY_PIN = 2;  // Connect straight key to D2 pin (digital pin 2)
 const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (digital pin 2)
 const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (digital pin 3)
 const int YELLOW_LED_PIN = 13;   // D13 for the yellow LED on Xiao SAMD21
 
 // Key mode definitions
 enum KeyMode {
-  STRAIGHT_KEY,     // Traditional straight key
-  PADDLE_SINGLE,    // Paddle used as a single lever
   PADDLE_IAMBIC_A,  // Paddle used in iambic mode A (Curtis A - true implementation)
   PADDLE_IAMBIC_B   // Paddle used in iambic mode B
 };
 
 // Current key mode
-KeyMode currentKeyMode = STRAIGHT_KEY;
+KeyMode currentKeyMode = PADDLE_IAMBIC_A;
 
 // Timing constants (in milliseconds)
 const unsigned long DIT_THRESHOLD = 150;      // Maximum duration for a dit
 const unsigned long DAH_THRESHOLD = 450;      // Maximum duration for a dah
 const unsigned long ELEMENT_THRESHOLD = 200;  // Maximum time between elements within a character
 const unsigned long WORD_THRESHOLD = 1400;    // Maximum time between words
-const unsigned long DEBOUNCE_DELAY = 20;      // Debounce time in milliseconds to prevent contact bounce
+const unsigned long DEBOUNCE_DELAY = 200;      // Debounce time in milliseconds to prevent contact bounce
 const unsigned long SIGNAL_REPEAT_DELAY = 300; // Minimum time between signals to prevent multiple signals from a single press
 
 // State variables
@@ -72,7 +69,6 @@ void setup() {
   Serial.begin(9600);
   
   // Set up pins with internal pull-up resistors
-  pinMode(STRAIGHT_KEY_PIN, INPUT_PULLUP);
   pinMode(PADDLE_DOT_PIN, INPUT_PULLUP);
   pinMode(PADDLE_DASH_PIN, INPUT_PULLUP);
   
@@ -94,12 +90,6 @@ void loop() {
   
   // Handle key input based on current mode
   switch (currentKeyMode) {
-    case STRAIGHT_KEY:
-      handleStraightKey();
-      break;
-    case PADDLE_SINGLE:
-      handleSinglePaddle();
-      break;
     case PADDLE_IAMBIC_A:
       handleIambicPaddleModeA();
       break;
@@ -148,13 +138,10 @@ void checkSerialCommands() {
     
     // Process command
     switch (cmd) {
-      case 'S': // Straight key mode
-        currentKeyMode = STRAIGHT_KEY;
-        Serial.println("MODE:STRAIGHT");
-        break;
-      case 'P': // Single paddle mode
-        currentKeyMode = PADDLE_SINGLE;
-        Serial.println("MODE:PADDLE_SINGLE");
+      case 'S': // For backward compatibility, map to Iambic A
+      case 'P': // For backward compatibility, map to Iambic A
+        currentKeyMode = PADDLE_IAMBIC_A;
+        Serial.println("MODE:PADDLE_IAMBIC_A");
         break;
       case 'A': // Iambic paddle mode A (Curtis A)
         currentKeyMode = PADDLE_IAMBIC_A;
@@ -168,119 +155,6 @@ void checkSerialCommands() {
   }
 }
 
-/**
- * Handle straight key input with debounce
- */
-void handleStraightKey() {
-  // Read the state of the straight key (LOW when pressed, HIGH when released)
-  bool currentKeyState = digitalRead(STRAIGHT_KEY_PIN);
-  
-  // Check if the state has changed
-  if (currentKeyState != lastKeyState) {
-    // Reset the debounce timer
-    lastDebounceTime = millis();
-  }
-  
-  // Only act on the state change if it's been stable for longer than the debounce delay
-  // and enough time has passed since the last signal
-  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
-      (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
-    // If the key state has changed and is stable
-    bool keyIsDown = currentKeyState == LOW;
-    
-    // Key press detected
-    if (keyIsDown && !keyWasDown) {
-      keyDownTime = millis();
-      keyWasDown = true;
-      
-      // Set input active to trigger LED blinking
-      setInputActive();
-    }
-    
-    // Key release detected
-    if (!keyIsDown && keyWasDown) {
-      keyUpTime = millis();
-      unsigned long pressDuration = keyUpTime - keyDownTime;
-      
-      // Determine if it's a dit or dah and send immediately
-      if (pressDuration <= DIT_THRESHOLD) {
-        Serial.print(".");
-        lastSentElement = '.';
-        lastSignalTime = millis(); // Record when this signal was sent
-      } else if (pressDuration <= DAH_THRESHOLD) {
-        Serial.print("-");
-        lastSentElement = '-';
-        lastSignalTime = millis(); // Record when this signal was sent
-      }
-      
-      lastElementTime = keyUpTime;
-      keyWasDown = false;
-      
-      // Clear input active flag when key is released
-      inputActive = false;
-    }
-  }
-  
-  // Save the current state for next comparison
-  lastKeyState = currentKeyState;
-}
-
-/**
- * Handle single paddle input with debounce (one lever for dots or dashes)
- */
-void handleSinglePaddle() {
-  // Read the state of the paddle dot contact (LOW when pressed, HIGH when released)
-  bool currentKeyState = digitalRead(PADDLE_DOT_PIN);
-  
-  // Check if the state has changed
-  if (currentKeyState != lastKeyState) {
-    // Reset the debounce timer
-    lastDebounceTime = millis();
-  }
-  
-  // Only act on the state change if it's been stable for longer than the debounce delay
-  // and enough time has passed since the last signal
-  if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY && 
-      (millis() - lastSignalTime) > SIGNAL_REPEAT_DELAY) {
-    // If the key state has changed and is stable
-    bool dotIsDown = currentKeyState == LOW;
-    
-    // Key press detected
-    if (dotIsDown && !keyWasDown) {
-      keyDownTime = millis();
-      keyWasDown = true;
-      
-      // Set input active to trigger LED blinking
-      setInputActive();
-    }
-    
-    // Key release detected
-    if (!dotIsDown && keyWasDown) {
-      keyUpTime = millis();
-      unsigned long pressDuration = keyUpTime - keyDownTime;
-      
-      // Determine if it's a dit or dah and send immediately
-      if (pressDuration <= DIT_THRESHOLD) {
-        Serial.print(".");
-        lastSentElement = '.';
-        lastSignalTime = millis(); // Record when this signal was sent
-      } else if (pressDuration <= DAH_THRESHOLD) {
-        Serial.print("-");
-        lastSentElement = '-';
-        lastSignalTime = millis(); // Record when this signal was sent
-      }
-      
-      lastElementTime = keyUpTime;
-      keyWasDown = false;
-      
-      // Clear input active flag when key is released
-      inputActive = false;
-    }
-  }
-  
-  // Save the current state for next comparison
-  lastKeyState = currentKeyState;
-}
 
 /**
  * Handle iambic paddle input in Mode A with debounce (Curtis A - true implementation)

@@ -15,7 +15,7 @@ export class SettingsManager {
             morseSpeed: 13,
             volume: -10, // Default volume in dB
             arduinoPort: '',
-            keyMode: 'S', // S = Straight key, P = Paddle, A = Iambic A, B = Iambic B
+            keyMode: 'A', // A = Iambic A, B = Iambic B
             theme: 'light',
             maidenheadLocator: '',
             preferredBand: 'auto',
@@ -34,6 +34,12 @@ export class SettingsManager {
             
             // Merge with defaults (keeping defaults for missing properties)
             this.settings = { ...this.settings, ...storedSettings };
+            
+            // Handle legacy key modes
+            if (this.settings.keyMode === 'S' || this.settings.keyMode === 'P') {
+                console.log(`Converting legacy key mode '${this.settings.keyMode}' to 'A'`);
+                this.settings.keyMode = 'A';
+            }
             
             // Apply settings
             this.applySettings();
