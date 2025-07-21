@@ -131,6 +131,106 @@ SuperMorse is built using Electron, which provides significant advantages for di
 
 SuperMorse leverages these capabilities to provide a seamless installation experience across all supported operating systems. When you download a distributed version of SuperMorse, everything needed to run the application is included in the package.
 
+## Normal User Installation
+
+If you just want to use SuperMorse without building it from source, follow these instructions to install the pre-built application for your operating system.
+
+### Download
+
+Download the latest version of SuperMorse for your platform from the [Releases page](https://github.com/Supermagnum/supermorse-app/releases).
+
+### Linux Installation
+
+1. **Debian/Ubuntu (.deb package)**:
+   ```bash
+   # Install the downloaded .deb package
+   sudo dpkg -i supermorse_1.0.0_amd64.deb
+   
+   # If there are dependency issues, run
+   sudo apt-get install -f
+   ```
+
+2. **AppImage**:
+   ```bash
+   # Make the AppImage executable
+   chmod +x SuperMorse-1.0.0.AppImage
+   
+   # Run the application
+   ./SuperMorse-1.0.0.AppImage
+   ```
+
+3. **USB Permissions for Arduino**:
+   ```bash
+   # Add your user to the dialout group to access serial ports
+   sudo usermod -a -G dialout $USER
+   
+   # Log out and log back in for changes to take effect
+   ```
+
+4. **Starting SuperMorse**:
+   - Launch from your applications menu, or
+   - Run from terminal: `supermorse-app`
+
+### macOS Installation
+
+1. **Mount the DMG**:
+   - Double-click the downloaded `SuperMorse-1.0.0.dmg` file
+   - Drag the SuperMorse app to your Applications folder
+
+2. **First Launch**:
+   - Go to Applications in Finder
+   - Right-click (or Control+click) on SuperMorse and select "Open"
+   - Click "Open" on the security dialog (only needed the first time)
+
+3. **USB Permissions**:
+   - When connecting an Arduino, macOS may prompt for permissions
+   - Open System Preferences > Security & Privacy > Privacy > USB
+   - Ensure SuperMorse has permission to access USB devices
+
+4. **Troubleshooting**:
+   - If you see "App is damaged" message, open Terminal and run:
+     ```bash
+     xattr -cr /Applications/SuperMorse.app
+     ```
+
+### Windows Installation
+
+1. **Run the Installer**:
+   - Double-click the downloaded `SuperMorse-Setup-1.0.0.exe`
+   - Follow the installation wizard prompts
+
+2. **Windows Security**:
+   - If Windows SmartScreen appears, click "More info" and "Run anyway"
+
+3. **Arduino Drivers**:
+   - For Arduino connectivity, you may need to install drivers
+   - Windows 10/11 usually installs these automatically
+   - For manual installation, visit [Arduino's driver page](https://www.arduino.cc/en/Guide/DriverInstallation)
+
+4. **Starting SuperMorse**:
+   - Launch from the Start menu, or
+   - Use the desktop shortcut created during installation
+
+### First-Time Setup
+
+After installation on any platform:
+
+1. **Create a User Account**:
+   - Launch SuperMorse
+   - Click "Register" to create a new user account
+   - Fill in your details and complete registration
+
+2. **Arduino Setup** (optional):
+   - Connect your Arduino board via USB
+   - Upload the appropriate firmware for your board from the Arduino firmware section
+   - Select your board type in SuperMorse settings
+
+3. **Audio Settings**:
+   - Configure your preferred audio output device
+   - Adjust the tone frequency and volume as needed
+
+For more information on using SuperMorse, see the Features section above.
+
 ## Modified Mumble server.
 It is located here.
 https://github.com/Supermagnum/Supermorse-server
