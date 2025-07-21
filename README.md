@@ -41,6 +41,7 @@ Get a visual overview of the SuperMorse application:
 - [Progress Tracking](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/progress.jpeg) - Track your Morse code learning progress
 - [Settings Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/settings.jpeg) - Configure your learning experience
 - [Training Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/training.jpeg) - Morse code learning and practice
+- [Listening Mode](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/listening.jpeg) - Practice listening to Morse code
 - [Murmur Communication](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/murmur.jpeg) - HF communication feature ( outdated picture)
 
 ## Features
