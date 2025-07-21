@@ -41,7 +41,7 @@ Get a visual overview of the SuperMorse application:
 - [Progress Tracking](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/progress.jpeg) - Track your Morse code learning progress
 - [Settings Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/settings.jpeg) - Configure your learning experience
 - [Training Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/training.jpeg) - Morse code learning and practice
-- [Murmur Communication](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/murmur.jpeg) - HF communication feature
+- [Murmur Communication](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/murmur.jpeg) - HF communication feature ( outdated picture)
 
 ## Features
 
@@ -78,7 +78,7 @@ One of these:
 
 
 
-**Note**: You must be logged in to the Supermorse app to access training features, track progress, and change settings.
+**Note**: You must be logged in to the Supermorse app to access training features, track progress, and change settings. These are hidden until you have logged in.
 
 ## Arduino Pin Configuration
 
