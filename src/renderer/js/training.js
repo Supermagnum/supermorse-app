@@ -678,12 +678,19 @@ export class MorseTrainer {
             alphabets.getLearningOrder('international', 3).length + 
             alphabets.getLearningOrder('international', 4).length) {
             
-            // Update mastery to 100%
-            this.mastery = {
-                'international': 100,
-                'prosigns': 100,
-                'special': 100
-            };
+                // Update mastery to 100%, and track whether this was achieved with Arduino (sending) or keyboard (listening)
+                // The masteryType field indicates if the user can actually send Morse code or only listen
+                const masteryType = this.app.currentSection === 'training' ? 'sending' : 'listening';
+                
+                this.mastery = {
+                    'international': 100,
+                    'prosigns': 100,
+                    'special': 100,
+                    'masteryType': masteryType
+                };
+                
+                // Log which type of mastery was achieved
+                console.log(`User achieved 100% mastery via ${masteryType} training`);
             
             // Show completion message
             this.app.showModal('Congratulations!', 

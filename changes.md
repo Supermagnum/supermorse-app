@@ -2,9 +2,186 @@
 
 ## Overview
 
-
-
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
+
+## July 21, 2025
+
+## 23. Added Listening Training Tab and Mastery Type Restrictions
+
+### Problem Addressed
+
+The application had only one training method using Arduino hardware, making it difficult for users without Arduino to practice Morse code. Additionally, users who only mastered listening/copying had access to send messages in all HF band channels, which is not representative of real-world skills where sending Morse code requires physical proficiency with a key.
+
+### Changes Made
+
+#### 23.1 Added Listening Training Tab
+
+Created a dedicated "Listening training" tab as a copy of the existing Morse Code Training tab:
+
+```javascript
+// Added new tab item to navigation in index.html
+<li class="sidebar-item" data-section="listening">
+    <i class="fas fa-headphones"></i>
+    <span>Listening training</span>
+</li>
+
+// Added a new section to match the training section but with unique element IDs
+<section id="listeningSection" class="content-section hidden">
+    <h2>Listening training</h2>
+    <div class="warning-text">This method does not learn you how to use a morse key</div>
+    <!-- Copied content from trainingSection with unique IDs -->
+</section>
+```
+
+#### 23.2 Implemented Input Method Restrictions
+
+Enforced specific input methods for each training tab:
+
+```javascript
+// In arduino.js - Check current section before processing input
+processSerialLine(line) {
+    // Only process Arduino input in the training section, not listening section
+    if (this.app.currentSection === 'listening') {
+        console.log('Arduino input ignored in Listening training tab');
+        return;
+    }
+    
+    // Process Arduino input normally for training tab
+    // ...
+}
+
+// In app.js - Keyboard event listener for Listening tab
+document.addEventListener('keydown', (e) => {
+    // Only process keyboard input in the listening section
+    if (this.currentSection === 'listening') {
+        // Map key presses to Morse characters
+        // ...
+    } else if (this.currentSection === 'training') {
+        // Show message to use Arduino for Training tab
+        this.showMessage('Please use Arduino for the Training tab');
+    }
+});
+```
+
+#### 23.3 Added Visual Indicators and Instructions
+
+Added clear visual indications of input method for each tab:
+
+```html
+<!-- Added warning text in Listening training section -->
+<div class="warning-text" style="color: red;">This method does not learn you how to use a morse key</div>
+
+<!-- Updated challenge text for Training tab -->
+<p id="challengeText">Connect Arduino and press Start to begin - Arduino input only</p>
+
+<!-- Updated challenge text for Listening tab -->
+<p id="challengeTextListening">Press Start to begin - Keyboard input only</p>
+```
+
+#### 23.4 Added Auto-Logout on App Close
+
+Implemented automatic logout when the app is closed:
+
+```javascript
+// In app.js - Added window event listener for app close
+window.addEventListener('beforeunload', () => {
+    // Logout user when app is closed
+    if (this.auth) {
+        this.auth.logout();
+    }
+});
+```
+
+#### 23.5 Added Mastery Type Tracking
+
+Modified training.js to track whether mastery was achieved through sending or listening:
+
+```javascript
+// When updating mastery to 100%, record whether this was via sending or listening
+if (this.learnedCharacters.length >= internationalOrder.length + 
+    alphabets.getLearningOrder('international', 3).length + 
+    alphabets.getLearningOrder('international', 4).length) {
+        
+        // Track whether this was achieved with Arduino (sending) or keyboard (listening)
+        const masteryType = this.app.currentSection === 'training' ? 'sending' : 'listening';
+        
+        this.mastery = {
+            'international': 100,
+            'prosigns': 100,
+            'special': 100,
+            'masteryType': masteryType
+        };
+        
+        // Log which type of mastery was achieved
+        console.log(`User achieved 100% mastery via ${masteryType} training`);
+}
+```
+
+#### 23.6 Added Server-Side Restrictions for Listening-Only Users
+
+Modified murmur.js and the server configuration to restrict message sending in HF band channels for listening-only users:
+
+```javascript
+// In murmur.js - Added check for mastery type before allowing sending
+async checkSendingPermission() {
+    // Get the user's progress to check mastery type
+    const progress = await window.electronAPI.getProgress(userId);
+    
+    // HF band channels where sending is restricted
+    const hfBandChannels = ['160m', '80m', '60m', '40m', '30m', '20m', '17m', '15m', '10m', '6m'];
+    
+    // Check if user only mastered listening
+    if (progress?.mastery?.masteryType === 'listening') {
+        // Check if current channel is an HF band
+        if (hfBandChannels.includes(this.currentBand)) {
+            return {
+                canSend: false,
+                reason: 'You can only listen in this channel because you only mastered listening training. ' +
+                       'Complete training using Arduino to send messages in HF band channels.'
+            };
+        }
+        
+        // Allow sending in text_chat
+        if (this.currentBand === 'text_chat') {
+            return { canSend: true };
+        }
+        
+        // Allow sending in mods channel if user is a moderator
+        if (this.currentBand === 'mods' && this.isAdmin) {
+            return { canSend: true };
+        }
+    }
+}
+```
+
+Added a metadata field and access control group in the server configuration:
+
+```ini
+; Define custom metadata fields
+[metadata_fields]
+; Flag to indicate user has only mastered listening (keyboard-only training)
+listeningOnly=bool
+
+; Access control configuration
+[acl]
+; Define custom groups
+; listening-only group for users who only completed keyboard training
+~listeningonly=listeningOnly:true
+
+; HF band channels (1-10)
+; Listening-only users can enter and listen but not speak or send text messages
+1=~listeningonly:+enter,+traverse,-speak,-whisper,-textmessage
+```
+
+### Benefits
+
+- **Improved Accessibility**: Users without Arduino hardware can now practice Morse code listening
+- **Clear Skill Differentiation**: System now distinguishes between sending proficiency and listening-only skills
+- **More Realistic Simulation**: Only users who've mastered physical keys can send in HF bands, better reflecting real amateur radio requirements
+- **Security Enhancement**: Auto-logout on app close prevents unauthorized access
+- **Balanced Permissions**: Listening-only users can still communicate in text_chat channel
+- **Educational Clarity**: Clear visual indications of which input method to use for each training mode
+- **Server-Enforced Restrictions**: Permissions are synchronized with the server database for consistent enforcement
 
 ## July 20, 2025
 

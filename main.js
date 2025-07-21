@@ -541,6 +541,44 @@ ipcMain.handle('get-mumble-user-info', async () => {
   }
 });
 
+/**
+ * Update Mumble user metadata
+ * This allows the client to update user metadata on the server,
+ * including flags like listeningOnly for mastery type restrictions
+ */
+ipcMain.handle('update-mumble-metadata', async (event, metadata) => {
+  try {
+    if (!mumbleClient) {
+      return { success: false, error: 'Not connected to a Mumble server' };
+    }
+    
+    // Get current user
+    const currentUser = mumbleClient.user;
+    if (!currentUser) {
+      return { success: false, error: 'Current user not found' };
+    }
+    
+    // Update user metadata
+    if (currentUser.setMetadata) {
+      // Use direct method if available
+      await currentUser.setMetadata(metadata);
+    } else if (currentUser.setComment) {
+      // Fallback method: encode metadata in comment
+      const metadataString = JSON.stringify(metadata);
+      await currentUser.setComment(metadataString);
+    } else {
+      return { success: false, error: 'Server does not support metadata updates' };
+    }
+    
+    console.log(`Updated user metadata for ${currentUser.name}:`, metadata);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating Mumble metadata:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('ban-mumble-user', async (event, userId) => {
   try {
     if (!mumbleClient) {
