@@ -35,13 +35,15 @@ All user data, progress tracking, and settings are stored in plain JSON files in
 
 ## Screenshots
 
-Get a visual overview of the SuperMorse application:
+Get a visual overview of the SuperMorse application, with  all features unlocked:
 
-- [Login Screen](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/login.jpeg) - User authentication interface
-- [Progress Tracking](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/progress.jpeg) - Track your Morse code learning progress
-- [Settings Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/settings.jpeg) - Configure your learning experience
-- [Training Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/training.jpeg) - Morse code learning and practice
-- [Listening Mode](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/listening.jpeg) - Practice listening to Morse code
+- [Login Screen](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/login.png) - User authentication interface
+- [Progress Tracking](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/progress.png) - Track your Morse code learning progress
+- [Training Interface](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/training.png) - Morse code learning with Arduino input
+- [Listening Mode](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/listening.png) - Practice listening to Morse code with keyboard input
+- [Regional Morse Code](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/regional.png) - Unlock and practice regional Morse code variations
+- [Murmur HF Communication](https://github.com/Supermagnum/supermorse-app/blob/main/Screenshots/murmur.png) - Communicate using Morse code in simulated HF bands
+
 
 
 ## Features
