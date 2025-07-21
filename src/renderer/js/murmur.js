@@ -748,6 +748,64 @@ export class MurmurInterface {
     
     
     /**
+     * Check if user can send messages in current channel based on mastery type
+     * @returns {Promise<Object>} - Object with canSend and reason properties
+     */
+    async checkSendingPermission() {
+        if (!this.isConnected) {
+            return { canSend: false, reason: 'Not connected to server' };
+        }
+        
+        // Get the user's progress to check mastery type
+        const userId = this.app.auth.getCurrentUser()?.id;
+        if (!userId) {
+            return { canSend: false, reason: 'User not authenticated' };
+        }
+        
+        try {
+            const progress = await window.electronAPI.getProgress(userId);
+            
+            // HF band channels where sending is restricted for listening-only users
+            const hfBandChannels = ['160m', '80m', '60m', '40m', '30m', '20m', '17m', '15m', '10m', '6m'];
+            
+            // Check if user only mastered listening
+            if (progress?.mastery?.masteryType === 'listening') {
+                // Check if current channel is an HF band
+                if (hfBandChannels.includes(this.currentBand)) {
+                    return {
+                        canSend: false,
+                        reason: 'You can only listen in this channel because you only mastered listening training. ' +
+                               'Complete training using Arduino to send messages in HF band channels.'
+                    };
+                }
+                
+                // Allow sending in text_chat
+                if (this.currentBand === 'text_chat') {
+                    return { canSend: true };
+                }
+                
+                // Allow sending in mods channel if user is a moderator
+                if (this.currentBand === 'mods' && this.isAdmin) {
+                    return { canSend: true };
+                }
+                
+                // Restrict sending in all other channels
+                return {
+                    canSend: false,
+                    reason: 'You can only send messages in text_chat channel with keyboard-only mastery.'
+                };
+            }
+            
+            // User has full sending mastery
+            return { canSend: true };
+        } catch (error) {
+            console.error('Error checking mastery type:', error);
+            // Default to allowing if we can't check
+            return { canSend: true };
+        }
+    }
+    
+    /**
      * Send a Morse code message
      * @param {string} message - The message to send
      */
@@ -760,6 +818,15 @@ export class MurmurInterface {
         }
         
         try {
+            // Check if the user has permission to send in this channel
+            const permissionCheck = await this.checkSendingPermission();
+            
+            if (!permissionCheck.canSend) {
+                // Show error with reason
+                this.app.showModal('Sending Restricted', permissionCheck.reason);
+                return;
+            }
+            
             // Send the message via IPC
             const result = await window.electronAPI.sendMumbleMessage(message);
             
@@ -771,6 +838,9 @@ export class MurmurInterface {
                     time: new Date(),
                     isSelf: true
                 });
+                
+                // Sync restriction to server database if needed
+                await this.syncMasteryTypeToServer();
             } else {
                 // Show error
                 this.app.showModal('Message Error', 
@@ -780,6 +850,41 @@ export class MurmurInterface {
             console.error('Error sending Morse message:', error);
             this.app.showModal('Message Error', 
                 `Failed to send message: ${error.message}`);
+        }
+    }
+    
+    /**
+     * Sync mastery type to server database
+     * This ensures the server knows which users can only listen
+     * @returns {Promise<boolean>} - True if sync was successful
+     */
+    async syncMasteryTypeToServer() {
+        // Only sync if connected
+        if (!this.isConnected) return false;
+        
+        try {
+            // Get the user's progress to check mastery type
+            const userId = this.app.auth.getCurrentUser()?.id;
+            if (!userId) return false;
+            
+            const progress = await window.electronAPI.getProgress(userId);
+            
+            // Only need to sync if mastery type is 'listening'
+            if (progress?.mastery?.masteryType === 'listening') {
+                console.log('Syncing listening-only status to server database');
+                
+                // Send metadata update to server
+                const result = await window.electronAPI.updateMumbleMetadata({
+                    listeningOnly: 'true'
+                });
+                
+                return result.success;
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Error syncing mastery type to server:', error);
+            return false;
         }
     }
     

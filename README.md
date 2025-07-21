@@ -46,18 +46,24 @@ Get a visual overview of the SuperMorse application:
 ## Features
 
 - Progressive Morse code learning using the Koch method (starting with K and M)
-- User authentication with username/password and email registration
+- User authentication with chase sensitive username/password and email registration
 - Session tracking with 30-minute lessons and break recommendations
 - Configurable sinusoidal tone with adjustable frequency
 - Selectable audio output device for different speakers or headphones
 - Sidetone feedback to hear what you're sending with physical keys
 - Arduino integration for physical Morse key input
+- Two complementary training modes:
+  - **Morse Code Training**: Arduino input only for learning to send Morse code with physical keys
+  - **Listening training**: Keyboard input only for learning to copy/listen to Morse code
+- Mastery type tracking that distinguishes between sending and listening-only skills
+- Access control in Murmur channels based on mastery type (users who only master listening cannot send in HF band channels)
+- Automatic logout when the application is closed
 - Detailed progress tracking and statistics
 - Progressive unlocking of character sets and features:
   1. International Morse code
   2. Prosigns
   3. Special characters
-  4. Regional Morse code variations and Murmur HF communication with simulated band conditions.
+  4. Regional Morse code variations and Murmur HF communication with simulated band conditions
  
 ## Needed Hardware
 One of these:
