@@ -72,7 +72,7 @@ One of these:
 - **Seeeduino XIAO ESP32-C6 boards**
 - **Arduino Micro boards**
 - **Arduino Nano boards**
-- **Dual-paddle Morse key** (other types also supported)
+- **Dual-paddle Morse key**
 - **Suitable USB cable**
 - **3-conductor wire**
 - **Any computer** with USB ports, screen, and keyboard 
