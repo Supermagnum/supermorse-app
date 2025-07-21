@@ -178,6 +178,17 @@ export class MorseTrainer {
     }
     
     /**
+     * Check if all standard character sets are mastered
+     * @returns {boolean} - True if all standard character sets are mastered
+     */
+    areAllCharactersMastered() {
+        // Check if mastery levels for all character sets are at 100%
+        return this.mastery.international === 100 && 
+               this.mastery.prosigns === 100 && 
+               this.mastery.special === 100;
+    }
+    
+    /**
      * Start a training lesson
      */
     startLesson() {
@@ -186,6 +197,53 @@ export class MorseTrainer {
         // Don't start if already training
         if (this.isTraining && this.lessonActive) {
             console.log("Already training, ignoring start request");
+            return;
+        }
+        
+        // Check if all standard characters (international, prosigns, special) are mastered
+        if (this.areAllCharactersMastered()) {
+            console.log("All characters mastered, showing completion message");
+            
+            // Show completion message with options for regional characters
+            this.app.showModal('Training Complete', 
+                `<p>Congratulations! You've mastered all International Morse Code characters, prosigns, and special characters.</p>
+                <p>You've unlocked the Murmur HF Communication feature!</p>
+                <p>To continue learning, you can select a regional character set:</p>
+                <div class="regional-options">
+                    <button id="startRegionalEuropean" class="button primary">European Characters</button>
+                    <button id="startRegionalCyrillic" class="button primary">Cyrillic Characters</button>
+                    <button id="startRegionalArabic" class="button primary">Arabic Numerals</button>
+                </div>
+                <p>Or practice what you've already learned:</p>
+                <button id="startPracticeMode" class="button secondary">Practice Mode</button>`,
+                () => {
+                    // Setup event listeners for the regional buttons when modal is shown
+                    document.getElementById('startRegionalEuropean')?.addEventListener('click', () => {
+                        // Implementation for starting European character training would go here
+                        console.log("Starting European character training");
+                        this.app.hideModal();
+                    });
+                    
+                    document.getElementById('startRegionalCyrillic')?.addEventListener('click', () => {
+                        // Implementation for starting Cyrillic character training would go here
+                        console.log("Starting Cyrillic character training");
+                        this.app.hideModal();
+                    });
+                    
+                    document.getElementById('startRegionalArabic')?.addEventListener('click', () => {
+                        // Implementation for starting Arabic numeral training would go here
+                        console.log("Starting Arabic numeral training");
+                        this.app.hideModal();
+                    });
+                    
+                    document.getElementById('startPracticeMode')?.addEventListener('click', () => {
+                        // Start practice mode with all learned characters
+                        console.log("Starting practice mode with all learned characters");
+                        this.startPracticeMode();
+                        this.app.hideModal();
+                    });
+                }
+            );
             return;
         }
         

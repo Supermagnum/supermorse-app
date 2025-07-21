@@ -749,6 +749,57 @@ footer {
   color: var(--text-light);
 }
 
+/* Styles for disabled content that is visible but non-interactive */
+.disabled-content {
+  position: relative;
+  opacity: 0.9; /* Increased from 0.7 for better visibility */
+  pointer-events: none;
+  filter: grayscale(15%); /* Reduced from 30% for better visibility */
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  background-color: var(--bg-color);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+  border: 1px dashed var(--border-color);
+}
+
+.disabled-content::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.03); /* Reduced from 0.05 */
+  border-radius: var(--border-radius-md);
+  z-index: 1;
+}
+
+.disabled-content > * {
+  position: relative;
+  z-index: 2; /* Changed from 0 to be above the overlay */
+}
+
+.requirements-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3; /* Increased from 2 */
+  background-color: rgba(255, 255, 255, 0.8); /* Reduced from 0.9 for better visibility */
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-height: 100px; /* Limit height so content below is visible */
+  overflow: auto;
+}
+
+.requirements-overlay i {
+  font-size: 1.2rem;
+  color: var(--warning-color);
+  margin-right: var(--spacing-xs);
+}
+
 /* ================ MURMUR SECTION ================ */
 .lock-message {
   text-align: center;

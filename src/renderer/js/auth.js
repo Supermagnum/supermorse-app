@@ -98,6 +98,8 @@ export class AuthManager {
                         name: result.user?.name || username
                     };
                 }
+                // Clear the login message
+                this.setFormMessage('loginMessage', '', true);
                 
                 // Show the authenticated UI
                 this.app.showAuthenticatedUI(this.currentUser);

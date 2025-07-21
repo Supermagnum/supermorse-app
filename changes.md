@@ -6,6 +6,56 @@ This document details the implementation changes made to improve authentication 
 
 ## July 21, 2025
 
+## 24. Key Combinations for Prosigns and Regional Morse Code Settings
+
+### Problem Addressed
+
+The application lacked support for key combinations (prosigns) in listening training mode. Users could not practice or input important prosigns like AR (end of message), SK (end of contact), BT (break/new paragraph), and KN (go ahead, specific station). Additionally, there was no clear pathway for users to explore regional Morse code variations after mastering the standard character sets.
+
+### Changes Made
+
+#### 24.1 Added Key Combinations Support for Prosigns
+
+Implemented detection for simultaneous keypresses in listening training mode:
+- Added tracking of currently pressed keys
+- Created a mapping of valid prosign combinations (AR, SK, BT, KN)
+- Added sidetone generation when prosign combinations are detected
+- Ensured sidetone stops when keys are released
+- Implemented debounce mechanism to prevent duplicate prosign detection
+
+#### 24.2 Added Regional Morse Code Settings Tab
+
+Created a dedicated tab for regional Morse code variations:
+- Added a new navigation item in the sidebar
+- Created a corresponding content section
+- Implemented requirements for unlocking (mastery of International, Prosigns, and Special characters)
+- Made content visible but disabled until prerequisites are met
+- Added clear explanation of requirements to unlock
+- Included interactive character preview for regional sets
+
+#### 24.3 AI FAILS:
+
+- Was unable to create a test user with this learned: International Morse code,Prosigns,Special characters
+
+The AI failed in doing this too,- so this is utter bullshi! and blatant lies.
+Modified how locked features are displayed:
+- Changed from hiding locked content to displaying it in a disabled state
+- Added CSS styling for disabled content with reduced opacity and grayscale filter
+- Implemented requirements overlay explaining prerequisites
+- Made locked features visible but non-interactive until prerequisites are met
+
+
+### Benefits
+
+- Enhanced learning experience with support for important prosigns
+- Improved audio feedback with sidetone for both individual keys and prosign combinations
+- Clear progression path for users to move from standard to regional character sets
+
+
+## July 21, 2025
+
+## July 21, 2025
+
 ## 23. Added Listening Training Tab and Mastery Type Restrictions
 
 ### Problem Addressed
