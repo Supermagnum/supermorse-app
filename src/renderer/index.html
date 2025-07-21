@@ -44,6 +44,12 @@
                             <li data-section="settings">
                                 <i class="fas fa-cog"></i> Settings
                             </li>
+                            <li id="regionalNavItem" data-section="regional">
+                                <i class="fas fa-globe"></i> Regional Morse Code
+                                <span class="lock-icon">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                            </li>
                             <li id="murmurNavItem" class="locked" data-section="murmur">
                                 <i class="fas fa-broadcast-tower"></i> Murmur HF
                                 <span class="lock-icon">
@@ -363,6 +369,38 @@
                         </div>
                         
                         <div class="settings-group">
+                            <h3>Regional Morse Code Settings</h3>
+                            <div id="regionalSettingsLocked" class="locked-feature">
+                                <p>
+                                    <i class="fas fa-lock"></i>
+                                    Regional Morse code settings will be available after mastering International Morse, Prosigns, and Special characters.
+                                </p>
+                            </div>
+                            
+                            <div id="regionalSettingsUnlocked" class="hidden">
+                                <div class="form-group">
+                                    <label for="regionalCharacterSet">Regional Character Set</label>
+                                    <select id="regionalCharacterSet">
+                                        <option value="none" selected>None (Standard International Only)</option>
+                                        <option value="european">European Characters (å, ä, ö, etc.)</option>
+                                        <option value="cyrillic">Cyrillic Characters</option>
+                                        <option value="arabic">Arabic Numerals</option>
+                                    </select>
+                                    <p class="hint">Select additional character sets to learn after mastering the standard set</p>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="regionalTrainingMode">Training Mode</label>
+                                    <select id="regionalTrainingMode">
+                                        <option value="progressive">Progressive (One character at a time)</option>
+                                        <option value="immersive">Immersive (All characters at once)</option>
+                                    </select>
+                                    <p class="hint">Choose how you want to learn the regional character set</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
                             <h3>Murmur Server Settings</h3>
                             <div id="murmurSettingsLocked" class="locked-feature">
                                 <p>
@@ -415,6 +453,72 @@
                         <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
                     </section>
                     
+                    <!-- Regional Morse Code Settings Section -->
+                    <section id="regionalSection" class="hidden">
+                        <h2>Regional Morse Code Settings</h2>
+                        
+                        <div id="regionalLocked" class="locked-feature">
+                            <div class="lock-message">
+                                <i class="fas fa-lock"></i>
+                                <h3>Feature Locked</h3>
+                                <p>This feature requires mastery of all standard character sets:</p>
+                                <ul>
+                                    <li>International Morse Code</li>
+                                    <li>Prosigns</li>
+                                    <li>Special Characters</li>
+                                </ul>
+                                <p>Complete your training to unlock regional variations.</p>
+                                <div class="progress-bar">
+                                    <div id="regionalUnlockProgress" class="progress-indicator" style="width: 0%"></div>
+                                </div>
+                                <span id="regionalUnlockProgressText">0% Complete</span>
+                            </div>
+                        </div>
+                        
+                        <div id="regionalUnlocked" class="disabled-content">
+                            <div class="requirements-overlay">
+                                <i class="fas fa-lock"></i>
+                                <span>Complete mastery of International Morse, Prosigns, and Special Characters required</span>
+                            </div>
+                            <div class="settings-group">
+                                <h3>Regional Character Sets</h3>
+                                <p>Learn additional Morse code characters used in different regions and languages.</p>
+                                
+                                <div class="form-group">
+                                    <label for="regionalCharacterSetSelect">Select Regional Character Set</label>
+                                    <select id="regionalCharacterSetSelect">
+                                        <option value="none">None (Standard International Only)</option>
+                                        <option value="nordic">Nordic Characters (Å, Ä, Ö, etc.)</option>
+                                        <option value="german">German Characters (Ä, Ö, Ü, ß, etc.)</option>
+                                        <option value="french">French Characters (É, È, Ç, etc.)</option>
+                                        <option value="cyrillic">Cyrillic Characters</option>
+                                        <option value="japanese">Japanese Wabun Code</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="regionalTrainingModeSelect">Training Mode</label>
+                                    <select id="regionalTrainingModeSelect">
+                                        <option value="sequential">Sequential (Learn after standard set)</option>
+                                        <option value="integrated">Integrated (Mix with standard set)</option>
+                                        <option value="focused">Focused (Regional characters only)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="characters-preview">
+                                    <h4>Characters in Selected Set</h4>
+                                    <div id="regionalCharactersPreview" class="char-grid"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-group">
+                                <h3>Start Regional Training</h3>
+                                <p>Begin learning regional characters after you've mastered the standard set.</p>
+                                <button id="startRegionalTrainingBtn" class="btn primary">Start Regional Training</button>
+                            </div>
+                        </div>
+                    </section>
+                    
                     <!-- Murmur HF Communication Section (locked until mastery) -->
                     <section id="murmurSection" class="hidden">
                         <h2>Murmur HF Communication</h2>
@@ -431,7 +535,11 @@
                             </div>
                         </div>
                         
-                        <div id="murmurUnlocked" class="hidden">
+                        <div id="murmurUnlocked" class="disabled-content">
+                            <div class="requirements-overlay">
+                                <i class="fas fa-lock"></i>
+                                <span>Complete mastery of International Morse, Prosigns, and Special Characters required</span>
+                            </div>
                             <div class="hf-status">
                                 <div class="current-band">
                                     <h3>Current Band</h3>

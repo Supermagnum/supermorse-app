@@ -21,7 +21,9 @@ export class SettingsManager {
             preferredBand: 'auto',
             serverAddress: '',
             audioDevice: 'default', // Audio output device
-            sidetoneEnabled: 'on'    // Whether to play sidetone on key press
+            sidetoneEnabled: 'on',    // Whether to play sidetone on key press
+            regionalCharacterSet: 'none', // Regional character set (none, european, cyrillic, arabic)
+            regionalTrainingMode: 'progressive' // How to learn regional characters (progressive, immersive)
         };
     }
     

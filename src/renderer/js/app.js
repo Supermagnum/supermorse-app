@@ -252,7 +252,19 @@ class SuperMorseApp {
             });
         }
         
-        // Add keyboard event listener that only works for Listening training tab
+        // Track currently pressed keys for prosigns
+        this.pressedKeys = new Set();
+        this.lastProsignTime = 0;
+        
+        // Map of valid prosign combinations
+        this.prosignCombinations = {
+            'AR': ['A', 'R'],
+            'SK': ['S', 'K'],
+            'BT': ['B', 'T'],
+            'KN': ['K', 'N']
+        };
+        
+        // Add keyboard event listeners for single keys and combinations
         document.addEventListener('keydown', (event) => {
             // Only process keyboard input when in the Listening training tab
             // Specifically BLOCK keyboard input for the Training tab (Arduino only)
@@ -260,13 +272,46 @@ class SuperMorseApp {
                 this.trainer && 
                 this.trainer.lessonActive) {
                 
-                // Get the pressed key
+                // Get the pressed key and add to tracking set
                 const key = event.key.toUpperCase();
                 
-                // Filter for alphanumeric keys and some special characters
+                // Only track alphanumeric keys
                 if (/^[A-Z0-9]$/.test(key)) {
-                    // Pass to the trainer
-                    this.trainer.handleUserInput(key);
+                    // Add to pressed keys
+                    this.pressedKeys.add(key);
+                    
+                    // Check if we have a valid prosign combination
+                    const detectedProsign = this.checkForProsign();
+                    
+                    if (detectedProsign) {
+                        // Handle prosign - this should be treated as a single input
+                        this.trainer.handleUserInput(detectedProsign);
+                        
+                        // Generate sidetone for the prosign
+                        if (this.morseAudio) {
+                            this.morseAudio.generateSidetone(true);
+                            
+                            // Get the Morse code for this prosign
+                            const prosignMorse = window.ALPHABETS.charToMorse(detectedProsign);
+                            if (prosignMorse) {
+                                // Display the prosign being sent
+                                console.log(`Sending prosign: ${detectedProsign} (${prosignMorse})`);
+                            }
+                        }
+                        
+                        // Set timestamp to prevent duplicate prosign detection
+                        this.lastProsignTime = Date.now();
+                    } 
+                    // If not a prosign, handle as a regular key but only if it's a single key press
+                    else if (this.pressedKeys.size === 1) {
+                        // Generate sidetone for the key
+                        if (this.morseAudio) {
+                            this.morseAudio.generateSidetone(true);
+                        }
+                        
+                        // Pass to the trainer
+                        this.trainer.handleUserInput(key);
+                    }
                 }
             } else if (this.currentSection === 'training' &&
                       this.trainer && 
@@ -377,6 +422,50 @@ class SuperMorseApp {
                 <p>© 2025 SuperMorse Team</p>`
             );
         });
+        
+        // Handle key up events to stop sidetones and track released keys
+        document.addEventListener('keyup', (event) => {
+            const key = event.key.toUpperCase();
+            
+            // Only process for listening section
+            if (this.currentSection === 'listening' && this.trainer && this.trainer.lessonActive) {
+                // Remove from pressed keys
+                this.pressedKeys.delete(key);
+                
+                // If all keys are released, stop the sidetone
+                if (this.pressedKeys.size === 0 && this.morseAudio) {
+                    this.morseAudio.generateSidetone(false);
+                }
+            }
+        });
+        
+        // No Alt+M shortcut - removed as requested
+    }
+    
+    /**
+     * Helper method to check if a valid prosign combination is currently pressed
+     * @returns {string|null} The detected prosign or null if none detected
+     */
+    checkForProsign() {
+        // Don't detect another prosign too quickly to avoid duplicate detection
+        if (Date.now() - this.lastProsignTime < 300) {
+            return null;
+        }
+        
+        // Check each prosign combination
+        for (const [prosign, keys] of Object.entries(this.prosignCombinations)) {
+            // Check if all keys for this prosign are currently pressed
+            const allKeysPressed = keys.every(k => this.pressedKeys.has(k));
+            
+            // Check that only the keys for this prosign are pressed (no extra keys)
+            const onlyProsignKeys = this.pressedKeys.size === keys.length;
+            
+            if (allKeysPressed && onlyProsignKeys) {
+                return prosign;
+            }
+        }
+        
+        return null;
     }
     
     /**
@@ -385,7 +474,7 @@ class SuperMorseApp {
      */
     navigateTo(section) {
         // Check if section requires authentication
-        const restrictedSections = ['training', 'listening', 'progress', 'settings', 'murmur'];
+        const restrictedSections = ['training', 'listening', 'progress', 'settings', 'regional', 'murmur'];
         if (restrictedSections.includes(section) && !this.auth.isAuthenticated()) {
             // Show authentication required modal
             this.showModal('Authentication Required', 
@@ -445,7 +534,7 @@ class SuperMorseApp {
             }
             
             // Restricted sections are only visible when authenticated
-            if (['training', 'listening', 'progress', 'settings', 'murmur'].includes(section)) {
+            if (['training', 'listening', 'progress', 'settings', 'regional', 'murmur'].includes(section)) {
                 if (isAuthenticated) {
                     item.classList.remove('hidden');
                 } else {
@@ -550,13 +639,114 @@ class SuperMorseApp {
                 document.getElementById('unlockProgressText').textContent = `${Math.round(totalProgress)}% Complete`;
             }
             
-            // Unlock Murmur if mastery is complete
+            // Update both Murmur and Regional Settings unlock states
             if (masteryComplete) {
                 this.unlockMurmur();
+                this.unlockRegionalSettings();
+            } else {
+                this.lockRegionalSettings();
             }
         } catch (error) {
             console.error('Error checking feature unlocks:', error);
         }
+    }
+    
+    /**
+     * Unlock Regional Morse Code Settings
+     */
+    unlockRegionalSettings() {
+        // Update UI elements to show the Regional Morse Code Settings are unlocked
+        document.getElementById('regionalSettingsLocked').classList.add('hidden');
+        document.getElementById('regionalSettingsUnlocked').classList.remove('hidden');
+        
+        // Update the dedicated Regional tab as well
+        document.getElementById('regionalNavItem').classList.remove('locked');
+        document.getElementById('regionalNavItem').querySelector('.lock-icon').classList.add('hidden');
+        document.getElementById('regionalLocked').classList.add('hidden');
+        document.getElementById('regionalUnlocked').classList.remove('disabled-content');
+        document.getElementById('regionalUnlocked').querySelector('.requirements-overlay').classList.add('hidden');
+        
+        // Update progress indicators
+        const totalProgress = document.getElementById('unlockProgress').style.width;
+        const progressText = document.getElementById('unlockProgressText').textContent;
+        document.getElementById('regionalUnlockProgress').style.width = totalProgress;
+        document.getElementById('regionalUnlockProgressText').textContent = progressText;
+        
+        // Set up event listeners for regional training
+        document.getElementById('startRegionalTrainingBtn')?.addEventListener('click', () => {
+            const selectedSet = document.getElementById('regionalCharacterSetSelect').value;
+            if (selectedSet === 'none') {
+                this.showModal('No Character Set Selected', 
+                    'Please select a regional character set before starting training.');
+                return;
+            }
+            
+            this.showModal('Regional Training', 
+                `Starting training for ${selectedSet} character set. This will be implemented in a future update.`);
+        });
+        
+        // Set up change listener for character set preview
+        document.getElementById('regionalCharacterSetSelect')?.addEventListener('change', (e) => {
+            this.updateRegionalCharactersPreview(e.target.value);
+        });
+        
+        // Initialize character preview with default selection
+        this.updateRegionalCharactersPreview(document.getElementById('regionalCharacterSetSelect').value);
+    }
+    
+    /**
+     * Update the preview of regional characters based on selected set
+     * @param {string} setName - The name of the selected character set
+     */
+    updateRegionalCharactersPreview(setName) {
+        const previewEl = document.getElementById('regionalCharactersPreview');
+        if (!previewEl) return;
+        
+        previewEl.innerHTML = '';
+        
+        // Sample characters for each set (would be expanded in a real implementation)
+        const characterSets = {
+            'none': [],
+            'nordic': ['Å', 'Ä', 'Ö'],
+            'german': ['Ä', 'Ö', 'Ü', 'ß'],
+            'french': ['É', 'È', 'Ç', 'À', 'Ù'],
+            'cyrillic': ['Б', 'Г', 'Д', 'Ж', 'З'],
+            'japanese': ['ア', 'イ', 'ウ', 'エ', 'オ']
+        };
+        
+        const chars = characterSets[setName] || [];
+        
+        if (chars.length === 0) {
+            previewEl.textContent = 'No additional characters';
+            return;
+        }
+        
+        // Add each character to the preview
+        chars.forEach(char => {
+            const span = document.createElement('span');
+            span.textContent = char;
+            previewEl.appendChild(span);
+        });
+    }
+    
+    /**
+     * Lock Regional Morse Code Settings
+     */
+    lockRegionalSettings() {
+        // Update UI elements to show the Regional Morse Code Settings are locked
+        document.getElementById('regionalSettingsLocked').classList.remove('hidden');
+        document.getElementById('regionalSettingsUnlocked').classList.add('hidden');
+        
+        // Update the dedicated Regional tab as well
+        document.getElementById('regionalNavItem').classList.add('locked');
+        document.getElementById('regionalNavItem').querySelector('.lock-icon').classList.remove('hidden');
+        
+        // Show both the lock message and the disabled content
+        document.getElementById('regionalLocked').classList.remove('hidden');
+        document.getElementById('regionalUnlocked').classList.remove('hidden'); // Keep content visible
+        document.getElementById('regionalUnlocked').classList.add('disabled-content');
+        const overlay = document.getElementById('regionalUnlocked').querySelector('.requirements-overlay');
+        if (overlay) overlay.classList.remove('hidden');
     }
     
     /**
@@ -568,8 +758,11 @@ class SuperMorseApp {
         document.getElementById('murmurNavItem').querySelector('.lock-icon').classList.add('hidden');
         document.getElementById('murmurSettingsLocked').classList.add('hidden');
         document.getElementById('murmurSettingsUnlocked').classList.remove('hidden');
+        
+        // Hide lock message and enable content
         document.getElementById('murmurLocked').classList.add('hidden');
-        document.getElementById('murmurUnlocked').classList.remove('hidden');
+        document.getElementById('murmurUnlocked').classList.remove('disabled-content');
+        document.getElementById('murmurUnlocked').querySelector('.requirements-overlay').classList.add('hidden');
         
         // Set up Murmur volume control
         document.getElementById('volumeControl')?.addEventListener('input', (e) => {
@@ -590,6 +783,24 @@ class SuperMorseApp {
                 <p>You can now communicate with other Morse code enthusiasts around the world using simulated HF propagation.</p>`
             );
         }
+    }
+    
+    /**
+     * Lock Murmur HF Communication
+     */
+    lockMurmur() {
+        // Update UI elements
+        document.getElementById('murmurNavItem').classList.add('locked');
+        document.getElementById('murmurNavItem').querySelector('.lock-icon').classList.remove('hidden');
+        document.getElementById('murmurSettingsLocked').classList.remove('hidden');
+        document.getElementById('murmurSettingsUnlocked').classList.add('hidden');
+        
+        // Show both the lock message and the disabled content
+        document.getElementById('murmurLocked').classList.remove('hidden');
+        document.getElementById('murmurUnlocked').classList.remove('hidden'); // Keep content visible
+        document.getElementById('murmurUnlocked').classList.add('disabled-content');
+        const overlay = document.getElementById('murmurUnlocked').querySelector('.requirements-overlay');
+        if (overlay) overlay.classList.remove('hidden');
     }
     
     /**
@@ -739,7 +950,6 @@ class SuperMorseApp {
         }, 100);
     }
 }
-
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new SuperMorseApp();
