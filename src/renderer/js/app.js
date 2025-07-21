@@ -188,6 +188,111 @@ class SuperMorseApp {
             this.morseAudio.playTone(frequency, 500);
         });
         
+        // Listening training controls with event listeners and current character syncing
+        document.getElementById('startLessonBtnListening').addEventListener('click', () => {
+            document.getElementById('startLessonBtnListening').classList.add('hidden');
+            document.getElementById('stopLessonBtnListening').classList.remove('hidden');
+            
+            // Use the original training tab's start lesson functionality
+            this.trainer.startLesson();
+            
+            // Sync the display to the listening training tab
+            this.syncListeningDisplay();
+            
+            // Set explicit instruction for keyboard input when lesson starts
+            document.getElementById('challengeTextListening').textContent = 
+                'Listen and type on keyboard what you hear - Keyboard input only';
+        });
+        
+        document.getElementById('stopLessonBtnListening').addEventListener('click', () => {
+            document.getElementById('stopLessonBtnListening').classList.add('hidden');
+            document.getElementById('startLessonBtnListening').classList.remove('hidden');
+            
+            // Use the original training tab's stop lesson functionality
+            this.trainer.stopLesson();
+        });
+        
+        // Listening training tone frequency adjustment
+        document.getElementById('toneFrequencyListening').addEventListener('input', (e) => {
+            const frequency = parseInt(e.target.value);
+            document.getElementById('frequencyValueListening').textContent = frequency;
+            this.morseAudio.setFrequency(frequency);
+        });
+        
+        // Listening training morse speed adjustment
+        document.getElementById('morseSpeedListening').addEventListener('input', (e) => {
+            const speed = parseInt(e.target.value);
+            document.getElementById('speedValueListening').textContent = speed;
+            this.trainer.setSpeed(speed);
+        });
+        
+        // Listening training test tone button
+        document.getElementById('playToneBtnListening').addEventListener('click', () => {
+            const frequency = parseInt(document.getElementById('toneFrequencyListening').value);
+            this.morseAudio.playTone(frequency, 500);
+        });
+        
+        // Set up MutationObserver to watch for changes in the displayCharacter element
+        // This allows us to sync the current character between tabs without modifying training.js
+        const displayCharacterObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'characterData' || mutation.type === 'childList') {
+                    this.syncListeningDisplay();
+                }
+            });
+        });
+        
+        // Start observing the original training tab's character display
+        const displayCharacterElement = document.getElementById('displayCharacter');
+        if (displayCharacterElement) {
+            displayCharacterObserver.observe(displayCharacterElement, { 
+                characterData: true, 
+                childList: true,
+                subtree: true 
+            });
+        }
+        
+        // Add keyboard event listener that only works for Listening training tab
+        document.addEventListener('keydown', (event) => {
+            // Only process keyboard input when in the Listening training tab
+            // Specifically BLOCK keyboard input for the Training tab (Arduino only)
+            if (this.currentSection === 'listening' && 
+                this.trainer && 
+                this.trainer.lessonActive) {
+                
+                // Get the pressed key
+                const key = event.key.toUpperCase();
+                
+                // Filter for alphanumeric keys and some special characters
+                if (/^[A-Z0-9]$/.test(key)) {
+                    // Pass to the trainer
+                    this.trainer.handleUserInput(key);
+                }
+            } else if (this.currentSection === 'training' &&
+                      this.trainer && 
+                      this.trainer.lessonActive) {
+                // If in the Training tab, prevent keyboard input
+                // Don't call handleUserInput for keyboard in Training tab
+                
+                // Display a message if they try to use keyboard in training tab
+                // Only for alphanumeric keys that would normally be accepted
+                if (/^[A-Z0-9]$/.test(event.key.toUpperCase())) {
+                    // Optional: Show a message explaining keyboard isn't allowed
+                    document.getElementById('challengeText').textContent = 
+                        'Training tab only accepts Arduino input. Use the Listening tab for keyboard.';
+                    
+                    // Reset the message after a short delay
+                    setTimeout(() => {
+                        if (this.currentSection === 'training' && this.trainer.lessonActive) {
+                            document.getElementById('challengeText').textContent = 
+                                'Listen and type using Arduino.';
+                        }
+                    }, 2000);
+                }
+            }
+        });
+        
+        
         // Settings form
         document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
             const toneFrequency = parseInt(document.getElementById('settingsToneFrequency').value);
@@ -280,7 +385,7 @@ class SuperMorseApp {
      */
     navigateTo(section) {
         // Check if section requires authentication
-        const restrictedSections = ['training', 'progress', 'settings', 'murmur'];
+        const restrictedSections = ['training', 'listening', 'progress', 'settings', 'murmur'];
         if (restrictedSections.includes(section) && !this.auth.isAuthenticated()) {
             // Show authentication required modal
             this.showModal('Authentication Required', 
@@ -315,6 +420,9 @@ class SuperMorseApp {
             this.trainer.updateProgressDisplay();
         } else if (section === 'murmur') {
             this.murmur.initMurmurUI();
+        } else if (section === 'listening') {
+            // Sync the listening training display with the main training display
+            this.syncListeningDisplay();
         }
     }
     
@@ -337,7 +445,7 @@ class SuperMorseApp {
             }
             
             // Restricted sections are only visible when authenticated
-            if (['training', 'progress', 'settings', 'murmur'].includes(section)) {
+            if (['training', 'listening', 'progress', 'settings', 'murmur'].includes(section)) {
                 if (isAuthenticated) {
                     item.classList.remove('hidden');
                 } else {
@@ -525,6 +633,80 @@ class SuperMorseApp {
     }
     
     /**
+     * Synchronize the Listening training display with the main Training display
+     * This copies the current character and morse pattern from the original 
+     * training section to the listening training section
+     */
+    syncListeningDisplay() {
+        // Sync the current character
+        const displayCharacter = document.getElementById('displayCharacter');
+        const displayCharacterListening = document.getElementById('displayCharacterListening');
+        if (displayCharacter && displayCharacterListening) {
+            displayCharacterListening.textContent = displayCharacter.textContent;
+        }
+        
+        // Sync the morse pattern
+        const morsePattern = document.getElementById('morsePattern');
+        const morsePatternListening = document.getElementById('morsePatternListening');
+        if (morsePattern && morsePatternListening) {
+            morsePatternListening.textContent = morsePattern.textContent;
+        }
+        
+        // Sync the progress indicator
+        const progressIndicator = document.getElementById('progressIndicator');
+        const progressIndicatorListening = document.getElementById('progressIndicatorListening');
+        if (progressIndicator && progressIndicatorListening) {
+            progressIndicatorListening.style.width = progressIndicator.style.width;
+        }
+        
+        // Sync the progress text
+        const progressText = document.getElementById('progressText');
+        const progressTextListening = document.getElementById('progressTextListening');
+        if (progressText && progressTextListening) {
+            progressTextListening.textContent = progressText.textContent;
+        }
+        
+        // Set specific message for Listening training tab, not syncing from training tab
+        const challengeTextListening = document.getElementById('challengeTextListening');
+        if (challengeTextListening) {
+            // Set an appropriate message based on whether the lesson is active
+            if (this.trainer && this.trainer.lessonActive) {
+                challengeTextListening.textContent = 'Listen and type on keyboard what you hear - Keyboard input only';
+            } else {
+                challengeTextListening.textContent = 'Press Start to begin - Keyboard input only';
+            }
+        }
+        
+        // Sync the user input
+        const userInput = document.getElementById('userInput');
+        const userInputListening = document.getElementById('userInputListening');
+        if (userInput && userInputListening) {
+            userInputListening.innerHTML = userInput.innerHTML;
+        }
+        
+        // Sync the time elapsed
+        const timeElapsed = document.getElementById('timeElapsed');
+        const timeElapsedListening = document.getElementById('timeElapsedListening');
+        if (timeElapsed && timeElapsedListening) {
+            timeElapsedListening.textContent = timeElapsed.textContent;
+        }
+        
+        // Sync the accuracy rate
+        const accuracyRate = document.getElementById('accuracyRate');
+        const accuracyRateListening = document.getElementById('accuracyRateListening');
+        if (accuracyRate && accuracyRateListening) {
+            accuracyRateListening.textContent = accuracyRate.textContent;
+        }
+        
+        // Sync the time remaining
+        const timeRemaining = document.getElementById('timeRemaining');
+        const timeRemainingListening = document.getElementById('timeRemainingListening');
+        if (timeRemaining && timeRemainingListening) {
+            timeRemainingListening.textContent = timeRemaining.textContent;
+        }
+    }
+    
+    /**
      * Show a modal for port selection
      * @param {Array} ports - The available ports
      */
@@ -561,4 +743,11 @@ class SuperMorseApp {
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new SuperMorseApp();
+    
+    // Add event listener to log user out when app is closed
+    window.addEventListener('beforeunload', () => {
+        if (window.app && window.app.auth) {
+            window.app.auth.logout();
+        }
+    });
 });

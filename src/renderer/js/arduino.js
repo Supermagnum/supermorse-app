@@ -145,8 +145,8 @@ export class ArduinoInterface {
         
         // Handle decoded Morse characters
         if (line.length === 1) {
-            // Single character decoded from Morse
-            if (this.app.trainer && this.app.trainer.lessonActive) {
+            // Single character decoded from Morse - only process in Training tab, not Listening tab
+            if (this.app.trainer && this.app.trainer.lessonActive && this.app.currentSection === 'training') {
                 this.app.trainer.handleUserInput(line);
             }
             return;
@@ -167,8 +167,8 @@ export class ArduinoInterface {
                         
                         if (char) {
                             console.log(`Decoded Morse "${morse}" to character "${char}"`);
-                            // Send the decoded character to the trainer
-                            if (this.app.trainer && this.app.trainer.lessonActive) {
+                            // Send the decoded character to the trainer only when in Training tab
+                            if (this.app.trainer && this.app.trainer.lessonActive && this.app.currentSection === 'training') {
                                 this.app.trainer.handleUserInput(char);
                             }
                         }
