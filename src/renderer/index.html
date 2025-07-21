@@ -35,6 +35,9 @@
                             <li class="active" data-section="training">
                                 <i class="fas fa-graduation-cap"></i> Training
                             </li>
+                            <li data-section="listening">
+                                <i class="fas fa-headphones"></i> Listening training
+                            </li>
                             <li data-section="progress">
                                 <i class="fas fa-chart-line"></i> Progress
                             </li>
@@ -145,7 +148,7 @@
                         
                         <div class="practice-area">
                             <div class="practice-display">
-                                <div id="challengeText" class="challenge-text">Waiting to start...</div>
+                                <div id="challengeText" class="challenge-text">Connect Arduino and press Start to begin - Arduino input only</div>
                                 <div id="userInput" class="user-input"></div>
                             </div>
                             
@@ -174,6 +177,65 @@
                             <div class="stat-item">
                                 <h4>Remaining Time</h4>
                                 <div id="timeRemaining">30:00</div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- Listening Training Section -->
+                    <section id="listeningSection" class="hidden">
+                        <h2>Listening training</h2>
+                        <p style="color: red; font-weight: bold;">This method does not learn you how to use a morse key</p>
+                        
+                        <div class="learning-panel">
+                            <div class="current-character">
+                                <h3>Current Character</h3>
+                                <div id="displayCharacterListening" class="character-display">K</div>
+                                <div id="morsePatternListening" class="morse-pattern">-.-</div>
+                            </div>
+                            
+                            <div class="training-controls">
+                                <button id="startLessonBtnListening" class="btn btn-primary">Start Lesson</button>
+                                <button id="stopLessonBtnListening" class="btn btn-danger hidden">Stop</button>
+                                <div class="training-progress">
+                                    <div class="progress-bar">
+                                        <div id="progressIndicatorListening" class="progress-indicator" style="width: 0%"></div>
+                                    </div>
+                                    <span id="progressTextListening">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="practice-area">
+                            <div class="practice-display">
+                                <div id="challengeTextListening" class="challenge-text">Press Start to begin - Keyboard input only</div>
+                                <div id="userInputListening" class="user-input"></div>
+                            </div>
+                            
+                            <div class="tone-controls">
+                                <label for="toneFrequencyListening">Tone Frequency: <span id="frequencyValueListening">600</span> Hz</label>
+                                <input type="range" id="toneFrequencyListening" min="400" max="1000" step="10" value="600">
+                                
+                                <label for="morseSpeedListening">Morse Speed: <span id="speedValueListening">13</span> WPM</label>
+                                <input type="range" id="morseSpeedListening" min="13" max="30" step="1" value="13">
+                                
+                                <button id="playToneBtnListening" class="btn btn-small">
+                                    <i class="fas fa-play"></i> Test Tone
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="lesson-stats">
+                            <div class="stat-item">
+                                <h4>Time Elapsed</h4>
+                                <div id="timeElapsedListening">00:00</div>
+                            </div>
+                            <div class="stat-item">
+                                <h4>Accuracy</h4>
+                                <div id="accuracyRateListening">0%</div>
+                            </div>
+                            <div class="stat-item">
+                                <h4>Remaining Time</h4>
+                                <div id="timeRemainingListening">30:00</div>
                             </div>
                         </div>
                     </section>
