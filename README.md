@@ -31,7 +31,20 @@ SuperMorse uses simple JSON files for all data storage:
 - Easy to backup and restore
 - Portable across different systems
 
-All user data, progress tracking, and settings are stored in plain JSON files in the `data` directory.
+All user data, progress tracking, and settings are stored in plain JSON files in the data directory.
+
+### Database File Locations
+
+The JSON database files are stored in these locations depending on your operating system:
+
+- **Linux**: `~/.config/supermorse-app/data/`
+- **macOS**: `~/Library/Application Support/supermorse-app/data/`
+- **Windows**: `%APPDATA%\supermorse-app\data\`
+
+These directories contain the following subdirectories:
+- `users/` - User account information
+- `progress/` - Learning progress for each user
+- `stats/` - Character-specific statistics tracking
 
 ## Screenshots
 

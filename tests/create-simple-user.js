@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const jsonDataService = require('./src/services/JsonDataService');
+const jsonDataService = require('../src/services/JsonDataService');
 
 console.log('Creating simple test user with basic password...');
 
