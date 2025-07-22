@@ -6,6 +6,23 @@ This document details the implementation changes made to improve authentication 
 
 ## July 22, 2025
 
+## 26. Fixed Listening Training Keyboard Input and Character Feedback
+
+### Problem Addressed
+
+The listening training functionality was correctly capturing keyboard input, but it wasn't properly displaying feedback for correct and incorrect characters. After a user completed a 5-character sequence, the evaluation results (green for correct characters, red for incorrect ones) were only being shown in the original training section and not in the listening training section.
+
+## Todo:
+- Check that learned characters actually are saved to the database
+- use mkdir -p dev-logs && npm run dev > dev-logs/app.log 2>&1
+
+### Benefits
+
+- Proper visual feedback in the listening training section shows users which characters they got correct or incorrect
+- Consistent user experience between Arduino-based training and keyboard-based listening training
+- Real-time character display during typing provides immediate feedback to users
+- Enhanced learning experience with clear visual indicators for performance
+
 ## 25. Added Farnsworth Timing Support
 
 ### Problem Addressed
@@ -59,8 +76,6 @@ Integrated Farnsworth timing with the existing settings framework:
 
 ## Todo:
 - Check that learned characters actually are saved to the database
-- Look at  the display of wrong and correct characters answered
-- Listening training, does that actually pick up keystrokes from the keyboard?
 - use mkdir -p dev-logs && npm run dev > dev-logs/app.log 2>&1
 
 ## July 21, 2025
