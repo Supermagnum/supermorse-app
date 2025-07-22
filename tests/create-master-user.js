@@ -8,7 +8,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const jsonDataService = require('./src/services/JsonDataService');
+const jsonDataService = require('../src/services/JsonDataService');
 
 // Set up console formatting
 const colors = {

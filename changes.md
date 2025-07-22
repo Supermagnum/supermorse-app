@@ -6,6 +6,30 @@ This document details the implementation changes made to improve authentication 
 
 ## July 22, 2025
 
+## 27. Fixed Path References in Test Scripts
+
+### Problem Addressed
+
+The run-tests.sh script and related test files had incorrect path references, causing test scripts to fail when executed from certain locations. Specifically, the test runner was looking for test-create-user.js in the project root directory rather than in the tests directory, and some test scripts had incorrect relative paths to import required modules.
+
+### Changes Made
+
+#### 27.1 Fixed Test Script Path References in run-tests.sh
+
+Updated the test runner script to correctly point to test scripts in the tests directory rather than the project root, ensuring that all tests can be located and executed properly regardless of where the script is run from.
+
+#### 27.2 Corrected Module Import Paths in Test Scripts
+
+Corrected relative paths in test scripts within the tests directory to properly reference modules in the src directory. This ensures that scripts like create-master-user.js and create-simple-user.js can correctly import required modules when executed from the tests directory.
+
+### Benefits
+
+- All test scripts can now be executed successfully from any location
+- Consistent path references across all test scripts
+- Improved reliability of the test suite
+- Better maintainability with properly structured relative paths
+- Tests now work correctly when run either individually or through the test runner
+
 ## 26. Fixed Listening Training Keyboard Input and Character Feedback
 
 ### Problem Addressed

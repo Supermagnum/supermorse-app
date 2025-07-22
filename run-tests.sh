@@ -46,7 +46,7 @@ read -r choice
 
 case "$choice" in
     1)
-        run_test "$PROJECT_ROOT/test-create-user.js" "Simple User Creation Test"
+        run_test "$PROJECT_ROOT/tests/test-create-user.js" "Simple User Creation Test"
         ;;
     2)
         run_test "$PROJECT_ROOT/tests/verify-user-creation.js" "User Creation Verification"
@@ -56,7 +56,7 @@ case "$choice" in
         ;;
     4)
         echo -e "${BLUE}Running all tests...${NC}\n"
-        run_test "$PROJECT_ROOT/test-create-user.js" "Simple User Creation Test"
+        run_test "$PROJECT_ROOT/tests/test-create-user.js" "Simple User Creation Test"
         run_test "$PROJECT_ROOT/tests/verify-user-creation.js" "User Creation Verification"
         run_test "$PROJECT_ROOT/tests/end-to-end-registration-test.js" "End-to-End Registration Test"
         ;;
