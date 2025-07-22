@@ -22,6 +22,8 @@ export class SettingsManager {
             serverAddress: '',
             audioDevice: 'default', // Audio output device
             sidetoneEnabled: 'on',    // Whether to play sidetone on key press
+            farnsworthEnabled: false, // Whether to use Farnsworth timing (characters faster than spacing)
+            farnsworthRatio: 18, // Character speed in WPM when Farnsworth is enabled (must be > morseSpeed)
             regionalCharacterSet: 'none', // Regional character set (none, european, cyrillic, arabic)
             regionalTrainingMode: 'progressive' // How to learn regional characters (progressive, immersive)
         };
@@ -100,9 +102,18 @@ export class SettingsManager {
             }
         }
         
-        // Apply morse speed
+        // Apply morse speed and Farnsworth settings
         if (this.app.trainer) {
             this.app.trainer.setSpeed(this.settings.morseSpeed);
+            
+            // Apply Farnsworth timing if enabled
+            if (this.settings.farnsworthEnabled) {
+                // Pass the faster character speed for Farnsworth timing
+                this.app.trainer.farnsworthWpm = this.settings.farnsworthRatio;
+            } else {
+                // When Farnsworth is disabled, character speed equals overall speed
+                this.app.trainer.farnsworthWpm = null;
+            }
         }
         
         // Update UI elements with current settings
@@ -150,6 +161,29 @@ export class SettingsManager {
         
         if (sidetoneToggle) {
             sidetoneToggle.value = this.settings.sidetoneEnabled;
+        }
+        
+        // Set Farnsworth settings
+        const farnsworthToggle = document.getElementById('farnsworthEnabled');
+        const farnsworthRatio = document.getElementById('farnsworthRatio');
+        const farnsworthRatioGroup = document.getElementById('farnsworthRatioGroup');
+        
+        if (farnsworthToggle) {
+            farnsworthToggle.checked = this.settings.farnsworthEnabled;
+        }
+        
+        if (farnsworthRatio) {
+            farnsworthRatio.value = this.settings.farnsworthRatio;
+            document.getElementById('farnsworthRatioValue').textContent = this.settings.farnsworthRatio;
+        }
+        
+        // Show/hide farnsworth ratio control based on toggle state
+        if (farnsworthRatioGroup) {
+            if (this.settings.farnsworthEnabled) {
+                farnsworthRatioGroup.classList.remove('hidden');
+            } else {
+                farnsworthRatioGroup.classList.add('hidden');
+            }
         }
         
         // Only set these if they're visible (Murmur unlocked)

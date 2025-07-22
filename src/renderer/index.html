@@ -366,6 +366,21 @@
                                 </select>
                                 <p class="hint">Enable/disable audio feedback when sending with Morse key</p>
                             </div>
+                            
+                            <div class="form-group">
+                                <label for="farnsworthEnabled">Farnsworth Timing</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="farnsworthEnabled">
+                                    <span class="slider"></span>
+                                </div>
+                                <p class="hint">Farnsworth timing sends characters at a higher speed while maintaining slower spacing between them</p>
+                            </div>
+                            
+                            <div class="form-group" id="farnsworthRatioGroup">
+                                <label for="farnsworthRatio">Farnsworth Character Speed: <span id="farnsworthRatioValue">18</span> WPM</label>
+                                <input type="range" id="farnsworthRatio" min="13" max="30" step="1" value="18">
+                                <p class="hint">Character speed when Farnsworth timing is enabled (spacing will use your set WPM)</p>
+                            </div>
                         </div>
                         
                         <div class="settings-group">

@@ -1083,16 +1083,17 @@ export class MorseTrainer {
     
     /**
      * Set the Morse code speed
-     * @param {number} wpm - The speed in words per minute
+     * @param {number} wpm - Words per minute
      */
     setSpeed(wpm) {
         this.wpm = wpm;
         
-        // Adjust Farnsworth speed if needed
-        if (wpm > 18) {
-            this.farnsworthWpm = wpm;
-        } else {
-            this.farnsworthWpm = Math.min(wpm, 13); // Minimum 13 WPM
+        // Note: farnsworthWpm is now controlled by settings
+        // and will be set directly by the SettingsManager
+        // We only update it here if not already set
+        if (this.farnsworthWpm === undefined) {
+            // Default behavior for backward compatibility
+            this.farnsworthWpm = null;
         }
     }
 }

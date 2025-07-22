@@ -277,6 +277,109 @@ footer {
   border-color: var(--primary-color);
 }
 
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+/* Make the actual checkbox larger and position it over the entire toggle
+   but make it invisible - this ensures clicks anywhere on the toggle work */
+.toggle-switch input {
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  z-index: 3;
+  cursor: pointer;
+}
+
+/* Create slider appearance */
+.toggle-switch .slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border-color);
+  transition: var(--transition-normal);
+  border-radius: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+  pointer-events: none; /* Let clicks pass through to the checkbox */
+}
+
+/* Create the toggle circle */
+.toggle-switch .slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--card-bg);
+  transition: var(--transition-normal);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Toggle is on */
+.toggle-switch input:checked + .slider {
+  background-color: var(--primary-color);
+}
+
+/* Move toggle circle when checked */
+.toggle-switch input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+/* Make toggle switch labels clickable and improve usability */
+.form-group label[for="farnsworthEnabled"] {
+  display: inline-block;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+/* Add focus styles for better keyboard accessibility */
+.toggle-switch input:focus + .slider {
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Style the container for toggle switches to improve layout */
+.form-group:has(.toggle-switch) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.form-group:has(.toggle-switch) label {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.form-group:has(.toggle-switch) p.hint {
+  flex-basis: 100%;
+  margin-top: var(--spacing-sm);
+}
+
+/* Add hover effect for better visual feedback */
+.toggle-switch .slider:hover {
+  background-color: var(--text-light);
+}
+
+.toggle-switch input:checked + .slider:hover {
+  background-color: var(--primary-dark);
+}
+
 .form-message {
   margin-top: var(--spacing-sm);
   font-size: var(--font-small);

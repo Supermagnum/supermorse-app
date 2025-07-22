@@ -353,13 +353,20 @@ export class MorseAudio {
     
     /**
      * Calculate timing based on WPM
-     * @param {number} wpm - Words per minute
+     * @param {number} wpm - Words per minute (overall effective speed)
      * @param {number} farnsworthWpm - Farnsworth character speed (optional)
      */
     calculateTiming(wpm, farnsworthWpm = null) {
         // Paris standard: "PARIS" is 50 units (including spaces)
         // at 1 WPM, "PARIS" takes 60 seconds, so 1 unit = 60/(50*WPM) seconds
-        const characterWpm = farnsworthWpm || wpm;
+        
+        // Check if we should use Farnsworth timing
+        // Farnsworth is used when character speed is higher than overall speed
+        const isFarnsworth = farnsworthWpm && farnsworthWpm > wpm;
+        
+        // Character elements (dits, dahs, intra-character spaces) are based on 
+        // character speed (which is farnsworthWpm in Farnsworth, or wpm in standard timing)
+        const characterWpm = isFarnsworth ? farnsworthWpm : wpm;
         
         // Dit length (1 unit)
         this.ditLength = 60 / (50 * characterWpm);
@@ -370,21 +377,16 @@ export class MorseAudio {
         // Intra-character space (1 unit)
         this.intraCharSpace = this.ditLength;
         
-        if (farnsworthWpm && farnsworthWpm < wpm) {
-            // Inter-character space (Farnsworth timing)
-            const effectiveWpm = farnsworthWpm;
-            this.interCharSpace = (60 / (50 * effectiveWpm)) * 3;
-            
-            // Inter-word space (Farnsworth timing)
-            this.interWordSpace = (60 / (50 * effectiveWpm)) * 7;
-        } else {
-            // Standard timing
-            // Inter-character space (3 units)
-            this.interCharSpace = 3 * this.ditLength;
-            
-            // Inter-word space (7 units)
-            this.interWordSpace = 7 * this.ditLength;
-        }
+        // Spaces between characters and words are based on overall speed (wpm)
+        // In standard timing, this is the same as the character speed
+        // In Farnsworth, this is slower than the character speed
+        const unitLength = 60 / (50 * wpm);
+        
+        // Inter-character space (3 units)
+        this.interCharSpace = 3 * unitLength;
+        
+        // Inter-word space (7 units)
+        this.interWordSpace = 7 * unitLength;
     }
     
     /**
