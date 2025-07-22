@@ -575,8 +575,9 @@ export class MorseTrainer {
             }
         }
         
-        // Update display
+        // Update display in both the training and listening sections
         document.getElementById('userInput').innerHTML = displayHtml;
+        document.getElementById('userInputListening').innerHTML = displayHtml;
         
         // Calculate accuracy for this group
         const accuracy = (correct / this.currentSequence.length) * 100;
@@ -613,8 +614,9 @@ export class MorseTrainer {
         if (this.userInput.length < 5) {
             this.userInput += char.toUpperCase();
             
-            // Update display
+            // Update display in both training and listening sections
             document.getElementById('userInput').textContent = this.userInput;
+            document.getElementById('userInputListening').textContent = this.userInput;
             
             // If we have 5 characters, evaluate the input
             if (this.userInput.length === 5) {
