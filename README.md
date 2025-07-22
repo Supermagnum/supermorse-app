@@ -52,6 +52,7 @@ Get a visual overview of the SuperMorse application, with  all features unlocked
 - User authentication with chase sensitive username/password and email registration
 - Session tracking with 30-minute lessons and break recommendations
 - Configurable sinusoidal tone with adjustable frequency
+- Farnsworth timing support (faster characters with increased spacing) for more effective learning
 - Selectable audio output device for different speakers or headphones
 - Sidetone feedback to hear what you're sending with physical keys
 - Arduino integration for physical Morse key input

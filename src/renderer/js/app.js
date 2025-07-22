@@ -349,6 +349,10 @@ class SuperMorseApp {
             const maidenheadLocator = document.getElementById('maidenheadLocator').value;
             const preferredBand = document.getElementById('preferredBand').value;
             
+            // Get Farnsworth timing settings
+            const farnsworthEnabled = document.getElementById('farnsworthEnabled').checked;
+            const farnsworthRatio = parseInt(document.getElementById('farnsworthRatio').value);
+            
             // Convert volume percentage to dB
             const volume = -40 + (volumePercent / 100 * 40);
             
@@ -360,7 +364,9 @@ class SuperMorseApp {
                 keyMode,
                 theme,
                 maidenheadLocator,
-                preferredBand
+                preferredBand,
+                farnsworthEnabled,
+                farnsworthRatio
             });
             
             this.showModal('Settings Saved', 'Your settings have been saved successfully.');
@@ -383,6 +389,22 @@ class SuperMorseApp {
                 console.error('Error refreshing ports:', error);
                 this.showModal('Error', 'Failed to refresh serial ports. ' + error.message);
             }
+        });
+        
+        // Farnsworth toggle
+        document.getElementById('farnsworthEnabled').addEventListener('change', (e) => {
+            const farnsworthRatioGroup = document.getElementById('farnsworthRatioGroup');
+            if (e.target.checked) {
+                farnsworthRatioGroup.classList.remove('hidden');
+            } else {
+                farnsworthRatioGroup.classList.add('hidden');
+            }
+        });
+        
+        // Farnsworth ratio adjustment
+        document.getElementById('farnsworthRatio').addEventListener('input', (e) => {
+            const ratio = parseInt(e.target.value);
+            document.getElementById('farnsworthRatioValue').textContent = ratio;
         });
         
         // Theme change

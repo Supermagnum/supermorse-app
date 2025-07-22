@@ -4,6 +4,65 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
+## July 22, 2025
+
+## 25. Added Farnsworth Timing Support
+
+### Problem Addressed
+
+The application lacked support for Farnsworth timing, an important technique in Morse code training where characters are sent at a higher speed while spacing between them is increased. This method helps learners recognize character patterns at full speed while giving more time to process between characters, making the transition to higher speeds easier. Without Farnsworth timing, users struggled to bridge the gap between slow speeds (where characters sound different) and higher speeds needed for practical use.
+
+### Changes Made
+
+#### 25.1 Added Farnsworth Timing Settings
+
+Added support for Farnsworth timing in the settings manager:
+- Added farnsworthEnabled setting to toggle Farnsworth timing on/off
+- Added farnsworthRatio setting to control the character speed in WPM
+- Set default Farnsworth character speed to 18 WPM for effective learning
+
+#### 25.2 Updated Morse Audio Engine
+
+Enhanced the Morse audio generation to properly implement Farnsworth timing according to the PARIS standard:
+- Modified the timing calculation algorithm to apply the faster character speed while maintaining slower spacing
+- Used the higher farnsworthWpm speed for character elements (dits, dahs, intra-character spacing)
+- Used the lower overall wpm speed for inter-character and inter-word spacing
+- Implemented the correct condition for applying Farnsworth timing
+
+#### 25.3 Added User Interface Controls
+
+Created UI controls to allow users to adjust Farnsworth timing settings:
+- Added a toggle switch to enable/disable Farnsworth timing
+- Added a slider to control the Farnsworth character speed
+- Implemented dynamic visibility of controls based on toggle state
+- Added CSS styling for the toggle switch with improved clickable area
+- Made the controls accessible with keyboard focus indicators
+
+#### 25.4 Enhanced Settings Integration
+
+Integrated Farnsworth timing with the existing settings framework:
+- Updated the settings form population to properly display Farnsworth settings
+- Added event handlers to update the UI when settings change
+- Ensured settings are properly saved and restored between sessions
+- Added initialization code to properly show/hide controls based on current settings
+
+### Benefits
+
+- Improved learning efficiency by implementing a proven technique used by Morse code instructors
+- Better transition from beginner to advanced speeds by maintaining proper character sounds while allowing more processing time
+- More natural progression in Morse code learning that prevents users from developing bad habits
+- Enhanced user control over their learning experience with customizable timing settings
+- Made it easier to recognize patterns in faster character sending while providing extra time to process between characters
+- Implemented according to proper standards (PARIS method) used in amateur radio
+- Better accessibility with improved toggle switch interface for all users
+
+
+## Todo:
+- Check that learned characters actually are saved to the database
+- Look at  the display of wrong and correct characters answered
+- Listening training, does that actually pick up keystrokes from the keyboard?
+- use mkdir -p dev-logs && npm run dev > dev-logs/app.log 2>&1
+
 ## July 21, 2025
 
 ## 24. Key Combinations for Prosigns and Regional Morse Code Settings
