@@ -30,8 +30,9 @@ export class MorseTrainer {
         this.groupTimer = null;
         
         // Speed settings
-        this.wpm = 13; // Words per minute
-        this.farnsworthWpm = 13; // Character spacing WPM for speeds <= 18 WPM
+        this.wpm = 13; // Words per minute (character speed)
+        this.farnsworthWpm = null; // Legacy parameter for backward compatibility
+        this.farnsworthRatio = 6.5; // Ratio between inter-character spacing and dit duration (standard is 3.0)
         
         // Progress tracking
         this.learnedCharacters = [];
@@ -1060,8 +1061,8 @@ export class MorseTrainer {
         console.log(`Playing Morse sequence: ${morseSequence}`);
         
         try {
-            // Play the Morse code
-            this.app.morseAudio.playMorseCode(morseSequence, this.wpm, this.farnsworthWpm);
+            // Play the Morse code using the new ratio-based approach
+            this.app.morseAudio.playMorseCode(morseSequence, this.wpm, this.farnsworthWpm, this.farnsworthRatio);
         } catch (error) {
             console.error("Error playing Morse sequence:", error);
         }
@@ -1080,7 +1081,7 @@ export class MorseTrainer {
         const morseChar = alphabets.charToMorse(char);
         
         // Play the Morse code and return the promise
-        return this.app.morseAudio.playMorseCode(morseChar, this.wpm, this.farnsworthWpm);
+        return this.app.morseAudio.playMorseCode(morseChar, this.wpm, this.farnsworthWpm, this.farnsworthRatio);
     }
     
     /**

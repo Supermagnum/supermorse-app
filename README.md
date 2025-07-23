@@ -65,7 +65,12 @@ Get a visual overview of the SuperMorse application, with  all features unlocked
 - User authentication with chase sensitive username/password and email registration
 - Session tracking with 30-minute lessons and break recommendations
 - Configurable sinusoidal tone with adjustable frequency
-- Farnsworth timing support (faster characters with increased spacing) for more effective learning
+- Farnsworth timing support for more effective learning:
+  - Uses a ratio-based approach to create appropriate spacing between characters
+  - Recommended minimum speed: 15 WPM (though 13 WPM minimum is enforced)
+  - Recommended minimum Farnsworth ratio: 6:1 (characters are sent at full speed, but spaces between them are 6 times longer than a dit)
+  - Higher ratios (6-10) are more suitable for beginners
+  - Standard Morse uses a 3:1 ratio between character spacing and dit duration
 - Selectable audio output device for different speakers or headphones
 - Sidetone feedback to hear what you're sending with physical keys
 - Arduino integration for physical Morse key input
