@@ -11,6 +11,7 @@ This document details the implementation changes made to improve authentication 
 ### Problem Addressed
 
 The settings form was not displaying the current Morse speed (WPM) value alongside the slider control, unlike other settings such as the Farnsworth ratio which properly showed their current values.
+morse code sent did not include Farnsworth timing between characters.
 
 ### Changes Made
 
@@ -23,6 +24,11 @@ Added a display element to show the current Morse speed value in the settings fo
 - Users can now see the current Morse speed value directly in the settings form
 - Provides consistency with other settings that already displayed their current values
 - Improves user experience by clearly showing the current speed setting
+
+
+
+## Todo:
+- Check that learned characters actually are saved to the database
 
 ## July 22, 2025
 
@@ -56,9 +62,8 @@ Corrected relative paths in test scripts within the tests directory to properly 
 
 The listening training functionality was correctly capturing keyboard input, but it wasn't properly displaying feedback for correct and incorrect characters. After a user completed a 5-character sequence, the evaluation results (green for correct characters, red for incorrect ones) were only being shown in the original training section and not in the listening training section.
 
-## Todo:
-- Check that learned characters actually are saved to the database
-- use mkdir -p dev-logs && npm run dev > dev-logs/app.log 2>&1
+
+
 
 ### Benefits
 
