@@ -67,7 +67,7 @@ Get a visual overview of the SuperMorse application, with  all features unlocked
 - Configurable sinusoidal tone with adjustable frequency
 - Farnsworth timing support for more effective learning:
   - Uses a ratio-based approach to create appropriate spacing between characters
-  - Recommended minimum speed: 15 WPM (though 13 WPM minimum is enforced)
+  - Recommended minimum speed: 15 WPM (though 13 WPM minimum is enforced as this was the minumum speed Koch used )
   - Recommended minimum Farnsworth ratio: 6:1 (characters are sent at full speed, but spaces between them are 6 times longer than a dit)
   - Higher ratios (6-10) are more suitable for beginners
   - Standard Morse uses a 3:1 ratio between character spacing and dit duration
