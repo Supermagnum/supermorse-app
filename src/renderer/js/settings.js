@@ -149,6 +149,7 @@ export class SettingsManager {
         // Set form values from current settings
         document.getElementById('settingsToneFrequency').value = this.settings.toneFrequency;
         document.getElementById('settingsMorseSpeed').value = this.settings.morseSpeed;
+        document.getElementById('settingsMorseSpeedValue').textContent = this.settings.morseSpeed;
         document.getElementById('settingsVolume').value = Math.round(((this.settings.volume + 40) / 40) * 100); // Convert dB to percentage
         document.getElementById('keyModeSelect').value = this.settings.keyMode;
         document.getElementById('themeSelect').value = this.settings.theme;
