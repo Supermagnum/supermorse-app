@@ -352,24 +352,21 @@ export class MorseAudio {
     }
     
     /**
-     * Calculate timing based on WPM
-     * @param {number} wpm - Words per minute (overall effective speed)
-     * @param {number} farnsworthWpm - Farnsworth character speed (optional)
+     * Calculate timing based on WPM and Farnsworth ratio
+     * @param {number} wpm - Words per minute (character speed)
+     * @param {boolean|number} useFarnsworth - Whether to use Farnsworth timing or legacy WPM value
+     * @param {number} farnsworthRatio - Ratio between inter-character spacing and dit duration (standard is 3.0)
      */
-    calculateTiming(wpm, farnsworthWpm = null) {
+    calculateTiming(wpm, useFarnsworth = false, farnsworthRatio = 3.0) {
         // Paris standard: "PARIS" is 50 units (including spaces)
         // at 1 WPM, "PARIS" takes 60 seconds, so 1 unit = 60/(50*WPM) seconds
         
-        // Check if we should use Farnsworth timing
-        // Farnsworth is used when character speed is higher than overall speed
-        const isFarnsworth = farnsworthWpm && farnsworthWpm > wpm;
+        // Handle legacy farnsworthWpm parameter (for backward compatibility)
+        const isFarnsworth = useFarnsworth === true || 
+                           (typeof useFarnsworth === 'number' && useFarnsworth > wpm);
         
-        // Character elements (dits, dahs, intra-character spaces) are based on 
-        // character speed (which is farnsworthWpm in Farnsworth, or wpm in standard timing)
-        const characterWpm = isFarnsworth ? farnsworthWpm : wpm;
-        
-        // Dit length (1 unit)
-        this.ditLength = 60 / (50 * characterWpm);
+        // Calculate dit duration based on character speed (WPM)
+        this.ditLength = 60 / (50 * wpm);
         
         // Dah length (3 units)
         this.dahLength = 3 * this.ditLength;
@@ -377,26 +374,51 @@ export class MorseAudio {
         // Intra-character space (1 unit)
         this.intraCharSpace = this.ditLength;
         
-        // Spaces between characters and words are based on overall speed (wpm)
-        // In standard timing, this is the same as the character speed
-        // In Farnsworth, this is slower than the character speed
-        const unitLength = 60 / (50 * wpm);
-        
-        // Inter-character space (3 units)
-        this.interCharSpace = 3 * unitLength;
-        
-        // Inter-word space (7 units)
-        this.interWordSpace = 7 * unitLength;
+        // Calculate inter-character and inter-word spacing
+        if (isFarnsworth) {
+            // In Farnsworth timing, we use the ratio to determine spacing between characters
+            // Standard Morse uses a 3:1 ratio (inter-character space is 3× the dit duration)
+            // Farnsworth uses a higher ratio (e.g., 6.5:1) to create more space between characters
+            
+            // For backward compatibility with the old dual-WPM approach
+            if (typeof useFarnsworth === 'number') {
+                // Legacy mode: Calculate ratio from the two WPM values
+                const slowWpm = wpm;
+                const fastWpm = useFarnsworth;
+                // The ratio is inversely proportional to the speed ratio
+                farnsworthRatio = (fastWpm / slowWpm) * 3.0;
+                console.log(`Converted legacy Farnsworth: Character ${fastWpm} WPM, Text ${slowWpm} WPM to ratio ${farnsworthRatio.toFixed(1)}`);
+            }
+            
+            // Use the ratio to set inter-character spacing
+            this.interCharSpace = farnsworthRatio * this.ditLength;
+            
+            // Word spacing keeps the same proportional relationship to character spacing
+            // Standard is 7:3 ratio between word and character spacing
+            const wordSpacingRatio = 7 / 3; // Standard word:character spacing ratio
+            this.interWordSpace = this.interCharSpace * wordSpacingRatio;
+            
+            console.log(`Using Farnsworth timing: Character speed ${wpm} WPM, Spacing ratio ${farnsworthRatio.toFixed(1)}:1`);
+            console.log(`Dit: ${Math.round(this.ditLength * 1000)}ms, Inter-character space: ${Math.round(this.interCharSpace * 1000)}ms`);
+        } else {
+            // Standard timing - everything based on the same WPM
+            // Inter-character space is 3× dit duration
+            this.interCharSpace = 3 * this.ditLength;
+            
+            // Inter-word space is 7× dit duration
+            this.interWordSpace = 7 * this.ditLength;
+        }
     }
     
     /**
      * Play a Morse code sequence
      * @param {string} morseCode - The Morse code sequence to play (.-. .- etc.)
-     * @param {number} wpm - Words per minute
-     * @param {number} farnsworthWpm - Farnsworth character speed (optional)
+     * @param {number} wpm - Words per minute (character speed)
+     * @param {boolean|number} farnsworthMode - Whether to use Farnsworth timing (true/false) or legacy WPM value
+     * @param {number} farnsworthRatio - Ratio between inter-character spacing and dit duration when Farnsworth is enabled
      * @returns {Promise} - Resolves when the sequence is complete or canceled
      */
-    async playMorseCode(morseCode, wpm = 13, farnsworthWpm = null) {
+    async playMorseCode(morseCode, wpm = 13, farnsworthMode = null, farnsworthRatio = 6.5) {
         console.log(`**** STARTING: Playing Morse code: ${morseCode} at ${wpm} WPM ****`);
         
         // Validate the input
@@ -410,8 +432,8 @@ export class MorseAudio {
         this.isPlaying = true;
         this.cancelPlayback = false;
         
-        // Calculate timing based on WPM
-        this.calculateTiming(wpm, farnsworthWpm);
+        // Calculate timing based on WPM and Farnsworth settings
+        this.calculateTiming(wpm, farnsworthMode, farnsworthRatio);
         console.log(`Calculated timing: dit=${this.ditLength}s, dah=${this.dahLength}s`);
         
         // Clean up the Morse code

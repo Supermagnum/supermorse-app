@@ -23,7 +23,7 @@ export class SettingsManager {
             audioDevice: 'default', // Audio output device
             sidetoneEnabled: 'on',    // Whether to play sidetone on key press
             farnsworthEnabled: false, // Whether to use Farnsworth timing (characters faster than spacing)
-            farnsworthRatio: 18, // Character speed in WPM when Farnsworth is enabled (must be > morseSpeed)
+            farnsworthRatio: 6.5, // Ratio between inter-character spacing and dit duration (standard is 3.0)
             regionalCharacterSet: 'none', // Regional character set (none, european, cyrillic, arabic)
             regionalTrainingMode: 'progressive' // How to learn regional characters (progressive, immersive)
         };
@@ -106,12 +106,15 @@ export class SettingsManager {
         if (this.app.trainer) {
             this.app.trainer.setSpeed(this.settings.morseSpeed);
             
-            // Apply Farnsworth timing if enabled
+        // Apply Farnsworth timing if enabled
             if (this.settings.farnsworthEnabled) {
-                // Pass the faster character speed for Farnsworth timing
-                this.app.trainer.farnsworthWpm = this.settings.farnsworthRatio;
+                // Pass the Farnsworth ratio to the trainer
+                this.app.trainer.farnsworthRatio = this.settings.farnsworthRatio;
+                // Set farnsworthWpm to true to indicate Farnsworth mode is active
+                this.app.trainer.farnsworthWpm = true;
             } else {
-                // When Farnsworth is disabled, character speed equals overall speed
+                // When Farnsworth is disabled, reset both values
+                this.app.trainer.farnsworthRatio = 3.0; // Standard ratio
                 this.app.trainer.farnsworthWpm = null;
             }
         }
@@ -174,7 +177,7 @@ export class SettingsManager {
         
         if (farnsworthRatio) {
             farnsworthRatio.value = this.settings.farnsworthRatio;
-            document.getElementById('farnsworthRatioValue').textContent = this.settings.farnsworthRatio;
+            document.getElementById('farnsworthRatioValue').textContent = this.settings.farnsworthRatio.toFixed(1);
         }
         
         // Show/hide farnsworth ratio control based on toggle state
