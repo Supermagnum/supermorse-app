@@ -11,7 +11,8 @@ This document details the implementation changes made to improve authentication 
 ### Problem Addressed
 
 The settings form was not displaying the current Morse speed (WPM) value alongside the slider control, unlike other settings such as the Farnsworth ratio which properly showed their current values.
-morse code sent did not include Farnsworth timing between characters.
+
+Morse code sent did not include Farnsworth timing between characters.
 
 ### Changes Made
 

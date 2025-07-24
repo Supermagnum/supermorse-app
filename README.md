@@ -90,14 +90,16 @@ Get a visual overview of the SuperMorse application, with  all features unlocked
 ## Needed Hardware
 One of these:
 - **Seeeduino XIAO** – The smallest compatible Arduino board. Can fit into the morse key base.
-- **Seeeduino XIAO ESP32-C6 boards**
-- **Arduino Micro boards**
-- **Arduino Nano boards**
+- **Seeeduino XIAO ESP32-C6**
+- **Arduino Micro**
+- **Arduino Nano**
 - **Dual-paddle Morse key**
 - **Suitable USB cable**
-- **3-conductor wire**
+- **3-conductor wire*, multistrand 22AWG per conductor**
 - **Any computer** with USB ports, screen, and keyboard 
-
+- **Soldering Iron, 20W**
+- **Solder** 
+- **Clear tape** To wrap the board in a Insulating layer
 
 
 **Note**: You must be logged in to the Supermorse app to access training features, track progress, and change settings. These are hidden until you have logged in.
@@ -119,6 +121,26 @@ All input pins use internal pull-up resistors, so paddles should connect to grou
 - Iambic paddle mode B
 
 You can switch between these modes in the application settings or by sending commands via the serial interface.
+
+
+Benefits of Iambic Keying
+
+    Increased Efficiency: Iambic keying can reduce the number of strokes needed to send Morse code, allowing for faster transmission.
+    Reduced Fatigue: This method minimizes repetitive motion, which can lead to less physical strain on the operator.
+
+
+    Dual-Lever Paddle: The iambic key consists of two paddles. One paddle sends "dits" (short signals), while the other sends "dahs" (long signals).
+    Squeezing Action: When both paddles are squeezed, the keyer alternates between sending dits and dahs. This mimics the rhythm of iambic meter in poetry.
+
+
+Modes of Operation
+
+Iambic keyers typically have two modes:
+
+    Mode A: When both paddles are released, the keyer finishes the current element (dit or dah) and stops.
+    Mode B: Upon releasing both paddles, the keyer finishes the current element and sends an additional element before stopping.
+
+
 
 # Arduino firmware:
 The SuperMorse app supports multiple Arduino boards. Choose the appropriate firmware for your board:
