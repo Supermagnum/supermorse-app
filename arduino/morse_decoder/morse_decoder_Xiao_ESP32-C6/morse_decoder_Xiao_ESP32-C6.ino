@@ -21,8 +21,8 @@
 // D2 on Xiao ESP32-C6 is GPIO 2 (according to documentation)
 // D3 on Xiao ESP32-C6 is GPIO 21 (according to documentation)
 // Previous incorrect mapping: D0-D10 = GPIO 8, 9, 10, 11, 12, 13, 14, 6, 5, 4, 7
-const int PADDLE_DOT_PIN = 2;     // Connect paddle dot contact to D2 pin (GPIO 2)
-const int PADDLE_DASH_PIN = 21;   // Connect paddle dash contact to D3 pin (GPIO 21)
+const int PADDLE_DOT_PIN = 2;     // Connect paddle dot contact to D2 pin (GPIO 2), left paddle
+const int PADDLE_DASH_PIN = 21;   // Connect paddle dash contact to D3 pin (GPIO 21), right paddle
 const int YELLOW_LED_PIN = 15;   // GPIO15 for the yellow LED on Xiao ESP32-C6
 
 // Key mode definitions

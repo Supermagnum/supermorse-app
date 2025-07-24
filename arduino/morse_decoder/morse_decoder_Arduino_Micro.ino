@@ -15,8 +15,8 @@
 // On any input on the two input pins, blink this led when the input is active.
 
 // Arduino Micro uses standard pin numbering
-const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (GPIO 2)
-const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (GPIO 3)
+const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (GPIO 2), left paddle
+const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (GPIO 3), right paddle
 
 // Key mode definitions
 enum KeyMode {
