@@ -14,6 +14,11 @@ export class ArduinoInterface {
         this.currentPort = null;
         this.buffer = '';
         
+        // Morse code processing
+        this.morseBuffer = '';
+        this.lastSignalTime = 0;
+        this.pauseThreshold = 1000; // Default pause threshold in ms (1 second)
+        
         // Set up event listeners
         this.setupEventListeners();
     }
@@ -156,24 +161,8 @@ export class ArduinoInterface {
         if (line.includes('.') || line.includes('-')) {
             // Only process if this appears to be Morse code (only dots, dashes, and spaces)
             if (/^[.\- ]+$/.test(line)) {
-                // The Arduino is sending dots and dashes, we need to decode them
-                // Split by spaces to get individual characters
-                const morseCharacters = line.trim().split(' ');
-                
-                for (const morse of morseCharacters) {
-                    if (morse) {
-                        // Try to decode the Morse code to a character
-                        const char = window.ALPHABETS.morseToChar(morse);
-                        
-                        if (char) {
-                            console.log(`Decoded Morse "${morse}" to character "${char}"`);
-                            // Send the decoded character to the trainer only when in Training tab
-                            if (this.app.trainer && this.app.trainer.lessonActive && this.app.currentSection === 'training') {
-                                this.app.trainer.handleUserInput(char);
-                            }
-                        }
-                    }
-                }
+                // Process with enhanced pause detection
+                this.processMorseWithPauseDetection(line);
             }
             return;
         }
@@ -182,6 +171,79 @@ export class ArduinoInterface {
         if (line === 'Morse Decoder Ready') {
             console.log('Arduino is ready');
             return;
+        }
+    }
+    
+    /**
+     * Process Morse code with enhanced pause detection
+     * @param {string} line - The line containing Morse code (dots, dashes, spaces)
+     */
+    processMorseWithPauseDetection(line) {
+        const currentTime = Date.now();
+        const timeElapsed = currentTime - this.lastSignalTime;
+        
+        // If significant time has passed since last signal, clear the buffer
+        if (this.lastSignalTime > 0 && timeElapsed > 2 * this.pauseThreshold) {
+            // Process any remaining code in the buffer before clearing
+            if (this.morseBuffer.trim()) {
+                this.decodeMorseCharacter(this.morseBuffer.trim());
+            }
+            this.morseBuffer = '';
+        }
+        
+        // Update last signal time
+        this.lastSignalTime = currentTime;
+        
+        // Process each character in the input line
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '.' || char === '-') {
+                // Add dot or dash to buffer
+                this.morseBuffer += char;
+            } else if (char === ' ') {
+                // Space could be intra-character or inter-character
+                // Count consecutive spaces to determine type
+                let spaceCount = 1;
+                while (i + 1 < line.length && line[i + 1] === ' ') {
+                    spaceCount++;
+                    i++;
+                }
+                
+                if (spaceCount >= 3) {
+                    // This is likely an inter-character space
+                    // Process the current character and reset buffer
+                    if (this.morseBuffer.trim()) {
+                        this.decodeMorseCharacter(this.morseBuffer.trim());
+                    }
+                    this.morseBuffer = '';
+                } else {
+                    // This is likely an intra-character space (element separation)
+                    // Keep accumulating in the same buffer
+                }
+            }
+        }
+        
+        // If the line ends without spaces, we may need to process the buffer
+        // But we'll wait for more input or a pause to confirm
+    }
+    
+    /**
+     * Decode a Morse code character and handle it
+     * @param {string} morse - The Morse code to decode
+     */
+    decodeMorseCharacter(morse) {
+        // Try to decode the Morse code to a character
+        const char = window.ALPHABETS.morseToChar(morse);
+        
+        if (char) {
+            console.log(`Decoded Morse "${morse}" to character "${char}"`);
+            // Send the decoded character to the trainer only when in Training tab
+            if (this.app.trainer && this.app.trainer.lessonActive && this.app.currentSection === 'training') {
+                this.app.trainer.handleUserInput(char);
+            }
+        } else {
+            console.log(`Could not decode Morse pattern: "${morse}"`);
         }
     }
     
@@ -245,6 +307,19 @@ export class ArduinoInterface {
             // Set key mode
             await this.setKeyMode(settings.keyMode);
             
+            // Set pause threshold from settings if available
+            if (settings.pauseThreshold !== undefined) {
+                this.setPauseThreshold(settings.pauseThreshold);
+            }
+            // Otherwise, calculate based on WPM
+            else if (settings.morseSpeed) {
+                // Base timing unit in milliseconds at this WPM
+                const unitLength = 60 / (50 * settings.morseSpeed) * 1000;
+                // Inter-character space is 3 units by standard
+                this.pauseThreshold = Math.max(3 * unitLength, 150); // Minimum 150ms
+                console.log(`Pause threshold calculated to ${this.pauseThreshold}ms at ${settings.morseSpeed} WPM`);
+            }
+            
             return true;
         } catch (error) {
             console.error('Error configuring Arduino:', error);
@@ -266,6 +341,22 @@ export class ArduinoInterface {
             return true;
         } catch (error) {
             console.error('Error setting key mode:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Set the pause threshold for Morse code character detection
+     * @param {number} threshold - Pause threshold in milliseconds
+     * @returns {boolean} - True if successful
+     */
+    setPauseThreshold(threshold) {
+        if (threshold >= 500 && threshold <= 3000) {
+            this.pauseThreshold = threshold;
+            console.log(`Pause threshold set to ${this.pauseThreshold}ms`);
+            return true;
+        } else {
+            console.warn(`Invalid pause threshold: ${threshold}ms. Must be between 500-3000ms`);
             return false;
         }
     }

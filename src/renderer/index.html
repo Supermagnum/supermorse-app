@@ -33,7 +33,7 @@
                                 <i class="fas fa-user-circle"></i> Account
                             </li>
                             <li class="active" data-section="training">
-                                <i class="fas fa-graduation-cap"></i> Training
+                                <i class="fas fa-graduation-cap"></i> Key Training
                             </li>
                             <li data-section="listening">
                                 <i class="fas fa-headphones"></i> Listening training
@@ -142,6 +142,8 @@
                             
                             <div class="training-controls">
                                 <button id="startLessonBtn" class="btn btn-primary">Start Lesson</button>
+                                <button id="pauseLessonBtn" class="btn btn-warning hidden">Pause</button>
+                                <button id="resumeLessonBtn" class="btn btn-success hidden">Resume</button>
                                 <button id="stopLessonBtn" class="btn btn-danger hidden">Stop</button>
                                 <div class="training-progress">
                                     <div class="progress-bar">
@@ -201,6 +203,8 @@
                             
                             <div class="training-controls">
                                 <button id="startLessonBtnListening" class="btn btn-primary">Start Lesson</button>
+                                <button id="pauseLessonBtnListening" class="btn btn-warning hidden">Pause</button>
+                                <button id="resumeLessonBtnListening" class="btn btn-success hidden">Resume</button>
                                 <button id="stopLessonBtnListening" class="btn btn-danger hidden">Stop</button>
                                 <div class="training-progress">
                                     <div class="progress-bar">
@@ -311,6 +315,12 @@
                                     <option value="B">Iambic Mode B</option>
                                 </select>
                                 <p class="hint">Select the iambic mode for your paddle</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="pauseThresholdSlider">Pause Threshold: <span id="pauseThresholdValue">1.0</span> seconds</label>
+                                <input type="range" id="pauseThresholdSlider" min="500" max="3000" step="100" value="1000">
+                                <p class="hint">Adjust how long a pause needs to be to detect as a space between Morse characters</p>
                             </div>
                             
                             <div class="form-group">

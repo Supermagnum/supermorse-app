@@ -4,6 +4,42 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
+## July 24, 2025
+
+## 29. Improved Morse Code Pause Detection and Added Lesson Pause Functionality
+
+### Problems Addressed
+
+The application had two usability issues:
+1. The Morse code training had trouble detecting pauses between signs from the morse device, making it difficult to properly interpret incoming signals from Arduino devices.
+2. There was no way to pause training lessons, forcing users to either complete or stop a lesson entirely, without the ability to temporarily pause and resume.
+
+### Changes Made
+
+#### 29.1 Added Configurable Pause Threshold
+
+Implemented a configurable pause threshold setting to improve detection of pauses between Morse code signs:
+- Added a slider in Morse Key Settings to adjust the pause threshold from 0.5 to 3 seconds
+- Set default pause threshold to 1 second (1000ms)
+- Created real-time application of threshold changes when connected to Arduino
+- Added persistent storage of the threshold in user settings
+
+#### 29.2 Implemented Lesson Pause Functionality
+
+Added the ability to pause and resume lessons in both Key Training and Listening Training sections:
+- Added Pause and Resume buttons to both training interfaces
+- Implemented timer pausing to properly track elapsed and remaining time
+- Created state management to track paused lessons
+- Ensured audio playback stops during pauses and resumes properly
+
+### Benefits
+
+- More accurate detection of character boundaries in Morse code input
+- Accommodates different sending speeds and styles with adjustable pause threshold
+- Better user experience with the ability to temporarily pause lessons
+- More accurate time tracking during training sessions
+- Greater flexibility for users during training sessions
+
 ## July 23, 2025
 
 ## 28. Morse Speed Display Fix in Settings

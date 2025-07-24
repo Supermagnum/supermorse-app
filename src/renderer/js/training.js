@@ -14,6 +14,7 @@ export class MorseTrainer {
         // Training state
         this.isTraining = false;
         this.lessonActive = false;
+        this.isPaused = false;
         this.currentCharacters = [];
         this.currentSequence = '';
         this.userInput = '';
@@ -28,6 +29,8 @@ export class MorseTrainer {
         this.sessionDuration = 30 * 60 * 1000; // 30 minutes in milliseconds
         this.sessionTimer = null;
         this.groupTimer = null;
+        this.pausedTime = null;
+        this.totalPausedTime = 0; // Track total time spent paused
         
         // Speed settings
         this.wpm = 13; // Words per minute (character speed)
@@ -269,6 +272,7 @@ export class MorseTrainer {
         
         // Update UI
         document.getElementById('startLessonBtn').classList.add('hidden');
+        document.getElementById('pauseLessonBtn').classList.remove('hidden');
         document.getElementById('stopLessonBtn').classList.remove('hidden');
         
         // Start session timer
@@ -899,19 +903,104 @@ export class MorseTrainer {
             clearInterval(this.sessionTimer);
         }
         
+        // Reset pause state
+        this.isPaused = false;
+        this.pausedTime = null;
+        this.totalPausedTime = 0;
+        
         // Update timer displays
         this.updateTimerDisplays();
         
         // Start a new timer that updates every second
         this.sessionTimer = setInterval(() => {
-            this.updateTimerDisplays();
-            
-            // Check if session time is up
-            const elapsed = Date.now() - this.sessionStartTime;
-            if (elapsed >= this.sessionDuration) {
-                this.endSession();
+            // Only update if not paused
+            if (!this.isPaused) {
+                this.updateTimerDisplays();
+                
+                // Check if session time is up
+                const elapsed = this.getElapsedTime();
+                if (elapsed >= this.sessionDuration) {
+                    this.endSession();
+                }
             }
         }, 1000);
+    }
+    
+    /**
+     * Pause the current lesson
+     */
+    pauseLesson() {
+        if (!this.lessonActive || this.isPaused) return;
+        
+        console.log("Pausing lesson");
+        this.isPaused = true;
+        this.pausedTime = Date.now();
+        
+        // Stop any audio playback
+        if (this.app.morseAudio) {
+            this.app.morseAudio.stopTone();
+        }
+        
+        // Update UI buttons
+        document.getElementById('pauseLessonBtn').classList.add('hidden');
+        document.getElementById('resumeLessonBtn').classList.remove('hidden');
+        document.getElementById('challengeText').textContent = 'Lesson paused';
+        
+        // Also update listening section buttons if needed
+        if (document.getElementById('pauseLessonBtnListening')) {
+            document.getElementById('pauseLessonBtnListening').classList.add('hidden');
+            document.getElementById('resumeLessonBtnListening').classList.remove('hidden');
+            document.getElementById('challengeTextListening').textContent = 'Lesson paused';
+        }
+    }
+    
+    /**
+     * Resume the current lesson
+     */
+    resumeLesson() {
+        if (!this.lessonActive || !this.isPaused) return;
+        
+        console.log("Resuming lesson");
+        
+        // Calculate how long we were paused
+        const pauseDuration = Date.now() - this.pausedTime;
+        this.totalPausedTime += pauseDuration;
+        this.pausedTime = null;
+        this.isPaused = false;
+        
+        // Update UI buttons
+        document.getElementById('resumeLessonBtn').classList.add('hidden');
+        document.getElementById('pauseLessonBtn').classList.remove('hidden');
+        document.getElementById('challengeText').textContent = 'Listen and type what you hear:';
+        
+        // Also update listening section buttons if needed
+        if (document.getElementById('resumeLessonBtnListening')) {
+            document.getElementById('resumeLessonBtnListening').classList.add('hidden');
+            document.getElementById('pauseLessonBtnListening').classList.remove('hidden');
+            document.getElementById('challengeTextListening').textContent = 'Listen and type what you hear:';
+        }
+        
+        // Continue with the current group or sequence
+        if (this.currentSequence) {
+            this.playMorseSequence(this.currentSequence);
+        }
+    }
+    
+    /**
+     * Get the actual elapsed time, accounting for pauses
+     * @returns {number} - Elapsed time in milliseconds
+     */
+    getElapsedTime() {
+        if (!this.sessionStartTime) return 0;
+        
+        let elapsed = Date.now() - this.sessionStartTime - this.totalPausedTime;
+        
+        // If currently paused, also subtract the current pause duration
+        if (this.isPaused && this.pausedTime) {
+            elapsed -= (Date.now() - this.pausedTime);
+        }
+        
+        return elapsed;
     }
     
     /**
@@ -920,12 +1009,18 @@ export class MorseTrainer {
     updateTimerDisplays() {
         if (!this.sessionStartTime) return;
         
-        const elapsed = Date.now() - this.sessionStartTime;
+        const elapsed = this.getElapsedTime();
         const remaining = Math.max(0, this.sessionDuration - elapsed);
         
         // Format times as MM:SS
         document.getElementById('timeElapsed').textContent = this.formatTime(elapsed);
         document.getElementById('timeRemaining').textContent = this.formatTime(remaining);
+        
+        // Also update listening section displays if they exist
+        if (document.getElementById('timeElapsedListening')) {
+            document.getElementById('timeElapsedListening').textContent = this.formatTime(elapsed);
+            document.getElementById('timeRemainingListening').textContent = this.formatTime(remaining);
+        }
     }
     
     /**
@@ -984,6 +1079,7 @@ export class MorseTrainer {
         this.lessonActive = false;
         this.shouldStop = true;
         this.isIntroducing = false;
+        this.isPaused = false;
         
         // Stop any audio playback
         if (this.app.morseAudio) {
@@ -1000,8 +1096,10 @@ export class MorseTrainer {
         document.getElementById('challengeText').textContent = 'Lesson stopped';
         document.getElementById('userInput').textContent = '';
         
-        // Show start button, hide stop button
+        // Show start button, hide other buttons
         document.getElementById('startLessonBtn').classList.remove('hidden');
+        document.getElementById('pauseLessonBtn').classList.add('hidden');
+        document.getElementById('resumeLessonBtn').classList.add('hidden');
         document.getElementById('stopLessonBtn').classList.add('hidden');
         
         // Wait a bit before allowing restart

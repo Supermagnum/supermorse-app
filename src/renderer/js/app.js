@@ -150,12 +150,23 @@ class SuperMorseApp {
         // Training controls
         document.getElementById('startLessonBtn').addEventListener('click', () => {
             document.getElementById('startLessonBtn').classList.add('hidden');
+            document.getElementById('pauseLessonBtn').classList.remove('hidden');
             document.getElementById('stopLessonBtn').classList.remove('hidden');
             this.trainer.startLesson();
         });
         
+        document.getElementById('pauseLessonBtn').addEventListener('click', () => {
+            this.trainer.pauseLesson();
+        });
+        
+        document.getElementById('resumeLessonBtn').addEventListener('click', () => {
+            this.trainer.resumeLesson();
+        });
+        
         document.getElementById('stopLessonBtn').addEventListener('click', () => {
             document.getElementById('stopLessonBtn').classList.add('hidden');
+            document.getElementById('pauseLessonBtn').classList.add('hidden');
+            document.getElementById('resumeLessonBtn').classList.add('hidden');
             document.getElementById('startLessonBtn').classList.remove('hidden');
             this.trainer.stopLesson();
         });
@@ -191,6 +202,7 @@ class SuperMorseApp {
         // Listening training controls with event listeners and current character syncing
         document.getElementById('startLessonBtnListening').addEventListener('click', () => {
             document.getElementById('startLessonBtnListening').classList.add('hidden');
+            document.getElementById('pauseLessonBtnListening').classList.remove('hidden');
             document.getElementById('stopLessonBtnListening').classList.remove('hidden');
             
             // Use the original training tab's start lesson functionality
@@ -204,8 +216,18 @@ class SuperMorseApp {
                 'Listen and type on keyboard what you hear - Keyboard input only';
         });
         
+        document.getElementById('pauseLessonBtnListening').addEventListener('click', () => {
+            this.trainer.pauseLesson();
+        });
+        
+        document.getElementById('resumeLessonBtnListening').addEventListener('click', () => {
+            this.trainer.resumeLesson();
+        });
+        
         document.getElementById('stopLessonBtnListening').addEventListener('click', () => {
             document.getElementById('stopLessonBtnListening').classList.add('hidden');
+            document.getElementById('pauseLessonBtnListening').classList.add('hidden');
+            document.getElementById('resumeLessonBtnListening').classList.add('hidden');
             document.getElementById('startLessonBtnListening').classList.remove('hidden');
             
             // Use the original training tab's stop lesson functionality
@@ -348,6 +370,7 @@ class SuperMorseApp {
             const theme = document.getElementById('themeSelect').value;
             const maidenheadLocator = document.getElementById('maidenheadLocator').value;
             const preferredBand = document.getElementById('preferredBand').value;
+            const pauseThreshold = parseInt(document.getElementById('pauseThresholdSlider').value);
             
             // Get Farnsworth timing settings
             const farnsworthEnabled = document.getElementById('farnsworthEnabled').checked;
@@ -366,7 +389,8 @@ class SuperMorseApp {
                 maidenheadLocator,
                 preferredBand,
                 farnsworthEnabled,
-                farnsworthRatio
+                farnsworthRatio,
+                pauseThreshold
             });
             
             this.showModal('Settings Saved', 'Your settings have been saved successfully.');
@@ -405,6 +429,17 @@ class SuperMorseApp {
         document.getElementById('farnsworthRatio').addEventListener('input', (e) => {
             const ratio = parseInt(e.target.value);
             document.getElementById('farnsworthRatioValue').textContent = ratio;
+        });
+        
+        // Pause threshold adjustment
+        document.getElementById('pauseThresholdSlider').addEventListener('input', (e) => {
+            const threshold = parseInt(e.target.value);
+            document.getElementById('pauseThresholdValue').textContent = (threshold / 1000).toFixed(1);
+            
+            // If Arduino is connected, update the pause threshold immediately
+            if (this.arduino && this.arduino.isConnected) {
+                this.arduino.pauseThreshold = threshold;
+            }
         });
         
         // Theme change

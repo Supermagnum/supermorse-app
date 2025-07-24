@@ -16,6 +16,7 @@ export class SettingsManager {
             volume: -10, // Default volume in dB
             arduinoPort: '',
             keyMode: 'A', // A = Iambic A, B = Iambic B
+            pauseThreshold: 1000, // Default pause threshold in ms (1 second)
             theme: 'light',
             maidenheadLocator: '',
             preferredBand: 'auto',
@@ -136,9 +137,14 @@ export class SettingsManager {
         
         document.getElementById('themeSelect').value = this.settings.theme;
         
-        // Set key mode on the Arduino if connected
+        // Set Arduino settings if connected
         if (this.app.arduino && this.app.arduino.isConnected) {
             this.app.arduino.setKeyMode(this.settings.keyMode);
+            
+            // Apply pause threshold setting
+            if (this.settings.pauseThreshold !== undefined) {
+                this.app.arduino.pauseThreshold = this.settings.pauseThreshold;
+            }
         }
     }
     
@@ -161,6 +167,13 @@ export class SettingsManager {
         if (audioDeviceSelect) {
             // Populate audio devices dropdown
             this.populateAudioDevices();
+        }
+        
+        // Set pause threshold slider if it exists
+        const pauseThresholdSlider = document.getElementById('pauseThresholdSlider');
+        if (pauseThresholdSlider) {
+            pauseThresholdSlider.value = this.settings.pauseThreshold;
+            document.getElementById('pauseThresholdValue').textContent = (this.settings.pauseThreshold / 1000).toFixed(1);
         }
         
         if (sidetoneToggle) {

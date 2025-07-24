@@ -95,8 +95,8 @@ One of these:
 - **Arduino Nano**
 - **Dual-paddle Morse key**
 - **Suitable USB cable**
-- **3-conductor wire*, multistrand 22AWG per conductor**
-- **Any computer** with USB ports, screen, and keyboard 
+- **3-conductor wire, multistrand 22AWG per conductor**
+- **Any computer** with USB ports, screen, and keyboard
 - **Soldering Iron, 20W**
 - **Solder** 
 - **Clear tape** To wrap the board in a Insulating layer
@@ -104,13 +104,23 @@ One of these:
 
 **Note**: You must be logged in to the Supermorse app to access training features, track progress, and change settings. These are hidden until you have logged in.
 
+# Arduino firmware:
+The SuperMorse app supports multiple Arduino boards. Choose the appropriate firmware for your board:
+
+- [Xiao ESP32-C6](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_ESP32-C6/morse_decoder_Xiao_ESP32-C6.ino) - For Seeeduino XIAO ESP32-C6 boards
+- [Xiao SAMD21](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_SAMD21.ino) - For Seeeduino XIAO SAMD21 boards, sometimes called Seeeduino XIAO.
+- [Arduino Micro](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Micro.ino) - For Arduino Micro boards
+- [Arduino Nano](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Nano.ino) - For Arduino Nano boards
+
+Each version includes built-in LED diagnostic feedback that flashes the onboard LED when input is detected.
+
 ## Arduino Pin Configuration
 
 The Arduino firmware supports iambic paddle keys. Here's how to connect your paddle:
 
 ### Pin Assignments
-- **Pin 2** - Paddle dot contact
-- **Pin 3** - Paddle dash contact
+- **Pin 2** - Paddle dot contact, left paddle
+- **Pin 3** - Paddle dash contact, right paddle
 
 ### Connection Instructions
 Connect the dot paddle to pin 2, dash paddle to pin 3, and common to ground
@@ -119,6 +129,16 @@ All input pins use internal pull-up resistors, so paddles should connect to grou
 
 - Iambic paddle mode A (Curtis A)
 - Iambic paddle mode B
+
+### Signal Processing
+
+The application includes configurable settings to optimize how it processes signals from your Morse key:
+
+- **Pause Threshold** - Adjustable from 0.5 to 3 seconds (default: 1 second)
+  - Controls how long a pause needs to be before it's detected as a space between Morse characters
+  - Lower values work better for faster operators
+  - Higher values help with beginners or inconsistent keying
+  - Can be adjusted in real-time from the Morse Key Settings section
 
 You can switch between these modes in the application settings or by sending commands via the serial interface.
 
@@ -139,18 +159,6 @@ Iambic keyers typically have two modes:
 
     Mode A: When both paddles are released, the keyer finishes the current element (dit or dah) and stops.
     Mode B: Upon releasing both paddles, the keyer finishes the current element and sends an additional element before stopping.
-
-
-
-# Arduino firmware:
-The SuperMorse app supports multiple Arduino boards. Choose the appropriate firmware for your board:
-
-- [Xiao ESP32-C6](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_ESP32-C6/morse_decoder_Xiao_ESP32-C6.ino) - For Seeeduino XIAO ESP32-C6 boards
-- [Xiao SAMD21](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Xiao_SAMD21.ino) - For Seeeduino XIAO SAMD21 boards, sometimes called Seeeduino XIAO.
-- [Arduino Micro](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Micro.ino) - For Arduino Micro boards
-- [Arduino Nano](https://github.com/Supermagnum/supermorse-app/tree/main/arduino/morse_decoder/morse_decoder_Arduino_Nano.ino) - For Arduino Nano boards
-
-Each version includes built-in LED diagnostic feedback that flashes the onboard LED when input is detected.
 
 
 ## Distribution

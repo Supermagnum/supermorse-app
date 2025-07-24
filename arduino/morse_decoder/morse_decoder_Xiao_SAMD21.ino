@@ -17,8 +17,8 @@
 // For SAMD21, D2 is digital pin 2
 // For SAMD21, D3 is digital pin 3
 // If this doesn't work, you may need to check the specific GPIO mapping for your board
-const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (digital pin 2)
-const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (digital pin 3)
+const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (digital pin 2), left paddle
+const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (digital pin 3), right paddle
 const int YELLOW_LED_PIN = 13;   // D13 for the yellow LED on Xiao SAMD21
 
 // Key mode definitions
