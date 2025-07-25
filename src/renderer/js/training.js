@@ -33,7 +33,7 @@ export class MorseTrainer {
         this.totalPausedTime = 0; // Track total time spent paused
         
         // Speed settings
-        this.wpm = 13; // Words per minute (character speed)
+        this.wpm = 15; // Words per minute (character speed)
         this.farnsworthWpm = null; // Legacy parameter for backward compatibility
         this.farnsworthRatio = 6.5; // Ratio between inter-character spacing and dit duration (standard is 3.0)
         
@@ -572,12 +572,21 @@ export class MorseTrainer {
             const expectedChar = this.currentSequence[i];
             const userChar = this.userInput[i] || '';
             
+            // Create a container for character and its label
+            displayHtml += '<span class="char-container" style="display:inline-block; text-align:center; margin:0 10px;">';
+            
+            // Add character label above the Morse representation
+            displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${userChar.toUpperCase()}</span>`;
+            
+            // Add the Morse character with correct/incorrect styling
             if (userChar.toUpperCase() === expectedChar.toUpperCase()) {
                 correct++;
                 displayHtml += `<span class="correct">${userChar.toUpperCase()}</span>`;
             } else {
                 displayHtml += `<span class="incorrect">${userChar.toUpperCase()}</span>`;
             }
+            
+            displayHtml += '</span>'; // Close the character container
         }
         
         // Update display in both the training and listening sections
@@ -601,11 +610,12 @@ export class MorseTrainer {
         // Update accuracy display
         document.getElementById('accuracyRate').textContent = `${Math.round(progressPercent)}%`;
         
-        // Wait a moment to show the results, then move to next group
+        // Wait 10 seconds to show the results, then move to next group
+        // Changed from 2 seconds to 10 seconds as requested
         setTimeout(() => {
             this.groupIndex++;
             this.startNextGroup();
-        }, 2000);
+        }, 10000); // 10 seconds
     }
     
     /**
@@ -619,9 +629,24 @@ export class MorseTrainer {
         if (this.userInput.length < 5) {
             this.userInput += char.toUpperCase();
             
+            // Create HTML with character labels above the Morse representation
+            let displayHtml = '';
+            for (let i = 0; i < this.userInput.length; i++) {
+                // Create a container for character and its label
+                displayHtml += '<span class="char-container" style="display:inline-block; text-align:center; margin:0 10px;">';
+                
+                // Add character label above the Morse representation
+                displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${this.userInput[i]}</span>`;
+                
+                // Add the Morse character
+                displayHtml += `<span>${this.userInput[i]}</span>`;
+                
+                displayHtml += '</span>'; // Close the character container
+            }
+            
             // Update display in both training and listening sections
-            document.getElementById('userInput').textContent = this.userInput;
-            document.getElementById('userInputListening').textContent = this.userInput;
+            document.getElementById('userInput').innerHTML = displayHtml;
+            document.getElementById('userInputListening').innerHTML = displayHtml;
             
             // If we have 5 characters, evaluate the input
             if (this.userInput.length === 5) {

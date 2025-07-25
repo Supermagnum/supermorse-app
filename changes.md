@@ -4,6 +4,97 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
+## July 25, 2025
+
+## 30. Improved Morse Code Training Display and Speed Settings
+
+### Problems Addressed
+
+The application had several usability issues with Morse code training:
+1. Characters were cleared from the screen as soon as they were received, making it difficult to see the full sequence during training
+2. There was no visual indication of what character each Morse pattern represented
+3. The default speed of 13 WPM was too slow for effective training
+
+### Changes Made
+
+#### 30.1 Increased Default Morse Speed to 15 WPM
+
+Updated the default Morse code speed to the more effective 15 WPM in training.js:
+```javascript
+// Old implementation
+this.wpm = 13; // Words per minute (character speed)
+
+// New implementation
+this.wpm = 15; // Words per minute (character speed)
+```
+
+#### 30.2 Added Character Labels Above Morse Representation
+
+Modified the character display to show the actual character above its Morse representation:
+```javascript
+// Create a container for character and its label
+displayHtml += '<span class="char-container" style="display:inline-block; text-align:center; margin:0 10px;">';
+
+// Add character label above the Morse representation
+displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${userChar.toUpperCase()}</span>`;
+
+// Add the Morse character with correct/incorrect styling
+if (userChar.toUpperCase() === expectedChar.toUpperCase()) {
+    correct++;
+    displayHtml += `<span class="correct">${userChar.toUpperCase()}</span>`;
+} else {
+    displayHtml += `<span class="incorrect">${userChar.toUpperCase()}</span>`;
+}
+
+displayHtml += '</span>'; // Close the character container
+```
+
+#### 30.3 Improved Character Display Persistence
+
+Modified the evaluateUserInput method to keep characters visible for 10 seconds before clearing:
+```javascript
+// Old implementation - waited 2 seconds before clearing
+setTimeout(() => {
+    this.groupIndex++;
+    this.startNextGroup();
+}, 2000); // 2 seconds
+
+// New implementation - waits 10 seconds before clearing
+setTimeout(() => {
+    this.groupIndex++;
+    this.startNextGroup();
+}, 10000); // 10 seconds
+```
+
+Updated handleUserInput to add proper spacing between characters and ensure they remain visible:
+```javascript
+// Create HTML with character labels above the Morse representation
+let displayHtml = '';
+for (let i = 0; i < this.userInput.length; i++) {
+    // Create a container for character and its label
+    displayHtml += '<span class="char-container" style="display:inline-block; text-align:center; margin:0 10px;">';
+    
+    // Add character label above the Morse representation
+    displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${this.userInput[i]}</span>`;
+    
+    // Add the Morse character
+    displayHtml += `<span>${this.userInput[i]}</span>`;
+    
+    displayHtml += '</span>'; // Close the character container
+}
+```
+
+### Benefits
+
+- More effective learning with the widely recommended 15 WPM speed
+- Improved visual feedback with character labels above Morse patterns
+- Better readability with consistent spacing between characters
+- Enhanced learning experience by keeping characters visible until the 5-character group is complete
+- Reduced confusion and frustration for beginners who need more time to process what they've received
+
+## Todo:
+- Improve how the app detects pauses between morse characters received from the morse key - it still has issues figuring out when there is a pause.
+
 ## July 24, 2025
 
 ## 29. Improved Morse Code Pause Detection and Added Lesson Pause Functionality
