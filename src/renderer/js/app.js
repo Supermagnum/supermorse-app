@@ -374,7 +374,7 @@ class SuperMorseApp {
             
             // Get Farnsworth timing settings
             const farnsworthEnabled = document.getElementById('farnsworthEnabled').checked;
-            const farnsworthRatio = parseInt(document.getElementById('farnsworthRatio').value);
+            const farnsworthRatio = parseFloat(document.getElementById('farnsworthRatio').value);
             
             // Convert volume percentage to dB
             const volume = -40 + (volumePercent / 100 * 40);
@@ -425,10 +425,16 @@ class SuperMorseApp {
             }
         });
         
+        // Settings Morse speed adjustment
+        document.getElementById('settingsMorseSpeed').addEventListener('input', (e) => {
+            const speed = parseInt(e.target.value);
+            document.getElementById('settingsMorseSpeedValue').textContent = speed;
+        });
+        
         // Farnsworth ratio adjustment
         document.getElementById('farnsworthRatio').addEventListener('input', (e) => {
-            const ratio = parseInt(e.target.value);
-            document.getElementById('farnsworthRatioValue').textContent = ratio;
+            const ratio = parseFloat(e.target.value);
+            document.getElementById('farnsworthRatioValue').textContent = ratio.toFixed(1);
         });
         
         // Pause threshold adjustment

@@ -270,6 +270,7 @@ After installation on any platform:
    - Launch SuperMorse
    - Click "Register" to create a new user account
    - Fill in your details and complete registration
+   - You can find your maidenhead locator here : https://www.m0ahn.co.uk/interactivelocatormap.html  
 
 2. **Arduino Setup** (optional):
    - Connect your Arduino board via USB

@@ -12,7 +12,7 @@ export class SettingsManager {
         this.app = app;
         this.settings = {
             toneFrequency: 600,
-            morseSpeed: 13,
+            morseSpeed: 15,
             volume: -10, // Default volume in dB
             arduinoPort: '',
             keyMode: 'A', // A = Iambic A, B = Iambic B

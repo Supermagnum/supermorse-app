@@ -4,6 +4,43 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
+## July 26, 2025
+
+## 31. Fixed Morse Speed WPM Settings and UI Updates
+
+### Problems Addressed
+
+Two issues were identified with the Morse speed settings:
+1. The Morse Speed (WPM) value in listening training did not update when changed
+2. The Morse Speed value in the settings section did not update when the slider was moved
+3. The default value for Morse Speed was set to 13 WPM instead of the more effective 15 WPM
+
+### Changes Made
+
+#### 31.1 Updated Default Morse Speed to 15 WPM
+
+Changed the default Morse speed from 13 WPM to 15 WPM in settings.js to provide a more effective learning experience. This is a standard recommended speed for effective Morse code learning.
+
+#### 31.2 Updated HTML Default Values
+
+Updated all HTML elements to display 15 WPM as the default value to maintain consistency with the settings change. This ensures users see the correct default speed value throughout the application.
+
+#### 31.3 Added Event Listener for Settings Slider
+
+Added a missing event listener in app.js to update the displayed WPM value when the settings slider is moved. This ensures real-time visual feedback when the user adjusts the Morse speed in the settings panel.
+
+#### 31.4 Fixed Farnsworth Ratio Value Handling
+
+Improved the Farnsworth ratio handling by using parseFloat instead of parseInt to correctly handle decimal values. Also enhanced the display formatting to show one decimal place for better precision.
+
+### Benefits
+
+- Consistent default Morse speed of 15 WPM across all components
+- Improved learning effectiveness with the recommended 15 WPM default speed
+- Real-time visual feedback when adjusting the Morse speed in settings
+- Proper handling of decimal values for Farnsworth ratio settings
+- Enhanced user experience with consistent behavior between training and settings
+
 ## July 25, 2025
 
 ## 30. Improved Morse Code Training Display and Speed Settings
