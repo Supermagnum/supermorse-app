@@ -8,9 +8,9 @@
     "dev": "electron . --dev",
     "test": "jest",
     "build": "electron-builder",
-    "build:linux": "electron-builder --linux --config.directories.output=dist/Linux",
-    "build:windows": "electron-builder --win --config.directories.output=dist/Windows",
-    "build:mac": "electron-builder --mac --config.directories.output=dist/MacOS"
+    "build:linux": "mkdir -p dist/Linux/linux-unpacked && electron-builder --linux --config.directories.output=dist/Linux",
+    "build:windows": "mkdir -p dist/Windows/win-unpacked && electron-builder --win --config.directories.output=dist/Windows",
+    "build:mac": "mkdir -p dist/MacOS/mac && electron-builder --mac --config.directories.output=dist/MacOS"
   },
   "build": {
     "appId": "com.supermorse.app",
