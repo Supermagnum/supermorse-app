@@ -11,6 +11,7 @@ dev-logs/
 
 # Build output
 dist/
+!dist/
 build/
 !build/icons/
 out/

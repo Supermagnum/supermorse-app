@@ -1,0 +1,4 @@
+owner: Supermagnum
+repo: supermorse-app
+provider: github
+updaterCacheDirName: supermorse-app-updater

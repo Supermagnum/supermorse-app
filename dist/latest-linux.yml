@@ -1,0 +1,9 @@
+version: 1.0.0
+files:
+  - url: Supermorse-1.0.0.AppImage
+    sha512: QMYRx8/848sUjE7WoSiDi0GGVzZE8QA7v7WHVIAwwC8fz/wBG4YuqU7RUJyAUgflEQrYvfKc1bNd8i7d2uk50Q==
+    size: 104927931
+    blockMapSize: 111311
+path: Supermorse-1.0.0.AppImage
+sha512: QMYRx8/848sUjE7WoSiDi0GGVzZE8QA7v7WHVIAwwC8fz/wBG4YuqU7RUJyAUgflEQrYvfKc1bNd8i7d2uk50Q==
+releaseDate: '2025-07-27T15:36:28.193Z'
