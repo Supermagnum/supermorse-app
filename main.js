@@ -10,12 +10,38 @@ const Store = require('electron-store');
 const fs = require('fs');
 const mumble = require('node-mumble');
 
-// Initialize electron-store for persistent settings and user data
-const store = new Store();
+// Wrap native module initialization in try-catch blocks to prevent segmentation faults
+let store;
+try {
+  // Initialize electron-store for persistent settings and user data
+  store = new Store();
+} catch (error) {
+  console.error('Failed to initialize electron-store:', error);
+  store = {
+    get: (key) => null,
+    set: (key, value) => {}
+  };
+}
 
-// Import user controller and data service
-const UserController = require('./src/controllers/UserController');
-const JsonDataService = require('./src/services/JsonDataService');
+// Import user controller and data service with error handling
+let UserController, JsonDataService;
+try {
+  UserController = require('./src/controllers/UserController');
+  JsonDataService = require('./src/services/JsonDataService');
+} catch (error) {
+  console.error('Failed to load user controller or data service:', error);
+  // Create minimal stub implementations
+  UserController = {
+    registerUser: async () => ({ success: false, message: 'Service unavailable' }),
+    loginUser: async () => ({ success: false, message: 'Service unavailable' }),
+    verifyToken: async () => ({ success: false, message: 'Service unavailable' }),
+    getUserProgress: async () => ({ success: false, message: 'Service unavailable' }),
+    updateUserProgress: async () => ({ success: false, message: 'Service unavailable' })
+  };
+  JsonDataService = {
+    setDataDirectories: () => {}
+  };
+}
 
 // Mumble client state
 let mumbleClient = null;
@@ -27,74 +53,101 @@ let mumbleConnection = {
   channels: []
 };
 
-// Make sure data directories exist for JSON storage
+// Make sure data directories exist for JSON storage with error handling
 // Use app.getPath('userData') instead of __dirname to ensure we have write access
-const DATA_DIR = path.join(app.getPath('userData'), 'data');
-const USERS_DIR = path.join(DATA_DIR, 'users');
-const PROGRESS_DIR = path.join(DATA_DIR, 'progress');
-const STATS_DIR = path.join(DATA_DIR, 'stats');
+let DATA_DIR, USERS_DIR, PROGRESS_DIR, STATS_DIR;
+try {
+  DATA_DIR = path.join(app.getPath('userData'), 'data');
+  USERS_DIR = path.join(DATA_DIR, 'users');
+  PROGRESS_DIR = path.join(DATA_DIR, 'progress');
+  STATS_DIR = path.join(DATA_DIR, 'stats');
 
-// Create data directories if they don't exist
-[DATA_DIR, USERS_DIR, PROGRESS_DIR, STATS_DIR].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    console.log(`Created directory: ${dir}`);
-  }
-});
+  // Create data directories if they don't exist
+  [DATA_DIR, USERS_DIR, PROGRESS_DIR, STATS_DIR].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`Created directory: ${dir}`);
+    }
+  });
+} catch (error) {
+  console.error('Failed to create data directories:', error);
+  // Set default paths that will be used as fallbacks
+  DATA_DIR = path.join(process.cwd(), 'data');
+  USERS_DIR = path.join(DATA_DIR, 'users');
+  PROGRESS_DIR = path.join(DATA_DIR, 'progress');
+  STATS_DIR = path.join(DATA_DIR, 'stats');
+}
 
 // Configure JsonDataService to use the same paths
-JsonDataService.setDataDirectories({
-  dataDir: DATA_DIR,
-  usersDir: USERS_DIR,
-  progressDir: PROGRESS_DIR,
-  statsDir: STATS_DIR
-});
+try {
+  JsonDataService.setDataDirectories({
+    dataDir: DATA_DIR,
+    usersDir: USERS_DIR,
+    progressDir: PROGRESS_DIR,
+    statsDir: STATS_DIR
+  });
+} catch (error) {
+  console.error('Failed to set data directories:', error);
+}
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow;
 let serialConnection = null;
 
-// Create certificates directory and files if they don't exist
-// Use app.getPath('userData') instead of __dirname to ensure we have write access
-const CERT_DIR = path.join(app.getPath('userData'), 'cert');
-if (!fs.existsSync(CERT_DIR)) {
-  fs.mkdirSync(CERT_DIR, { recursive: true });
-  console.log(`Created directory: ${CERT_DIR}`);
-  
-  // Generate self-signed certificates for development
-  const { execSync } = require('child_process');
-  try {
-    execSync(`openssl req -x509 -newkey rsa:2048 -nodes -keyout "${path.join(CERT_DIR, 'key.pem')}" -out "${path.join(CERT_DIR, 'cert.pem')}" -days 365 -subj "/CN=localhost"`, {
-      stdio: 'inherit'
-    });
-    console.log('Generated self-signed certificates for Mumble connection');
-  } catch (error) {
-    console.error('Failed to generate certificates:', error);
-    // Create empty files to prevent errors
-    fs.writeFileSync(path.join(CERT_DIR, 'key.pem'), '');
-    fs.writeFileSync(path.join(CERT_DIR, 'cert.pem'), '');
-  }
-}
-
-// Set up mumble connection options
+// Create certificates directory and files if they don't exist with improved error handling
+let CERT_DIR;
 let MUMBLE_OPTIONS = {
   rejectUnauthorized: false // For development - in production this should be true
 };
 
-// Try to read certificate files if they exist
 try {
-  const keyPath = path.join(CERT_DIR, 'key.pem');
-  const certPath = path.join(CERT_DIR, 'cert.pem');
-  
-  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-    MUMBLE_OPTIONS.key = fs.readFileSync(keyPath);
-    MUMBLE_OPTIONS.cert = fs.readFileSync(certPath);
-    console.log('Successfully loaded SSL certificates for Mumble connection');
-  } else {
-    console.warn('SSL certificate files exist but could not be read, using insecure connection');
+  // Use app.getPath('userData') instead of __dirname to ensure we have write access
+  CERT_DIR = path.join(app.getPath('userData'), 'cert');
+  if (!fs.existsSync(CERT_DIR)) {
+    fs.mkdirSync(CERT_DIR, { recursive: true });
+    console.log(`Created directory: ${CERT_DIR}`);
+    
+    // Only attempt to generate certificates if running in development mode
+    if (process.argv.includes('--dev')) {
+      // Generate self-signed certificates for development
+      const { execSync } = require('child_process');
+      try {
+        execSync(`openssl req -x509 -newkey rsa:2048 -nodes -keyout "${path.join(CERT_DIR, 'key.pem')}" -out "${path.join(CERT_DIR, 'cert.pem')}" -days 365 -subj "/CN=localhost"`, {
+          stdio: 'inherit'
+        });
+        console.log('Generated self-signed certificates for Mumble connection');
+      } catch (error) {
+        console.error('Failed to generate certificates:', error);
+        // Create empty files to prevent errors
+        fs.writeFileSync(path.join(CERT_DIR, 'key.pem'), '');
+        fs.writeFileSync(path.join(CERT_DIR, 'cert.pem'), '');
+      }
+    } else {
+      // Just create empty certificate files in non-dev mode
+      console.log('Creating empty certificate files (not in dev mode)');
+      fs.writeFileSync(path.join(CERT_DIR, 'key.pem'), '');
+      fs.writeFileSync(path.join(CERT_DIR, 'cert.pem'), '');
+    }
+  }
+
+  // Try to read certificate files if they exist
+  try {
+    const keyPath = path.join(CERT_DIR, 'key.pem');
+    const certPath = path.join(CERT_DIR, 'cert.pem');
+    
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+      MUMBLE_OPTIONS.key = fs.readFileSync(keyPath);
+      MUMBLE_OPTIONS.cert = fs.readFileSync(certPath);
+      console.log('Successfully loaded SSL certificates for Mumble connection');
+    } else {
+      console.warn('SSL certificate files exist but could not be read, using insecure connection');
+    }
+  } catch (error) {
+    console.warn('Failed to read SSL certificates, using insecure connection:', error.message);
   }
 } catch (error) {
-  console.warn('Failed to read SSL certificates, using insecure connection:', error.message);
+  console.error('Failed to set up certificates directory:', error);
+  CERT_DIR = path.join(process.cwd(), 'cert');
 }
 
 // Default settings
@@ -167,29 +220,44 @@ app.on('window-all-closed', () => {
 });
 
 /**
- * Initialize serial port for Arduino communication
+ * Initialize serial port for Arduino communication with enhanced error handling
  */
 async function initializeSerialPort() {
   try {
+    // Wrap the SerialPort functionality in try-catch to prevent crashes
     // List available ports
-    const ports = await SerialPort.list();
-    
-    // Log available ports
-    console.log('Available serial ports:');
-    ports.forEach(port => {
-      console.log(`${port.path} - ${port.manufacturer || 'Unknown'}`);
-    });
-    
-    // Store available ports for renderer to access
-    store.set('availablePorts', ports);
+    let ports = [];
+    try {
+      ports = await SerialPort.list();
+      
+      // Log available ports
+      console.log('Available serial ports:');
+      ports.forEach(port => {
+        console.log(`${port.path} - ${port.manufacturer || 'Unknown'}`);
+      });
+      
+      // Store available ports for renderer to access
+      try {
+        store.set('availablePorts', ports);
+      } catch (storeError) {
+        console.error('Failed to store available ports:', storeError);
+      }
+    } catch (listError) {
+      console.error('Error listing serial ports:', listError);
+      ports = [];
+    }
     
     // Auto-connect to stored port if available
-    const savedPort = store.get('settings.arduinoPort');
-    if (savedPort) {
-      connectToSerialPort(savedPort);
+    try {
+      const savedPort = store.get('settings.arduinoPort');
+      if (savedPort) {
+        connectToSerialPort(savedPort);
+      }
+    } catch (connectError) {
+      console.error('Error auto-connecting to saved port:', connectError);
     }
   } catch (error) {
-    console.error('Error listing serial ports:', error);
+    console.error('Error in serial port initialization:', error);
   }
 }
 

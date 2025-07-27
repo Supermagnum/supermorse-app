@@ -107,6 +107,18 @@ else
   exit 1
 fi
 
+# Rebuild native modules for Electron compatibility
+echo -e "\n${YELLOW}Rebuilding native modules for Electron compatibility...${NC}"
+npx @electron/rebuild
+if [ $? -eq 0 ]; then
+  echo -e "${GREEN}✓ Native modules rebuilt successfully${NC}"
+  log "Native modules rebuilt for Electron compatibility"
+else
+  echo -e "${RED}Failed to rebuild native modules. This may cause segmentation faults.${NC}"
+  log "Failed to rebuild native modules for Electron compatibility"
+  echo -e "${YELLOW}Attempting to continue installation...${NC}"
+fi
+
 # Build the application
 echo -e "\n${YELLOW}Building the application...${NC}"
 npm run build

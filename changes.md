@@ -6,6 +6,91 @@ This document details the implementation changes made to improve authentication 
 
 ## July 27, 2025
 
+## 39. Fixed AppImage Segmentation Fault
+
+### Problem Addressed
+
+The packaged AppImage version of the application was crashing with a "Minnesegmentsfeil" (segmentation fault) error when launched, while the unpacked version worked correctly. This issue was preventing users from using the AppImage format, which is one of the most convenient distribution methods for Linux applications.
+
+### Changes Made
+
+#### 39.1 Updated Electron-Builder Configuration for Native Modules
+
+Modified the electron-builder configuration in package.json to properly handle native modules in the AppImage:
+
+```json
+// Old implementation
+"linux": {
+  "icon": "build/icons/icon.png",
+  "category": "Education",
+  "artifactName": "${productName}-${version}.${ext}",
+  "target": "dir"
+}
+
+// New implementation
+"linux": {
+  "icon": "build/icons/icon.png",
+  "category": "Education",
+  "artifactName": "${productName}-${version}.${ext}",
+  "target": ["dir", "AppImage"],
+  "asarUnpack": [
+    "node_modules/serialport/**/*",
+    "node_modules/node-mumble/**/*",
+    "node_modules/bcrypt/**/*",
+    "node_modules/**/*.node"
+  ]
+}
+```
+
+#### 39.2 Added Multiple Target Types
+
+Changed the "target" setting from just "dir" to an array containing both "dir" and "AppImage" to ensure both formats are built correctly.
+
+#### 39.3 Added asarUnpack Configuration
+
+Added an "asarUnpack" array to specify native modules that should be excluded from the asar archive and unpacked for direct filesystem access. This included serialport, node-mumble, bcrypt, and any .node files containing native code.
+
+### Benefits
+
+- Fixed the segmentation fault that occurred when launching the AppImage
+- Allowed the application to be distributed as a single, self-contained file on Linux
+- Improved compatibility with various Linux distributions through the AppImage format
+- Properly handled native modules that require direct filesystem access
+- Maintained the ability to build both unpacked and AppImage formats
+- Enhanced user experience by providing a more reliable and convenient installation option
+
+## 38. Verified node-pre-gyp Dependency in Build Scripts
+
+### Problem Addressed
+
+It was necessary to verify that the build scripts include `npm install --save-dev node-pre-gyp`, which is critical for properly building native dependencies across different platforms and architectures.
+
+### Changes Made
+
+#### 38.1 Verified Dependency in package.json
+
+Confirmed that node-pre-gyp is correctly included in the devDependencies section of package.json:
+
+```json
+"devDependencies": {
+  "electron": "^25.0.0",
+  "electron-builder": "^24.1.1",
+  "jest": "^29.5.0",
+  "node-pre-gyp": "^0.17.0"
+}
+```
+
+#### 38.2 Examined Installation Scripts
+
+Verified that all three installation scripts (install-linux.sh, install-mac.sh, and install-windows.bat) run `npm install`, which automatically installs all dependencies listed in package.json, including node-pre-gyp.
+
+### Benefits
+
+- Confirmed proper dependency management for native module building
+- Verified consistent installation process across all supported platforms
+- Ensured the build system has the necessary tools for cross-platform compatibility
+- Documented the current dependency structure for future reference
+
 ## 37. Platform-Specific Build Output Directories
 
 ### Problem Addressed

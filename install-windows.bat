@@ -78,6 +78,19 @@ if %errorLevel% == 0 (
     exit
 )
 
+:: Rebuild native modules for Electron compatibility
+echo.
+echo [33mRebuilding native modules for Electron compatibility...[0m
+call npx @electron/rebuild
+if %errorLevel% == 0 (
+    echo [32m✓ Native modules rebuilt successfully[0m
+    call :log "Native modules rebuilt for Electron compatibility"
+) else (
+    echo [31mFailed to rebuild native modules. This may cause segmentation faults.[0m
+    call :log "Failed to rebuild native modules for Electron compatibility"
+    echo [33mAttempting to continue installation...[0m
+)
+
 :: Build the application
 echo.
 echo [33mBuilding the application...[0m
