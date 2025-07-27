@@ -6,6 +6,37 @@ This document details the implementation changes made to improve authentication 
 
 ## July 27, 2025
 
+## 37. Platform-Specific Build Output Directories
+
+### Problem Addressed
+
+The application used a single output directory for all platforms (Linux, Windows, and MacOS), making it difficult to manage platform-specific builds. This led to confusion when multiple platform builds were present in the same directory and complicated the installation process.
+
+### Changes Made
+
+#### 37.1 Added Platform-Specific Build Scripts
+
+Added dedicated build scripts in package.json for each supported platform, configuring each to output to its own platform-specific directory:
+- Linux builds now output to dist/Linux
+- Windows builds now output to dist/Windows
+- MacOS builds now output to dist/MacOS
+
+#### 37.2 Updated Installation Scripts
+
+Modified the installation scripts for each platform to look for builds in their respective platform-specific directories:
+- Linux installation now looks in dist/Linux/linux-unpacked
+- Windows installation now looks in dist/Windows/win-unpacked
+- Mac installation now looks in dist/MacOS/mac
+
+### Benefits
+
+- Clearer organization of build outputs by platform
+- Simplified management of multi-platform builds
+- Prevention of build file conflicts between platforms
+- Improved installation process with platform-specific paths
+- Easier identification of which build belongs to which platform
+- Better maintainability when working with multiple platform builds simultaneously
+
 ## 36. Fixed Progress Data Display in Learning Progress Tab
 
 ### Problem Addressed

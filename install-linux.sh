@@ -133,10 +133,10 @@ fi
 
 # Copy application files to installation directory
 echo -e "\n${YELLOW}Installing application...${NC}"
-if [ -d "dist/linux-unpacked" ]; then
-  sudo cp -r dist/linux-unpacked/* $INSTALL_DIR/
+if [ -d "dist/Linux/linux-unpacked" ]; then
+  sudo cp -r dist/Linux/linux-unpacked/* $INSTALL_DIR/
   echo -e "${GREEN}✓ Application installed successfully${NC}"
-  log "Application installed from dist/linux-unpacked"
+  log "Application installed from dist/Linux/linux-unpacked"
 else
   # If no build was created, copy the source files directly
   sudo cp -r . $INSTALL_DIR/

@@ -7,7 +7,10 @@
     "start": "electron .",
     "dev": "electron . --dev",
     "test": "jest",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build:linux": "electron-builder --linux --config.directories.output=dist/Linux",
+    "build:windows": "electron-builder --win --config.directories.output=dist/Windows",
+    "build:mac": "electron-builder --mac --config.directories.output=dist/MacOS"
   },
   "build": {
     "appId": "com.supermorse.app",

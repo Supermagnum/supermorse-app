@@ -112,10 +112,10 @@ if %errorLevel% == 0 (
 :: Copy application files to installation directory
 echo.
 echo [33mInstalling application...[0m
-if exist "dist\win-unpacked" (
-    xcopy "dist\win-unpacked\*" "%INSTALL_DIR%" /E /I /H /Y
+if exist "dist\Windows\win-unpacked" (
+    xcopy "dist\Windows\win-unpacked\*" "%INSTALL_DIR%" /E /I /H /Y
     echo [32m✓ Application installed successfully[0m
-    call :log "Application installed from dist\win-unpacked"
+    call :log "Application installed from dist\Windows\win-unpacked"
 ) else (
     :: If no build was created, copy the source files directly
     xcopy "*" "%INSTALL_DIR%" /E /I /H /Y
