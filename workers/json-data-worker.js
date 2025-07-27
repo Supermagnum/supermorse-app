@@ -1,158 +1,95 @@
 /**
- * JsonDataService.js
- * A service for managing user data using JSON files instead of a database
- * Uses a worker thread for multi-core processing of CPU-intensive tasks like password hashing
+ * json-data-worker.js
+ * Worker thread for JSON data operations and password hashing
+ * Handles CPU-intensive tasks like bcrypt hashing and file I/O
  */
 
+const { parentPort, workerData } = require('worker_threads');
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const { Worker } = require('worker_threads');
 
-// Default path constants - these will be overridden by the paths provided from main.js
+// Store data directories
 let DATA_DIR;
 let USERS_DIR;
 let PROGRESS_DIR;
 let STATS_DIR;
 
-// Worker thread management
-let worker = null;
-let isWorkerReady = false;
-let messageId = 0;
-const pendingMessages = new Map();
-
-// Try to initialize the worker
-function initializeWorker() {
+// Handle messages from the main thread
+parentPort.on('message', async (message) => {
+  const { type, data, id } = message;
+  
   try {
-    // Create a worker thread
-    const workerPath = path.join(__dirname, '../../workers/json-data-worker.js');
-    console.log('Initializing JSON data worker at:', workerPath);
+    let result;
     
-    worker = new Worker(workerPath);
+    switch (type) {
+      case 'set_directories':
+        setDataDirectories(data.paths);
+        result = { success: true };
+        break;
+        
+      case 'create_user':
+        result = await createUser(data.userData);
+        break;
+        
+      case 'get_user_by_id':
+        result = { user: await getUserById(data.userId) };
+        break;
+        
+      case 'get_user_by_username':
+        result = { user: await getUserByUsername(data.username) };
+        break;
+        
+      case 'get_user_by_email':
+        result = { user: await getUserByEmail(data.email) };
+        break;
+        
+      case 'verify_credentials':
+        result = await verifyCredentials(data.username, data.password);
+        break;
+        
+      case 'get_user_progress':
+        result = { progress: await getUserProgress(data.userId) };
+        break;
+        
+      case 'update_user_progress':
+        result = await updateUserProgress(data.userId, data.progressData);
+        break;
+        
+      case 'get_character_stats':
+        result = { stats: await getCharacterStats(data.userId, data.character) };
+        break;
+        
+      case 'update_character_stats':
+        result = await updateCharacterStats(data.userId, data.character, data.statsData);
+        break;
+        
+      case 'get_all_character_stats':
+        result = { stats: await getAllCharacterStats(data.userId) };
+        break;
+        
+      default:
+        result = { success: false, message: `Unknown operation type: ${type}` };
+    }
     
-    // Set up message handler
-    worker.on('message', handleWorkerMessage);
-    
-    // Handle worker errors
-    worker.on('error', (error) => {
-      console.error('JSON data worker error:', error);
-      isWorkerReady = false;
-      worker = null;
+    // Send result back to main thread with message ID
+    parentPort.postMessage({ 
+      type: `${type}_result`, 
+      success: true, 
+      data: result,
+      id // Include original message ID
     });
-    
-    // Handle worker exit
-    worker.on('exit', (code) => {
-      console.log(`JSON data worker exited with code ${code}`);
-      isWorkerReady = false;
-      worker = null;
-      
-      // Reject all pending messages
-      for (const [id, { reject }] of pendingMessages) {
-        reject(new Error('Worker thread terminated'));
-      }
-      pendingMessages.clear();
-    });
-    
-    // Handle process exit to clean up worker
-    process.on('exit', () => {
-      if (worker) {
-        worker.terminate();
-      }
-    });
-    
-    return true;
   } catch (error) {
-    console.error('Failed to initialize JSON data worker:', error);
-    worker = null;
-    isWorkerReady = false;
-    return false;
+    // Send error back to main thread with message ID
+    parentPort.postMessage({ 
+      type: `${type}_error`, 
+      success: false, 
+      error: error.message || 'Unknown error',
+      id // Include original message ID
+    });
   }
-}
-
-// Handle messages from the worker thread
-function handleWorkerMessage(message) {
-  const { type, success, data, error, id } = message;
-  
-  // Check if it's a ready message
-  if (type === 'ready') {
-    console.log('JSON data worker is ready');
-    isWorkerReady = true;
-    
-    // If directories are set, send them to the worker
-    if (DATA_DIR) {
-      sendToWorker('set_directories', { paths: { dataDir: DATA_DIR, usersDir: USERS_DIR, progressDir: PROGRESS_DIR, statsDir: STATS_DIR } });
-    }
-    return;
-  }
-  
-  // Log message for debugging
-  console.log(`Received worker message: ${type} (ID: ${id})`);
-  
-  // Find the pending promise using the ID directly from the message
-  const pendingPromise = pendingMessages.get(id);
-  if (!pendingPromise) {
-    console.warn(`Received response for unknown message ID: ${id}`);
-    console.warn('Current pending messages:', Array.from(pendingMessages.keys()));
-    return;
-  }
-  
-  // Resolve or reject the promise
-  if (success) {
-    pendingPromise.resolve(data);
-  } else {
-    pendingPromise.reject(new Error(error || 'Unknown error'));
-  }
-  
-  // Remove the pending promise
-  pendingMessages.delete(id);
-}
-
-// Send a message to the worker and return a promise
-function sendToWorker(type, data) {
-  return new Promise((resolve, reject) => {
-    // Check if worker is available
-    if (!worker || !isWorkerReady) {
-      reject(new Error('Worker is not available'));
-      return;
-    }
-    
-    // Generate a unique message ID
-    const id = messageId++;
-    
-    // Store the promise callbacks
-    pendingMessages.set(id, { resolve, reject });
-    
-    // Send the message to the worker
-    worker.postMessage({ type, data, id });
-  });
-}
-
-// Ensure directories exist (fallback implementation if worker isn't available)
-function ensureDirectoriesExist() {
-  if (!DATA_DIR) {
-    console.warn('Data directories not set. Using default paths.');
-    // Fallback to default paths if not set (for backward compatibility)
-    DATA_DIR = path.join(process.cwd(), 'data');
-    USERS_DIR = path.join(DATA_DIR, 'users');
-    PROGRESS_DIR = path.join(DATA_DIR, 'progress');
-    STATS_DIR = path.join(DATA_DIR, 'stats');
-  }
-  
-  [DATA_DIR, USERS_DIR, PROGRESS_DIR, STATS_DIR].forEach(dir => {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  });
-  
-  // Send directories to worker if available
-  if (worker && isWorkerReady) {
-    sendToWorker('set_directories', { paths: { dataDir: DATA_DIR, usersDir: USERS_DIR, progressDir: PROGRESS_DIR, statsDir: STATS_DIR } })
-      .catch(error => {
-        console.error('Error sending directories to worker:', error);
-      });
-  }
-}
+});
 
 /**
  * Set the data directories to use for storage
@@ -168,9 +105,23 @@ function setDataDirectories(paths) {
   ensureDirectoriesExist();
 }
 
-/**
- * User Management Functions
- */
+// Ensure directories exist
+function ensureDirectoriesExist() {
+  if (!DATA_DIR) {
+    console.warn('Data directories not set. Using default paths.');
+    // Fallback to default paths if not set (for backward compatibility)
+    DATA_DIR = path.join(process.cwd(), 'data');
+    USERS_DIR = path.join(DATA_DIR, 'users');
+    PROGRESS_DIR = path.join(DATA_DIR, 'progress');
+    STATS_DIR = path.join(DATA_DIR, 'stats');
+  }
+  
+  [DATA_DIR, USERS_DIR, PROGRESS_DIR, STATS_DIR].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  });
+}
 
 /**
  * Create a new user
@@ -179,15 +130,8 @@ function setDataDirectories(paths) {
  */
 async function createUser(userData) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      const result = await sendToWorker('create_user', { userData });
-      return result;
-    }
-    
-    // Fallback to direct implementation if worker is not available
     const { username, email, password, maidenheadLocator } = userData;
-    const name = userData.name || username;
+    const name = userData.name || username; // Use username as name if not provided
     
     // Validate data
     if (!username || !email || !password || !maidenheadLocator) {
@@ -206,7 +150,7 @@ async function createUser(userData) {
     // Generate user ID
     const userId = crypto.randomUUID();
     
-    // Hash password
+    // Hash password - CPU intensive operation that benefits from worker thread
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Create user object
@@ -242,13 +186,6 @@ async function createUser(userData) {
  */
 async function getUserById(userId) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      const result = await sendToWorker('get_user_by_id', { userId });
-      return result.user;
-    }
-    
-    // Fallback to direct implementation if worker is not available
     const userFilePath = path.join(USERS_DIR, `${userId}.json`);
     
     if (!fs.existsSync(userFilePath)) {
@@ -270,13 +207,6 @@ async function getUserById(userId) {
  */
 async function getUserByUsername(username) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      const result = await sendToWorker('get_user_by_username', { username });
-      return result.user;
-    }
-    
-    // Fallback to direct implementation if worker is not available
     // List all user files
     const userFiles = fs.readdirSync(USERS_DIR);
     
@@ -305,13 +235,6 @@ async function getUserByUsername(username) {
  */
 async function getUserByEmail(email) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      const result = await sendToWorker('get_user_by_email', { email });
-      return result.user;
-    }
-    
-    // Fallback to direct implementation if worker is not available
     // List all user files
     const userFiles = fs.readdirSync(USERS_DIR);
     
@@ -341,12 +264,6 @@ async function getUserByEmail(email) {
  */
 async function verifyCredentials(username, password) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      return await sendToWorker('verify_credentials', { username, password });
-    }
-    
-    // Fallback to direct implementation if worker is not available
     // Get user by username
     const user = await getUserByUsername(username);
     
@@ -354,7 +271,7 @@ async function verifyCredentials(username, password) {
       return { success: false, message: 'Invalid username or password' };
     }
     
-    // Verify password
+    // Verify password - CPU intensive operation that benefits from worker thread
     const passwordMatch = await bcrypt.compare(password, user.password);
     
     if (!passwordMatch) {
@@ -369,22 +286,12 @@ async function verifyCredentials(username, password) {
 }
 
 /**
- * Progress Management Functions
- */
-
-/**
  * Create initial progress record for a user
  * @param {string} userId - User ID
  * @returns {Promise<Object>} - Result with success flag
  */
 async function createInitialProgress(userId) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      return await sendToWorker('create_initial_progress', { userId });
-    }
-    
-    // Fallback to direct implementation if worker is not available
     // Create progress object
     const progress = {
       userId,
@@ -413,13 +320,6 @@ async function createInitialProgress(userId) {
  */
 async function getUserProgress(userId) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      const result = await sendToWorker('get_user_progress', { userId });
-      return result.progress;
-    }
-    
-    // Fallback to direct implementation if worker is not available
     const progressFilePath = path.join(PROGRESS_DIR, `${userId}.json`);
     
     if (!fs.existsSync(progressFilePath)) {
@@ -442,12 +342,6 @@ async function getUserProgress(userId) {
  */
 async function updateUserProgress(userId, progressData) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      return await sendToWorker('update_user_progress', { userId, progressData });
-    }
-    
-    // Fallback to direct implementation if worker is not available
     const progressFilePath = path.join(PROGRESS_DIR, `${userId}.json`);
     
     if (!fs.existsSync(progressFilePath)) {
@@ -476,10 +370,6 @@ async function updateUserProgress(userId, progressData) {
 }
 
 /**
- * Character Statistics Functions
- */
-
-/**
  * Get user character statistics
  * @param {string} userId - User ID
  * @param {string} character - Character
@@ -487,13 +377,6 @@ async function updateUserProgress(userId, progressData) {
  */
 async function getCharacterStats(userId, character) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      const result = await sendToWorker('get_character_stats', { userId, character });
-      return result.stats;
-    }
-    
-    // Fallback to direct implementation if worker is not available
     const statsFilePath = path.join(STATS_DIR, `${userId}_${character}.json`);
     
     if (!fs.existsSync(statsFilePath)) {
@@ -529,12 +412,6 @@ async function getCharacterStats(userId, character) {
  */
 async function updateCharacterStats(userId, character, statsData) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      return await sendToWorker('update_character_stats', { userId, character, statsData });
-    }
-    
-    // Fallback to direct implementation if worker is not available
     // Get current stats or create default
     const currentStats = await getCharacterStats(userId, character);
     
@@ -567,13 +444,6 @@ async function updateCharacterStats(userId, character, statsData) {
  */
 async function getAllCharacterStats(userId) {
   try {
-    // Try to use the worker if available
-    if (worker && isWorkerReady) {
-      const result = await sendToWorker('get_all_character_stats', { userId });
-      return result.stats;
-    }
-    
-    // Fallback to direct implementation if worker is not available
     // List all stats files
     const statsFiles = fs.readdirSync(STATS_DIR);
     
@@ -594,26 +464,6 @@ async function getAllCharacterStats(userId) {
   }
 }
 
-// Initialize worker at module load time
-initializeWorker();
-
-module.exports = {
-  // Configuration
-  setDataDirectories,
-  
-  // User management
-  createUser,
-  getUserById,
-  getUserByUsername,
-  getUserByEmail,
-  verifyCredentials,
-  
-  // Progress management
-  getUserProgress,
-  updateUserProgress,
-  
-  // Character statistics
-  getCharacterStats,
-  updateCharacterStats,
-  getAllCharacterStats
-};
+// Notify main thread that the worker is ready
+// Use ID 0 for the ready message to ensure compatibility
+parentPort.postMessage({ type: 'ready', success: true, id: 0 });

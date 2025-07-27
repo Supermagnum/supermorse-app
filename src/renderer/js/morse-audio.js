@@ -1,6 +1,7 @@
 /**
  * morse-audio.js
  * Handles Morse code audio generation using the Tone.js library
+ * Uses Web Worker for multi-core processing to improve performance
  */
 
 export class MorseAudio {
@@ -32,6 +33,138 @@ export class MorseAudio {
         
         // Enumerate available audio devices
         this.enumerateAudioDevices();
+        
+        // Initialize Web Worker for multi-core optimization
+        this.initWorker();
+        
+        // Playback queue for worker-generated timing data
+        this.playbackQueue = [];
+        this.isProcessingQueue = false;
+    }
+    
+    /**
+     * Initialize Web Worker for audio processing
+     * This offloads CPU-intensive calculations to a separate thread
+     */
+    initWorker() {
+        try {
+            // Create audio processing worker
+            this.audioWorker = new Worker('./js/workers/audio-worker.js');
+            
+            // Set up message handler for worker responses
+            this.audioWorker.onmessage = (e) => this.handleWorkerMessage(e);
+            
+            // Initialize worker with current parameters
+            this.audioWorker.postMessage({
+                type: 'set_parameters',
+                data: {
+                    frequency: this.frequency,
+                    volume: this.volume
+                }
+            });
+            
+            console.log('Audio processing worker initialized for multi-core support');
+        } catch (error) {
+            console.error('Failed to initialize audio worker:', error);
+            // We'll fall back to main thread processing if worker fails
+            this.audioWorker = null;
+        }
+    }
+    
+    /**
+     * Handle messages from the audio worker
+     * @param {MessageEvent} e - The message event from the worker
+     */
+    handleWorkerMessage(e) {
+        const { type, timingData, params, error } = e.data;
+        
+        switch (type) {
+            case 'timing_data_ready':
+                console.log(`Received timing data from worker for ${timingData.length} elements`);
+                // Process the timing data
+                this.playbackQueue = timingData;
+                // Start processing the queue if not already processing
+                if (!this.isProcessingQueue) {
+                    this.processPlaybackQueue();
+                }
+                break;
+                
+            case 'error':
+                console.error('Error in audio worker:', error);
+                break;
+        }
+    }
+    
+    /**
+     * Process the playback queue by playing tones according to timing data
+     * @returns {Promise} - Resolves when the queue is empty or playback is canceled
+     */
+    async processPlaybackQueue() {
+        this.isProcessingQueue = true;
+        
+        try {
+            // Ensure audio system is ready
+            await this.prepareAudioSystem();
+            
+            // Process each element in the queue
+            while (this.playbackQueue.length > 0 && !this.cancelPlayback) {
+                const element = this.playbackQueue.shift();
+                
+                if (element.isSound) {
+                    // Play a tone
+                    console.log(`Playing ${element.type} (${element.duration}ms)`);
+                    await this.playTone(this.frequency, element.duration);
+                } else {
+                    // Silence for a duration
+                    console.log(`Silence: ${element.type} (${element.duration}ms)`);
+                    await this.silence(element.duration);
+                }
+            }
+            
+            console.log("**** COMPLETED: Morse code playback finished successfully ****");
+        } catch (error) {
+            console.error('Error during playback queue processing:', error);
+        } finally {
+            this.isProcessingQueue = false;
+            this.isPlaying = false;
+            
+            // Add a small delay before stopping to ensure clean completion
+            if (!this.cancelPlayback) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            this.stopTone();
+        }
+    }
+    
+    /**
+     * Prepare the audio system for playback
+     * @returns {Promise} - Resolves when the audio system is ready
+     */
+    async prepareAudioSystem() {
+        // Completely reinitialize audio for clean start
+        console.log("Resetting audio system for clean playback");
+        
+        // First stop any existing oscillator
+        if (this.oscillator) {
+            if (this.oscillator.state === 'started') {
+                console.log("Stopping existing oscillator");
+                this.oscillator.stop();
+                // Wait long enough for full stop
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            // Start with a fresh oscillator
+            console.log("Starting fresh oscillator");
+            this.oscillator.start();
+            
+            // Brief delay to ensure oscillator is fully started
+            await new Promise(resolve => setTimeout(resolve, 100));
+            return true;
+        } else {
+            console.warn("No oscillator available");
+            return false;
+        }
     }
     
     /**
@@ -176,8 +309,20 @@ export class MorseAudio {
     setFrequency(freq) {
         this.frequency = freq;
         
+        // Update oscillator if available
         if (this.oscillator) {
             this.oscillator.frequency.value = freq;
+        }
+        
+        // Sync with worker if available
+        if (this.audioWorker) {
+            this.audioWorker.postMessage({
+                type: 'set_parameters',
+                data: {
+                    frequency: freq,
+                    volume: this.volume
+                }
+            });
         }
     }
     
@@ -188,8 +333,20 @@ export class MorseAudio {
     setVolume(vol) {
         this.volume = vol;
         
+        // Update oscillator if available
         if (this.oscillator) {
             this.oscillator.volume.value = vol;
+        }
+        
+        // Sync with worker if available
+        if (this.audioWorker) {
+            this.audioWorker.postMessage({
+                type: 'set_parameters',
+                data: {
+                    frequency: this.frequency,
+                    volume: vol
+                }
+            });
         }
     }
     
@@ -432,127 +589,164 @@ export class MorseAudio {
         this.isPlaying = true;
         this.cancelPlayback = false;
         
-        // Calculate timing based on WPM and Farnsworth settings
-        this.calculateTiming(wpm, farnsworthMode, farnsworthRatio);
-        console.log(`Calculated timing: dit=${this.ditLength}s, dah=${this.dahLength}s`);
-        
-        // Clean up the Morse code
-        const cleanCode = morseCode.trim().replace(/\s+/g, ' ');
-        console.log(`Cleaned Morse code: "${cleanCode}"`);
-        
-        try {
-            // Completely reinitialize audio for clean start
-            console.log("Resetting audio system for clean playback");
+        // Use Web Worker if available for multi-core processing
+        if (this.audioWorker) {
+            console.log("Using Web Worker for multi-core Morse code generation");
+            // Clear any existing queue
+            this.playbackQueue = [];
             
-            // First stop any existing oscillator
-            if (this.oscillator) {
-                if (this.oscillator.state === 'started') {
-                    console.log("Stopping existing oscillator");
-                    this.oscillator.stop();
-                    // Wait long enough for full stop
-                    await new Promise(resolve => setTimeout(resolve, 200));
+            // Send the request to the worker thread
+            this.audioWorker.postMessage({
+                type: 'generate_morse',
+                data: {
+                    morseCode: morseCode,
+                    wpm: wpm,
+                    farnsworthMode: farnsworthMode,
+                    farnsworthRatio: farnsworthRatio,
+                    frequency: this.frequency
                 }
-                
-                // Start with a fresh oscillator
-                console.log("Starting fresh oscillator");
-                this.oscillator.start();
-                
-                // Brief delay to ensure oscillator is fully started
-                await new Promise(resolve => setTimeout(resolve, 100));
-            } else {
-                console.warn("No oscillator available");
-                return Promise.resolve();
-            }
+            });
             
-            // Play each character
-            const characters = cleanCode.split(' ');
-            console.log(`Ready to play ${characters.length} character groups`);
-            
-            for (let i = 0; i < characters.length; i++) {
-                // Check for cancellation
-                if (this.cancelPlayback) {
-                    console.log("Playback canceled before character group");
-                    return;
-                }
-                
-                const character = characters[i];
-                console.log(`Playing character group ${i+1}/${characters.length}: "${character}"`);
-                
-                // Skip empty characters
-                if (!character) {
-                    console.log("Skipping empty character");
-                    continue;
-                }
-                
-                // Play each element (dit/dah) in the character
-                for (let j = 0; j < character.length; j++) {
-                    // Check for cancellation
-                    if (this.cancelPlayback) {
-                        console.log("Playback canceled before element");
-                        return;
-                    }
-                    
-                    const element = character[j];
-                    
-                    if (element === '.') {
-                        // Play dit
-                        console.log(`Playing dit ${j+1}/${character.length} (${this.ditLength * 1000}ms)`);
-                        try {
-                            await this.playTone(this.frequency, this.ditLength * 1000);
-                        } catch (err) {
-                            console.error("Error playing dit:", err);
-                        }
-                    } else if (element === '-') {
-                        // Play dah
-                        console.log(`Playing dah ${j+1}/${character.length} (${this.dahLength * 1000}ms)`);
-                        try {
-                            await this.playTone(this.frequency, this.dahLength * 1000);
-                        } catch (err) {
-                            console.error("Error playing dah:", err);
-                        }
+            // Return a promise that resolves when playback is complete
+            return new Promise(resolve => {
+                // Set up a completion checker
+                const checkCompletion = () => {
+                    if (!this.isProcessingQueue && !this.isPlaying) {
+                        resolve();
                     } else {
-                        console.warn(`Unknown element: "${element}"`);
+                        setTimeout(checkCompletion, 100);
+                    }
+                };
+                
+                // Start checking
+                checkCompletion();
+            });
+        } else {
+            // Fall back to original implementation if worker is not available
+            console.log("Web Worker not available, using main thread processing");
+            
+            // Calculate timing based on WPM and Farnsworth settings
+            this.calculateTiming(wpm, farnsworthMode, farnsworthRatio);
+            console.log(`Calculated timing: dit=${this.ditLength}s, dah=${this.dahLength}s`);
+            
+            // Clean up the Morse code
+            const cleanCode = morseCode.trim().replace(/\s+/g, ' ');
+            console.log(`Cleaned Morse code: "${cleanCode}"`);
+            
+            try {
+                // Completely reinitialize audio for clean start
+                console.log("Resetting audio system for clean playback");
+                
+                // First stop any existing oscillator
+                if (this.oscillator) {
+                    if (this.oscillator.state === 'started') {
+                        console.log("Stopping existing oscillator");
+                        this.oscillator.stop();
+                        // Wait long enough for full stop
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                    
+                    // Start with a fresh oscillator
+                    console.log("Starting fresh oscillator");
+                    this.oscillator.start();
+                    
+                    // Brief delay to ensure oscillator is fully started
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                } else {
+                    console.warn("No oscillator available");
+                    return Promise.resolve();
+                }
+                
+                // Play each character
+                const characters = cleanCode.split(' ');
+                console.log(`Ready to play ${characters.length} character groups`);
+                
+                for (let i = 0; i < characters.length; i++) {
+                    // Check for cancellation
+                    if (this.cancelPlayback) {
+                        console.log("Playback canceled before character group");
+                        return;
+                    }
+                    
+                    const character = characters[i];
+                    console.log(`Playing character group ${i+1}/${characters.length}: "${character}"`);
+                    
+                    // Skip empty characters
+                    if (!character) {
+                        console.log("Skipping empty character");
+                        continue;
+                    }
+                    
+                    // Play each element (dit/dah) in the character
+                    for (let j = 0; j < character.length; j++) {
+                        // Check for cancellation
+                        if (this.cancelPlayback) {
+                            console.log("Playback canceled before element");
+                            return;
+                        }
+                        
+                        const element = character[j];
+                        
+                        if (element === '.') {
+                            // Play dit
+                            console.log(`Playing dit ${j+1}/${character.length} (${this.ditLength * 1000}ms)`);
+                            try {
+                                await this.playTone(this.frequency, this.ditLength * 1000);
+                            } catch (err) {
+                                console.error("Error playing dit:", err);
+                            }
+                        } else if (element === '-') {
+                            // Play dah
+                            console.log(`Playing dah ${j+1}/${character.length} (${this.dahLength * 1000}ms)`);
+                            try {
+                                await this.playTone(this.frequency, this.dahLength * 1000);
+                            } catch (err) {
+                                console.error("Error playing dah:", err);
+                            }
+                        } else {
+                            console.warn(`Unknown element: "${element}"`);
+                        }
+                        
+                        // Check for cancellation
+                        if (this.cancelPlayback) {
+                            console.log("Playback canceled after element");
+                            return;
+                        }
+                        
+                        // Add intra-character space (except after the last element)
+                        if (j < character.length - 1) {
+                            console.log(`Intra-character silence (${this.intraCharSpace * 1000}ms)`);
+                            await this.silence(this.intraCharSpace * 1000);
+                        }
                     }
                     
                     // Check for cancellation
                     if (this.cancelPlayback) {
-                        console.log("Playback canceled after element");
+                        console.log("Playback canceled after character");
                         return;
                     }
                     
-                    // Add intra-character space (except after the last element)
-                    if (j < character.length - 1) {
-                        console.log(`Intra-character silence (${this.intraCharSpace * 1000}ms)`);
-                        await this.silence(this.intraCharSpace * 1000);
+                    // Add inter-character space (except after the last character)
+                    if (i < characters.length - 1) {
+                        console.log(`Inter-character silence (${this.interCharSpace * 1000}ms)`);
+                        await this.silence(this.interCharSpace * 1000);
                     }
                 }
                 
-                // Check for cancellation
-                if (this.cancelPlayback) {
-                    console.log("Playback canceled after character");
-                    return;
+                console.log("**** COMPLETED: Morse code playback finished successfully ****");
+            } catch (error) {
+                console.error('Error during Morse code playback:', error);
+            } finally {
+                // Always clean up
+                this.isPlaying = false;
+                
+                // Add a small delay before stopping to ensure clean completion
+                if (!this.cancelPlayback) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
                 }
                 
-                // Add inter-character space (except after the last character)
-                if (i < characters.length - 1) {
-                    console.log(`Inter-character silence (${this.interCharSpace * 1000}ms)`);
-                    await this.silence(this.interCharSpace * 1000);
-                }
+                this.stopTone();
             }
-            
-            console.log("**** COMPLETED: Morse code playback finished successfully ****");
-        } catch (error) {
-            console.error('Error during Morse code playback:', error);
-        } finally {
-            // Always clean up
-            this.isPlaying = false;
-            
-            // Add a small delay before stopping to ensure clean completion
-            if (!this.cancelPlayback) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            
-            this.stopTone();
         }
     }
     

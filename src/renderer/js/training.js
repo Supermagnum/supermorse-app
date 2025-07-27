@@ -664,19 +664,67 @@ export class MorseTrainer {
         
         // Check if we've reached the threshold for introducing a new character
         if (accuracy >= 90) {
-            // If we've been practicing a new character, mark it as learned
-            if (this.currentCharacter && !this.learnedCharacters.includes(this.currentCharacter)) {
-                this.learnedCharacters.push(this.currentCharacter);
+            // Special case for first-time users learning K and M
+            if (this.currentCharacter === 'K' && this.learnedCharacters.length === 0) {
+                // Add both K and M to learned characters since they're introduced together
+                this.learnedCharacters.push('K', 'M');
                 
-                // Show congratulations message
-                this.app.showModal('Character Mastered!', 
-                    `<p>Congratulations! You've mastered the character "${this.currentCharacter}".</p>
-                    <p>Moving on to the next character.</p>`
+                // Find the next character to learn (should be R)
+                this.findNextCharacterToLearn();
+                
+                // Save progress immediately to ensure learned characters are stored
+                if (this.currentUserId) {
+                    console.log("Saving K and M as learned characters to user statistics");
+                    this.saveProgress(this.currentUserId);
+                }
+                
+                // Show congratulations message with auto-start on dismiss
+                this.app.showModal('Characters Mastered!', 
+                    `<p>Congratulations! You've mastered the characters "K" and "M".</p>
+                    <p>Moving on to the next character "${this.currentCharacter}".</p>`,
+                    // Add callback to auto-start new lesson when modal is dismissed
+                    () => {
+                        // Start a new lesson automatically after dismissing the modal
+                        setTimeout(() => {
+                            if (!this.lessonActive) {
+                                this.startLesson();
+                            }
+                        }, 500);
+                    }
                 );
             }
-            
-            // Find the next character to learn
-            this.findNextCharacterToLearn();
+            // Normal case for learning subsequent characters
+            else if (this.currentCharacter && !this.learnedCharacters.includes(this.currentCharacter)) {
+                this.learnedCharacters.push(this.currentCharacter);
+                
+                // Find the next character to learn
+                this.findNextCharacterToLearn();
+                
+                // Save progress immediately to ensure learned character is stored
+                if (this.currentUserId) {
+                    console.log(`Saving character ${this.currentCharacter} as learned to user statistics`);
+                    this.saveProgress(this.currentUserId);
+                }
+                
+                // Show congratulations message with auto-start on dismiss
+                this.app.showModal('Character Mastered!', 
+                    `<p>Congratulations! You've mastered the character "${this.currentCharacter}".</p>
+                    <p>Moving on to the next character.</p>`,
+                    // Add callback to auto-start new lesson when modal is dismissed
+                    () => {
+                        // Start a new lesson automatically after dismissing the modal
+                        setTimeout(() => {
+                            if (!this.lessonActive) {
+                                this.startLesson();
+                            }
+                        }, 500);
+                    }
+                );
+            }
+            else {
+                // Find the next character to learn in all other cases
+                this.findNextCharacterToLearn();
+            }
         } else {
             // Not enough accuracy, keep practicing the same characters
             this.app.showModal('Keep Practicing', 

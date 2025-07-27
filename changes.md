@@ -4,6 +4,54 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
+## July 27, 2025
+
+## Todo:
+- Improve how the app detects pauses between morse characters received from the morse key - it still has issues figuring out when there is a pause.
+
+## 32. Fixed Character Progression in Morse Training and Added Multi-Core Optimization
+
+### Problems Addressed
+
+Four issues were identified with the Morse training system:
+1. After learning K and M in the Listening training method, the next character wasn't properly introduced after the popup dialog
+2. When K and M were learned, only K was shown as learned in the Learning Progress section
+3. Learned characters weren't being saved immediately to user statistics, potentially causing progress loss on app restart
+4. The application wasn't efficiently utilizing multi-core CPUs during training operations and audio processing
+
+### Changes Made
+
+#### 32.1 Fixed Next Character Introduction
+
+Added functionality to automatically start a new lesson after the "Character Mastered!" modal is dismissed, ensuring seamless progression to the next character without requiring additional user action.
+
+#### 32.2 Corrected Learning Progress Display
+
+Updated the character mastery logic to correctly add both K and M to the learnedCharacters array when a new user completes their first lesson, ensuring both characters appear as learned in the progress display.
+
+#### 32.3 Implemented Immediate Progress Saving
+
+Added immediate progress saving when characters are learned to ensure statistics are properly stored and available when the user logs in again. This applies to both the special K+M case for new users and normal character learning.
+
+#### 32.4 Added Multi-Core CPU Optimization
+
+Implemented optimizations to better utilize multi-core CPUs, particularly for audio processing and character evaluation tasks:
+- Added worker thread support for intensive audio processing operations
+- Offloaded character evaluation logic to background threads
+- Improved thread synchronization to prevent race conditions
+- Enhanced data sharing between threads for more efficient processing
+
+### Benefits
+
+- Seamless learning progression with automatic introduction of the next character after mastery
+- Accurate progress display showing all learned characters correctly
+- Reliable progress persistence across app sessions
+- Consistent behavior for both training modes (Key Training with Arduino and Listening training with keyboard)
+- Improved user experience with more intuitive progression through the learning sequence
+- Better application performance on multi-core systems with reduced audio latency
+- More responsive UI during intensive operations like audio processing and character evaluation
+- Reduced CPU usage on the main thread for smoother overall experience
+
 ## July 26, 2025
 
 ## 31. Fixed Morse Speed WPM Settings and UI Updates
@@ -129,8 +177,7 @@ for (let i = 0; i < this.userInput.length; i++) {
 - Enhanced learning experience by keeping characters visible until the 5-character group is complete
 - Reduced confusion and frustration for beginners who need more time to process what they've received
 
-## Todo:
-- Improve how the app detects pauses between morse characters received from the morse key - it still has issues figuring out when there is a pause.
+
 
 ## July 24, 2025
 
