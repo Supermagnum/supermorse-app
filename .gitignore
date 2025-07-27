@@ -12,6 +12,9 @@ dev-logs/
 # Build output
 dist/
 !dist/
+# Exclude specific large files
+dist/supermorse-app_1.0.0_amd64.snap
+dist/linux-unpacked/supermorse-app
 build/
 !build/icons/
 out/
