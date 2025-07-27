@@ -6,6 +6,187 @@ This document details the implementation changes made to improve authentication 
 
 ## July 27, 2025
 
+## 35. Improved Morse Code Boundary Detection with Pattern Recognition
+
+### Problem Addressed
+
+The morse key learner correctly identifies individual dots and dashes, but struggles to reliably distinguish between:
+- Inter-element pauses (short gaps between dots/dashes within a single character)
+- Inter-character pauses (longer gaps between complete characters)
+
+The current approach uses a fixed timing threshold, but it's unreliable due to inconsistent human timing with a paddle key. For example, a string like "KMMKM" might get misparsed due to ambiguous pause classification.
+
+### Changes Made
+
+#### 35.1 Added Pattern Recognition Algorithm
+
+Implemented a sophisticated pattern recognition algorithm in arduino.js that leverages the known character set from the user's current Koch method learning level:
+
+```javascript
+processMorseWithPatternRecognition(morseString) {
+    // Get current character set based on Koch method progress
+    const currentCharacterSet = this.app.morseTrainer.getCurrentCharacterSet();
+    
+    // Start with clear thresholds - unambiguous cases
+    if (this.pauseCount >= 7) {
+        // Definitely a word boundary - add a space and reset
+        return this.finalizeCharacter(morseString) + ' ';
+    } else if (this.pauseCount >= 4) {
+        // Likely a character boundary - finalize the current character
+        return this.finalizeCharacter(morseString);
+    } else if (this.pauseCount <= 1) {
+        // Definitely within the same character - just add to the buffer
+        return morseString;
+    }
+    
+    // Handle ambiguous cases (pauseCount is 2-3) with pattern recognition
+    
+    // Try both interpretations and see which produces valid characters
+    const currentBufferContent = this.currentMorseBuffer;
+    
+    // 1. Try interpreting as part of the same character
+    const combinedPattern = morseString + currentBufferContent;
+    const combinedChar = this.getAlphabets().morseToChar(combinedPattern);
+    
+    // 2. Try interpreting as a character boundary
+    const currentChar = this.getAlphabets().morseToChar(morseString);
+    
+    // Check validity against current character set
+    const combinedValid = currentCharacterSet.includes(combinedChar);
+    const separateValid = currentCharacterSet.includes(currentChar);
+    
+    // Make decision based on validity
+    if (combinedValid && !separateValid) {
+        // Only the combined interpretation gives a valid character
+        return combinedPattern;
+    } else if (!combinedValid && separateValid) {
+        // Only the separate interpretation gives a valid character
+        return this.finalizeCharacter(morseString);
+    } else if (combinedValid && separateValid) {
+        // Both interpretations are valid, use timing as tiebreaker
+        return this.pauseCount >= 3 ? this.finalizeCharacter(morseString) : combinedPattern;
+    } else {
+        // Neither interpretation gives a valid character in the current set
+        // Fall back to standard timing threshold
+        return this.pauseCount >= 3 ? this.finalizeCharacter(morseString) : morseString;
+    }
+}
+```
+
+#### 35.2 Added User-Configurable Toggle in Settings
+
+Added a toggle in settings.js to enable or disable the pattern recognition algorithm:
+
+```javascript
+constructor() {
+    // Default settings
+    this.settings = {
+        // ... other settings ...
+        usePatternRecognition: false // Disabled by default for backward compatibility
+    };
+}
+
+// Load settings from localStorage
+loadSettings() {
+    const savedSettings = localStorage.getItem('morseSettings');
+    if (savedSettings) {
+        try {
+            const parsed = JSON.parse(savedSettings);
+            // ... handle other settings ...
+            
+            // Add pattern recognition with backward compatibility
+            this.settings.usePatternRecognition = parsed.usePatternRecognition ?? false;
+            
+            console.log('Loaded settings:', this.settings);
+        } catch (error) {
+            console.error('Error loading settings:', error);
+        }
+    }
+}
+
+// Apply settings to UI and components
+applySettings() {
+    // ... other settings application ...
+    
+    // Apply pattern recognition setting
+    const patternRecognitionToggle = document.getElementById('patternRecognitionEnabled');
+    if (patternRecognitionToggle) {
+        patternRecognitionToggle.checked = this.settings.usePatternRecognition;
+    }
+}
+```
+
+#### 35.3 Added UI Toggle in Settings Form
+
+Added a toggle switch in the settings UI to allow users to enable/disable the feature:
+
+```html
+<div class="form-group">
+    <label for="patternRecognitionEnabled">Smart Pattern Recognition</label>
+    <div class="toggle-switch">
+        <input type="checkbox" id="patternRecognitionEnabled">
+        <span class="slider"></span>
+    </div>
+    <p class="hint">Uses pattern recognition and character validation to improve boundary detection between Morse elements. Disable if you suspect hardware issues like dirty key contacts.</p>
+</div>
+```
+
+#### 35.4 Integrated with Arduino Interface
+
+Updated the Arduino interface to use the enhanced algorithm when enabled:
+
+```javascript
+processSerialLine(line) {
+    // ... existing code ...
+    
+    if (element === '.' || element === '-') {
+        // Add the element to the current morse buffer
+        this.currentMorseBuffer += element;
+        
+        // Reset the pause counter since we received an element
+        this.pauseCount = 0;
+        
+        // Process the morse character
+        const processed = this.settings.usePatternRecognition ? 
+            this.processMorseWithPatternRecognition(this.currentMorseBuffer) : 
+            this.processMorseWithPauseDetection(this.currentMorseBuffer);
+        
+        // Handle the processed result
+        if (processed !== this.currentMorseBuffer) {
+            // If processing changed the buffer, update UI and reset buffer
+            this.currentMorseBuffer = '';
+            this.displayMorseCharacter(processed);
+        }
+    } else if (element === ' ') {
+        // Increment pause counter
+        this.pauseCount++;
+        
+        // Process pauses with appropriate algorithm
+        if (this.currentMorseBuffer) {
+            const processed = this.settings.usePatternRecognition ?
+                this.processMorseWithPatternRecognition(this.currentMorseBuffer) :
+                this.processMorseWithPauseDetection(this.currentMorseBuffer);
+            
+            // Handle the processed result
+            if (processed !== this.currentMorseBuffer) {
+                this.currentMorseBuffer = '';
+                this.displayMorseCharacter(processed);
+            }
+        }
+    }
+}
+```
+
+### Benefits
+
+- Significantly improved accuracy in distinguishing between inter-element and inter-character pauses
+- Leverages contextual knowledge of the user's current character set for smarter boundary decisions
+- Handles ambiguous cases by validating potential interpretations against known valid characters
+- Maintains backward compatibility with the original approach through a toggle option
+- Allows users to disable the feature if hardware issues are suspected (dirty contacts, debounce problems)
+- Maintains real-time processing capability by using efficient pattern matching
+- Improves the overall learning experience by reducing character recognition errors
+
 ## 34. Improved Morse Code Pattern Display in Training Interface
 
 ### Problem Addressed

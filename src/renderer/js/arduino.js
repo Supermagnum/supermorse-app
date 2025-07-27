@@ -175,18 +175,28 @@ export class ArduinoInterface {
     }
     
     /**
-     * Process Morse code with enhanced pause detection
+     * Process Morse code with pause detection
      * @param {string} line - The line containing Morse code (dots, dashes, spaces)
      */
     processMorseWithPauseDetection(line) {
         const currentTime = Date.now();
         const timeElapsed = currentTime - this.lastSignalTime;
         
+        // Check if enhanced pattern recognition is enabled
+        const usePatternRecognition = this.isPatternRecognitionEnabled();
+        
         // If significant time has passed since last signal, clear the buffer
         if (this.lastSignalTime > 0 && timeElapsed > 2 * this.pauseThreshold) {
             // Process any remaining code in the buffer before clearing
             if (this.morseBuffer.trim()) {
-                this.decodeMorseCharacter(this.morseBuffer.trim());
+                if (usePatternRecognition) {
+                    // Use enhanced decoding with pattern recognition
+                    const knownCharacters = this.getCurrentKnownCharacters();
+                    this.validateAndDecodeCharacter(this.morseBuffer.trim(), knownCharacters);
+                } else {
+                    // Use standard decoding
+                    this.decodeMorseCharacter(this.morseBuffer.trim());
+                }
             }
             this.morseBuffer = '';
         }
@@ -210,22 +220,215 @@ export class ArduinoInterface {
                     i++;
                 }
                 
-                if (spaceCount >= 3) {
-                    // This is likely an inter-character space
-                    // Process the current character and reset buffer
-                    if (this.morseBuffer.trim()) {
-                        this.decodeMorseCharacter(this.morseBuffer.trim());
-                    }
-                    this.morseBuffer = '';
+                if (usePatternRecognition) {
+                    // Use enhanced decision logic for ambiguous pauses
+                    this.processSpacesWithPatternRecognition(spaceCount);
                 } else {
-                    // This is likely an intra-character space (element separation)
-                    // Keep accumulating in the same buffer
+                    // Use the original simple space-counting approach
+                    this.processSpacesWithSimpleThreshold(spaceCount);
                 }
             }
         }
         
         // If the line ends without spaces, we may need to process the buffer
         // But we'll wait for more input or a pause to confirm
+    }
+    
+    /**
+     * Process spaces using the original simple threshold approach
+     * @param {number} spaceCount - Number of consecutive spaces
+     */
+    processSpacesWithSimpleThreshold(spaceCount) {
+        // Traditional approach: if 3+ spaces, treat as character boundary
+        if (spaceCount >= 3) {
+            // This is likely an inter-character space
+            if (this.morseBuffer.trim()) {
+                this.decodeMorseCharacter(this.morseBuffer.trim());
+            }
+            this.morseBuffer = '';
+        }
+        // Otherwise keep accumulating in the same buffer (intra-character space)
+    }
+    
+    /**
+     * Process spaces using pattern recognition for enhanced boundary detection
+     * @param {number} spaceCount - Number of consecutive spaces
+     */
+    processSpacesWithPatternRecognition(spaceCount) {
+        // Get current known character set
+        const knownCharacters = this.getCurrentKnownCharacters();
+        
+        // Define clear thresholds and ambiguous range
+        const CLEAR_INTRA_CHAR_THRESHOLD = 2;  // Clearly within a character if space count <= 2
+        const CLEAR_INTER_CHAR_THRESHOLD = 4;  // Clearly between characters if space count >= 4
+        
+        // If clearly within a character
+        if (spaceCount <= CLEAR_INTRA_CHAR_THRESHOLD) {
+            // This is likely an intra-character space (element separation)
+            // Keep accumulating in the same buffer
+            return;
+        }
+        
+        // If clearly between characters
+        if (spaceCount >= CLEAR_INTER_CHAR_THRESHOLD) {
+            // This is likely an inter-character space
+            // Process the current character and reset buffer
+            if (this.morseBuffer.trim()) {
+                this.validateAndDecodeCharacter(this.morseBuffer.trim(), knownCharacters);
+            }
+            this.morseBuffer = '';
+            return;
+        }
+        
+        // AMBIGUOUS CASE (spaceCount = 3)
+        // Use pattern recognition to decide
+        
+        // Current buffer - might be a complete character
+        const currentPattern = this.morseBuffer.trim();
+        
+        // No pattern to evaluate
+        if (!currentPattern) {
+            return;
+        }
+        
+        // Check if current buffer forms a valid character
+        const currentCharacter = this.isValidMorsePattern(currentPattern, knownCharacters);
+        
+        if (currentCharacter) {
+            // Current buffer forms a valid character, decode it
+            console.log(`Pattern recognition validated: "${currentPattern}" as "${currentCharacter}"`);
+            this.decodeMorseCharacter(currentPattern);
+            this.morseBuffer = '';
+            return;
+        }
+        
+        // Current pattern doesn't form a valid character
+        // Let's check if it could be the start of a valid character
+        const possibleCompletions = this.getPossibleCompletions(currentPattern, knownCharacters);
+        
+        if (possibleCompletions.length === 0) {
+            // Not the start of any valid character, treat as character boundary
+            console.log(`Pattern "${currentPattern}" is not a valid start to any known character, treating as boundary`);
+            this.morseBuffer = '';
+        } else {
+            // It could be the start of a valid character, keep accumulating
+            console.log(`Pattern "${currentPattern}" could be the start of: ${possibleCompletions.join(', ')}`);
+            // (do nothing, continue with current buffer)
+        }
+    }
+    
+    /**
+     * Check if a Morse pattern is valid for a known character
+     * @param {string} pattern - The Morse pattern to check
+     * @param {Array} knownCharacters - Array of characters known to the user
+     * @returns {string|null} - The character if valid, null otherwise
+     */
+    isValidMorsePattern(pattern, knownCharacters) {
+        // No pattern
+        if (!pattern) return null;
+        
+        // Check if this pattern forms a valid character
+        const char = window.ALPHABETS.morseToChar(pattern);
+        
+        // If not a valid character at all, return null
+        if (!char) return null;
+        
+        // If it's a valid character, check if it's in our known set
+        if (knownCharacters && knownCharacters.includes(char)) {
+            return char;
+        }
+        
+        // It's a valid character but not in our known set
+        // For beginners, be strict and only accept known characters
+        // For advanced users, accept any valid character
+        const isAdvancedUser = knownCharacters && knownCharacters.length >= 10;
+        return isAdvancedUser ? char : null;
+    }
+    
+    /**
+     * Get possible completions for a partial Morse pattern
+     * @param {string} partialPattern - The partial Morse pattern
+     * @param {Array} knownCharacters - Array of characters known to the user
+     * @returns {Array} - Array of possible character completions
+     */
+    getPossibleCompletions(partialPattern, knownCharacters) {
+        if (!partialPattern) return [];
+        
+        const completions = [];
+        const morseAlphabet = window.ALPHABETS.getCompleteMorseAlphabet();
+        
+        // Check each known character
+        for (const char of knownCharacters) {
+            const morsePattern = morseAlphabet[char];
+            
+            // If this character's pattern starts with our partial pattern
+            if (morsePattern && morsePattern.startsWith(partialPattern)) {
+                completions.push(char);
+            }
+        }
+        
+        return completions;
+    }
+    
+    /**
+     * Validate and decode a Morse character
+     * @param {string} morse - The Morse pattern to decode
+     * @param {Array} knownCharacters - Array of characters known to the user
+     */
+    validateAndDecodeCharacter(morse, knownCharacters) {
+        // For a complete character, first check if it's in our known set
+        const char = this.isValidMorsePattern(morse, knownCharacters);
+        
+        if (char) {
+            // Valid character in our known set, decode it
+            this.decodeMorseCharacter(morse);
+        } else {
+            // Not a valid character in our known set
+            console.log(`Unrecognized Morse pattern: "${morse}"`);
+        }
+    }
+    
+    /**
+     * Get current known characters from the trainer
+     * @returns {Array} - Array of characters the user knows
+     */
+    getCurrentKnownCharacters() {
+        // Default to basic characters if we can't get the current set
+        const defaultCharacters = ['K', 'M'];
+        
+        // Try to get characters from the trainer
+        if (!this.app || !this.app.trainer) {
+            return defaultCharacters;
+        }
+        
+        // Get characters in progress (current learning set)
+        const charactersInProgress = this.app.trainer.charactersInProgress;
+        if (charactersInProgress && charactersInProgress.length > 0) {
+            return charactersInProgress;
+        }
+        
+        // Fall back to current characters if available
+        const currentCharacters = this.app.trainer.currentCharacters;
+        if (currentCharacters && currentCharacters.length > 0) {
+            return currentCharacters;
+        }
+        
+        // Last resort - use default characters
+        return defaultCharacters;
+    }
+    
+    /**
+     * Check if pattern recognition is enabled in settings
+     * @returns {boolean} - True if enabled, false otherwise
+     */
+    isPatternRecognitionEnabled() {
+        // If we don't have access to settings, default to false
+        if (!this.app || !this.app.settings) {
+            return false;
+        }
+        
+        // Get the setting value
+        return this.app.settings.getSetting('usePatternRecognition') === true;
     }
     
     /**

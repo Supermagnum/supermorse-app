@@ -25,6 +25,7 @@ export class SettingsManager {
             sidetoneEnabled: 'on',    // Whether to play sidetone on key press
             farnsworthEnabled: false, // Whether to use Farnsworth timing (characters faster than spacing)
             farnsworthRatio: 6.5, // Ratio between inter-character spacing and dit duration (standard is 3.0)
+            usePatternRecognition: false, // Whether to use enhanced pattern recognition for Morse decoding
             regionalCharacterSet: 'none', // Regional character set (none, european, cyrillic, arabic)
             regionalTrainingMode: 'progressive' // How to learn regional characters (progressive, immersive)
         };
@@ -180,13 +181,18 @@ export class SettingsManager {
             sidetoneToggle.value = this.settings.sidetoneEnabled;
         }
         
-        // Set Farnsworth settings
+        // Set Farnsworth settings and pattern recognition toggle
         const farnsworthToggle = document.getElementById('farnsworthEnabled');
         const farnsworthRatio = document.getElementById('farnsworthRatio');
         const farnsworthRatioGroup = document.getElementById('farnsworthRatioGroup');
+        const patternRecognitionToggle = document.getElementById('patternRecognitionEnabled');
         
         if (farnsworthToggle) {
             farnsworthToggle.checked = this.settings.farnsworthEnabled;
+        }
+        
+        if (patternRecognitionToggle) {
+            patternRecognitionToggle.checked = this.settings.usePatternRecognition;
         }
         
         if (farnsworthRatio) {

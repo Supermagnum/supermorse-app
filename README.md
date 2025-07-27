@@ -142,8 +142,41 @@ The application includes configurable settings to optimize how it processes sign
 
 You can switch between these modes in the application settings or by sending commands via the serial interface.
 
+### Troubleshooting Morse Key Input
 
-Benefits of Iambic Keying
+If you're experiencing issues with pause detection between Morse elements (dots/dashes) or between characters, try these solutions:
+
+#### Hardware Solutions
+
+1. **Clean the Key Contacts**: 
+   - Dirty or oxidized contacts can cause erratic behavior
+   - Use a contact cleaner spray specifically designed for electronic contacts
+   - Apply to both paddle contacts and allow to dry completely before use
+   - Regular cleaning maintenance improves reliability significantly
+
+2. **Adjust the Debounce Value**:
+   - In the Arduino firmware, locate this line: `const unsigned long DEBOUNCE_DELAY = 250;`
+   - Increase this value to 500ms: `const unsigned long DEBOUNCE_DELAY = 500;`
+   - Higher debounce values help with:
+     - Dirty or worn contacts
+     - "Bouncy" mechanical keys
+     - Operators with less consistent timing
+
+#### Software Solutions
+
+1. **Use Pattern Recognition**:
+   - Enable the "Smart Pattern Recognition" option in settings
+   - This algorithm uses the known character set from your current learning level
+   - Validates potential character boundaries against known valid characters
+   - Particularly helpful for ambiguous timing cases
+
+2. **Adjust Pause Threshold**:
+   - Use the Pause Threshold slider in settings to find the optimal value for your keying style
+   - Start with the default (1 second) and adjust gradually
+
+These solutions can be used individually or in combination depending on the nature of your input issues.
+
+### Benefits of Iambic Keying
 
     Increased Efficiency: Iambic keying can reduce the number of strokes needed to send Morse code, allowing for faster transmission.
     Reduced Fatigue: This method minimizes repetitive motion, which can lead to less physical strain on the operator.
@@ -153,7 +186,7 @@ Benefits of Iambic Keying
     Squeezing Action: When both paddles are squeezed, the keyer alternates between sending dits and dahs. This mimics the rhythm of iambic meter in poetry.
 
 
-Modes of Operation
+### Modes of Operation
 
 Iambic keyers typically have two modes:
 
