@@ -5,36 +5,38 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 
 console.log('Creating test user in Electron userData directory...');
 
-// Find the Electron userData directory based on platform
-function getUserDataPath() {
-  let userDataPath;
-  
-  switch (process.platform) {
-    case 'win32':
-      userDataPath = path.join(process.env.APPDATA, 'supermorse-app');
-      break;
-    case 'darwin': // macOS
-      userDataPath = path.join(process.env.HOME, 'Library', 'Application Support', 'supermorse-app');
-      break;
-    case 'linux':
-      userDataPath = path.join(process.env.HOME, '.config', 'supermorse-app');
-      break;
-    default:
-      userDataPath = path.join(process.env.HOME, '.supermorse-app');
+/**
+ * Get the appropriate data directory based on the operating system
+ * @returns {string} The platform-specific data directory path
+ */
+function getPlatformDataDir() {
+  const platform = os.platform();
+  const homeDir = os.homedir();
+  let appDataDir;
+
+  if (platform === 'win32') {
+    // Windows: %APPDATA%\supermorse-app\data\
+    appDataDir = path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'), 'supermorse-app', 'data');
+  } else if (platform === 'darwin') {
+    // macOS: ~/Library/Application Support/supermorse-app/data/
+    appDataDir = path.join(homeDir, 'Library', 'Application Support', 'supermorse-app', 'data');
+  } else {
+    // Linux and others: ~/.config/supermorse-app/data/
+    appDataDir = path.join(homeDir, '.config', 'supermorse-app', 'data');
   }
-  
-  console.log(`Detected Electron userData path: ${userDataPath}`);
-  return userDataPath;
+
+  console.log(`Detected platform-specific data directory: ${appDataDir}`);
+  return appDataDir;
 }
 
-// Get the userData directory
-const userDataDir = getUserDataPath();
-const dataDir = path.join(userDataDir, 'data');
+// Get platform-specific data directory
+const dataDir = getPlatformDataDir();
 const usersDir = path.join(dataDir, 'users');
 const progressDir = path.join(dataDir, 'progress');
 const statsDir = path.join(dataDir, 'stats');
@@ -49,7 +51,6 @@ const statsDir = path.join(dataDir, 'stats');
 
 // Show data paths for debugging
 console.log('===== DEBUG PATHS =====');
-console.log(`Electron userData directory: ${userDataDir}`);
 console.log(`Data directory: ${dataDir}`);
 console.log(`Users directory: ${usersDir}`);
 console.log(`Progress directory: ${progressDir}`);

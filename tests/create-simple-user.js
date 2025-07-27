@@ -5,12 +5,36 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const jsonDataService = require('../src/services/JsonDataService');
 
 console.log('Creating simple test user with basic password...');
 
-// Set up data directories
-const dataDir = path.join(__dirname, 'data');
+/**
+ * Get the appropriate data directory based on the operating system
+ * @returns {string} The platform-specific data directory path
+ */
+function getPlatformDataDir() {
+  const platform = os.platform();
+  const homeDir = os.homedir();
+  let appDataDir;
+
+  if (platform === 'win32') {
+    // Windows: %APPDATA%\supermorse-app\data\
+    appDataDir = path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'), 'supermorse-app', 'data');
+  } else if (platform === 'darwin') {
+    // macOS: ~/Library/Application Support/supermorse-app/data/
+    appDataDir = path.join(homeDir, 'Library', 'Application Support', 'supermorse-app', 'data');
+  } else {
+    // Linux and others: ~/.config/supermorse-app/data/
+    appDataDir = path.join(homeDir, '.config', 'supermorse-app', 'data');
+  }
+
+  return appDataDir;
+}
+
+// Get platform-specific data directory
+const dataDir = getPlatformDataDir();
 const usersDir = path.join(dataDir, 'users');
 const progressDir = path.join(dataDir, 'progress');
 const statsDir = path.join(dataDir, 'stats');
@@ -41,6 +65,13 @@ const SIMPLE_USER = {
 
 async function createSimpleUser() {
   try {
+    // Ensure data directories exist
+    [dataDir, usersDir, progressDir, statsDir].forEach(dir => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    });
+    
     // Check if user already exists
     const existingUser = await jsonDataService.getUserByUsername(SIMPLE_USER.username);
     

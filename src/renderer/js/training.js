@@ -578,12 +578,15 @@ export class MorseTrainer {
             // Add character label above the Morse representation
             displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${userChar.toUpperCase()}</span>`;
             
+            // Get the Morse code pattern for this character
+            const morsePattern = this.getAlphabets().charToMorse(userChar.toUpperCase());
+            
             // Add the Morse character with correct/incorrect styling
             if (userChar.toUpperCase() === expectedChar.toUpperCase()) {
                 correct++;
-                displayHtml += `<span class="correct">${userChar.toUpperCase()}</span>`;
+                displayHtml += `<span class="correct">${morsePattern}</span>`;
             } else {
-                displayHtml += `<span class="incorrect">${userChar.toUpperCase()}</span>`;
+                displayHtml += `<span class="incorrect">${morsePattern}</span>`;
             }
             
             displayHtml += '</span>'; // Close the character container
@@ -638,8 +641,11 @@ export class MorseTrainer {
                 // Add character label above the Morse representation
                 displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${this.userInput[i]}</span>`;
                 
-                // Add the Morse character
-                displayHtml += `<span>${this.userInput[i]}</span>`;
+                // Get the Morse code pattern for this character
+                const morsePattern = this.getAlphabets().charToMorse(this.userInput[i]);
+                
+                // Add the Morse code pattern
+                displayHtml += `<span>${morsePattern}</span>`;
                 
                 displayHtml += '</span>'; // Close the character container
             }

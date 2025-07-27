@@ -18,6 +18,9 @@
 const int PADDLE_DOT_PIN = 2;    // Connect paddle dot contact to D2 pin (GPIO 2), left paddle
 const int PADDLE_DASH_PIN = 3;   // Connect paddle dash contact to D3 pin (GPIO 3), right paddle
 
+// Flag to enable debug messages - DISABLED by default, can be toggled with 'D' command
+const bool DEBUG_MODE = false;
+
 // Key mode definitions
 enum KeyMode {
   PADDLE_IAMBIC_A,  // Paddle used in iambic mode A (Curtis A - true implementation)
@@ -79,6 +82,22 @@ void setup() {
   }
   
   Serial.println("Morse Decoder Ready");
+  
+  if (DEBUG_MODE) {
+    Serial.println("DEBUG_MSG: TESTING DOT PIN...");
+    if (digitalRead(PADDLE_DOT_PIN) == LOW) {
+      Serial.println("DEBUG_MSG: DOT PIN IS PRESSED (LOW)");
+    } else {
+      Serial.println("DEBUG_MSG: DOT PIN IS RELEASED (HIGH)");
+    }
+    
+    Serial.println("DEBUG_MSG: TESTING DASH PIN...");
+    if (digitalRead(PADDLE_DASH_PIN) == LOW) {
+      Serial.println("DEBUG_MSG: DASH PIN IS PRESSED (LOW)");
+    } else {
+      Serial.println("DEBUG_MSG: DASH PIN IS RELEASED (HIGH)");
+    }
+  }
 }
 
 void loop() {
@@ -139,14 +158,31 @@ void checkSerialCommands() {
       case 'P': // For backward compatibility, map to Iambic A
         currentKeyMode = PADDLE_IAMBIC_A;
         Serial.println("MODE:PADDLE_IAMBIC_A");
+        if (DEBUG_MODE) {
+          Serial.println("DEBUG_MSG: Iambic mode A activated");
+        }
         break;
       case 'A': // Iambic paddle mode A (Curtis A)
         currentKeyMode = PADDLE_IAMBIC_A;
         Serial.println("MODE:PADDLE_IAMBIC_A");
+        if (DEBUG_MODE) {
+          Serial.println("DEBUG_MSG: Iambic mode A activated");
+        }
         break;
       case 'B': // Iambic paddle mode B
         currentKeyMode = PADDLE_IAMBIC_B;
         Serial.println("MODE:PADDLE_IAMBIC_B");
+        if (DEBUG_MODE) {
+          Serial.println("DEBUG_MSG: Iambic mode B activated");
+        }
+        break;
+      case 'D': // Debug toggle
+        // Toggle debug mode
+        if (DEBUG_MODE) {
+          Serial.println("DEBUG_MSG: Debug mode disabled");
+        } else {
+          Serial.println("DEBUG_MSG: Debug mode enabled");
+        }
         break;
     }
   }
@@ -186,6 +222,15 @@ void handleIambicPaddleModeA() {
     if ((dotPressed || dashPressed) && !(keyWasDown)) {
       setInputActive();
       keyWasDown = true;
+      
+      // Only send debug messages if DEBUG_MODE is enabled and a paddle is pressed
+      if (DEBUG_MODE) {
+        Serial.println("DEBUG_MSG: PADDLE PRESS DETECTED");
+        Serial.print("DEBUG_MSG: DOT PIN = ");
+        Serial.println(dotPressed ? "PRESSED (LOW)" : "RELEASED (HIGH)");
+        Serial.print("DEBUG_MSG: DASH PIN = ");
+        Serial.println(dashPressed ? "PRESSED (LOW)" : "RELEASED (HIGH)");
+      }
     } else if (!dotPressed && !dashPressed) {
       keyWasDown = false;
       inputActive = false;

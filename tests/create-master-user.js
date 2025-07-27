@@ -8,6 +8,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const jsonDataService = require('../src/services/JsonDataService');
 
 // Set up console formatting
@@ -56,13 +57,39 @@ function getAllCharacters() {
   };
 }
 
+/**
+ * Get the appropriate data directory based on the operating system
+ * @returns {string} The platform-specific data directory path
+ */
+function getPlatformDataDir() {
+  const platform = os.platform();
+  const homeDir = os.homedir();
+  let appDataDir;
+
+  if (platform === 'win32') {
+    // Windows: %APPDATA%\supermorse-app\data\
+    appDataDir = path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'), 'supermorse-app', 'data');
+  } else if (platform === 'darwin') {
+    // macOS: ~/Library/Application Support/supermorse-app/data/
+    appDataDir = path.join(homeDir, 'Library', 'Application Support', 'supermorse-app', 'data');
+  } else {
+    // Linux and others: ~/.config/supermorse-app/data/
+    appDataDir = path.join(homeDir, '.config', 'supermorse-app', 'data');
+  }
+
+  return appDataDir;
+}
+
 async function createMasterUser() {
   try {
     // Step 1: Setup
     console.log(`${colors.yellow}1. Setting up test environment...${colors.reset}`);
     
+    // Get platform-specific data directory
+    const dataDir = getPlatformDataDir();
+    console.log(`   Using data directory: ${dataDir}`);
+    
     // Ensure data directories exist
-    const dataDir = path.join(__dirname, 'data');
     const usersDir = path.join(dataDir, 'users');
     const progressDir = path.join(dataDir, 'progress');
     const statsDir = path.join(dataDir, 'stats');

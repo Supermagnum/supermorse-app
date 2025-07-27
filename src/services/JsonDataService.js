@@ -129,11 +129,34 @@ function sendToWorker(type, data) {
 }
 
 // Ensure directories exist (fallback implementation if worker isn't available)
+/**
+ * Get the appropriate data directory based on the operating system
+ * @returns {string} The platform-specific data directory path
+ */
+function getPlatformDataDir() {
+  const platform = process.platform;
+  const homeDir = require('os').homedir();
+  let appDataDir;
+
+  if (platform === 'win32') {
+    // Windows: %APPDATA%\supermorse-app\data\
+    appDataDir = path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'), 'supermorse-app', 'data');
+  } else if (platform === 'darwin') {
+    // macOS: ~/Library/Application Support/supermorse-app/data/
+    appDataDir = path.join(homeDir, 'Library', 'Application Support', 'supermorse-app', 'data');
+  } else {
+    // Linux and others: ~/.config/supermorse-app/data/
+    appDataDir = path.join(homeDir, '.config', 'supermorse-app', 'data');
+  }
+
+  return appDataDir;
+}
+
 function ensureDirectoriesExist() {
   if (!DATA_DIR) {
-    console.warn('Data directories not set. Using default paths.');
-    // Fallback to default paths if not set (for backward compatibility)
-    DATA_DIR = path.join(process.cwd(), 'data');
+    console.warn('Data directories not set. Using platform-specific default paths.');
+    // Fallback to platform-specific paths if not set
+    DATA_DIR = getPlatformDataDir();
     USERS_DIR = path.join(DATA_DIR, 'users');
     PROGRESS_DIR = path.join(DATA_DIR, 'progress');
     STATS_DIR = path.join(DATA_DIR, 'stats');

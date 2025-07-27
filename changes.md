@@ -6,6 +6,72 @@ This document details the implementation changes made to improve authentication 
 
 ## July 27, 2025
 
+## 34. Improved Morse Code Pattern Display in Training Interface
+
+### Problem Addressed
+
+In the Morse code training interface, when displaying Morse elements (like "-.-" for "K"), the application was showing the letter twice - once as a small label above and again below it, instead of showing the actual Morse code pattern below the letter. This made it harder for users to associate letters with their corresponding Morse code patterns during training.
+
+### Changes Made
+
+#### 34.1 Updated Character Display in Training Interface
+
+Modified the `evaluateUserInput` and `handleUserInput` methods in training.js to display the actual Morse code pattern below each letter instead of repeating the letter:
+
+```javascript
+// Old implementation - Displayed the letter twice
+displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${userChar.toUpperCase()}</span>`;
+displayHtml += `<span class="correct">${userChar.toUpperCase()}</span>`;
+
+// New implementation - Shows letter above and Morse pattern below
+displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${userChar.toUpperCase()}</span>`;
+const morsePattern = this.getAlphabets().charToMorse(userChar.toUpperCase());
+displayHtml += `<span class="correct">${morsePattern}</span>`;
+```
+
+This change was applied to both the final character evaluation display and the real-time feedback during typing.
+
+### Benefits
+
+- Clearer visualization of the relationship between letters and their Morse code patterns
+- Enhanced learning experience by reinforcing the letter-to-Morse-code connection
+- More efficient use of screen space by showing useful information instead of redundant content
+- Improved feedback that helps users better memorize Morse code patterns
+- Consistent representation throughout the training flow
+
+## 33. Implemented Debug Message Control System for Arduino Firmware
+
+### Problems Addressed
+
+The Arduino firmware, particularly the ESP32-C6 implementation, was sending excessive debug messages to the Electron app's console, making it difficult to identify important information. Debug messages related to paddle pin status were being sent continuously regardless of whether any paddle activity was occurring.
+
+### Changes Made
+
+#### 33.1 Added DEBUG_MODE Flag to All Arduino Implementations
+
+Added a consistent debug control system across all Arduino board implementations (ESP32-C6, Arduino Micro, Arduino Nano, and Xiao SAMD21) with a DEBUG_MODE flag that is disabled by default but can be toggled via serial command.
+
+#### 33.2 Limited Debug Messages to Paddle Press Events
+
+Modified all Arduino implementations to only send debug messages when paddle presses actually occur, rather than sending continuous status updates that flood the console.
+
+#### 33.3 Added Serial Command to Toggle Debug Mode
+
+Implemented a 'D' command across all board variants that allows users to enable or disable debug mode via serial communication when additional debugging information is needed.
+
+#### 33.4 Fixed ESP32-C6 Continuous Pin Testing
+
+Fixed the ESP32-C6 implementation which was performing direct pin testing every 250ms regardless of paddle activity, contributing significantly to console flooding. Changed to only perform testing when DEBUG_MODE is enabled and a paddle is pressed.
+
+### Benefits
+
+- Cleaner console output with relevant information about paddle presses
+- Consistent debug control system across all supported Arduino boards
+- Ability to enable detailed debugging when needed for troubleshooting
+- Improved user experience with less console noise
+- Better visibility of important messages and Morse signals
+- Preserved all essential functionality while reducing unnecessary output
+
 ## Todo:
 - Improve how the app detects pauses between morse characters received from the morse key - it still has issues figuring out when there is a pause.
 

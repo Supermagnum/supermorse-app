@@ -39,7 +39,7 @@ const unsigned long DIT_THRESHOLD = 150;      // Maximum duration for a dit
 const unsigned long DAH_THRESHOLD = 450;      // Maximum duration for a dah
 const unsigned long ELEMENT_THRESHOLD = 200;  // Maximum time between elements within a character
 const unsigned long WORD_THRESHOLD = 1400;    // Maximum time between words
-const unsigned long DEBOUNCE_DELAY = 200;     // Debounce time in milliseconds to prevent contact bounce
+const unsigned long DEBOUNCE_DELAY = 250;     // Debounce time in milliseconds to prevent contact bounce
 
 // State variables
 unsigned long keyDownTime = 0;
@@ -68,8 +68,8 @@ bool elementComplete = false;      // Flag to track if the current element is co
 bool squeezeReleased = false;      // Flag to track if the squeeze was released after element completion
 unsigned long elementCompleteTime = 0; // Time when the current element completed
 
-// Flag to enable debug messages - ENABLED for troubleshooting
-const bool DEBUG_MODE = true;
+// Flag to enable debug messages - DISABLED by default, can be toggled with 'D' command
+const bool DEBUG_MODE = false;
 
 // Track last time we sent a debug message to avoid flooding
 unsigned long lastDebugTime = 0;
@@ -77,9 +77,9 @@ const unsigned long DEBUG_INTERVAL = 10000;  // 10 seconds between status messag
 
 // We don't need a safety timeout anymore since LED pulses automatically turn off
 
-// Direct pin testing in every cycle - more frequent for better responsiveness
+// Direct pin testing only happens when paddle is pressed to avoid console flooding
 unsigned long lastPinTestTime = 0;
-const unsigned long PIN_TEST_INTERVAL = 250;  // 250ms between checks for faster response
+const unsigned long PIN_TEST_INTERVAL = 1000;  // 1000ms between checks when paddle is active
 
 void setup() {
   // Initialize serial communication
@@ -186,17 +186,12 @@ void loop() {
     lastElementTime = 0; // Reset to prevent continuous spaces
   }
   
-  // Direct pin testing for troubleshooting - lower priority now that we have direct checks
-  if (millis() - lastPinTestTime >= PIN_TEST_INTERVAL) {
+  // Direct pin testing for troubleshooting - only run when a paddle is pressed or DEBUG_MODE is enabled
+  if (DEBUG_MODE && (dotPinPressed || dashPinPressed) && (millis() - lastPinTestTime >= PIN_TEST_INTERVAL)) {
     lastPinTestTime = millis();
     
-    // Reread pins for debug report - might have changed since the start of loop()
-    dotPinPressed = digitalRead(PADDLE_DOT_PIN) == LOW;
-    dashPinPressed = digitalRead(PADDLE_DASH_PIN) == LOW;
-    
-    // Always send debug on completely separate lines from Morse
-    Serial.println(); // Blank line for complete separation
-    Serial.println("DEBUG_MSG: DIRECT PIN TEST");
+    // Only send debug messages when in DEBUG_MODE and a paddle is pressed
+    Serial.println("DEBUG_MSG: PADDLE PRESS DETECTED");
     Serial.print("DEBUG_MSG: DOT PIN (GPIO ");
     Serial.print(PADDLE_DOT_PIN);
     Serial.print(") = ");
@@ -206,21 +201,6 @@ void loop() {
     Serial.print(PADDLE_DASH_PIN);
     Serial.print(") = ");
     Serial.println(dashPinPressed ? "PRESSED (LOW)" : "RELEASED (HIGH)");
-    
-    // Debug output only - no Morse here
-    if (dotPinPressed) {
-      Serial.println("DEBUG_MSG: DOT BUTTON PRESSED");
-    }
-    
-    if (dashPinPressed) {
-      Serial.println("DEBUG_MSG: DASH BUTTON PRESSED");
-    }
-    
-    // Show LED state
-    Serial.print("DEBUG_MSG: LED is currently ");
-    Serial.println(ledIsOn ? "ON" : "OFF");
-    Serial.println("DEBUG_MSG: END OF PIN TEST");
-    Serial.println(); // Extra blank line for separation
   }
   
   // No need for safety reset timer anymore, pulses turn off automatically
@@ -305,7 +285,7 @@ void checkSerialCommands() {
       case 'D': // Debug toggle
         // Toggle debug mode
         if (DEBUG_MODE) {
-          Serial.println("DEBUG_MSG: Debug mode already enabled");
+        Serial.println("DEBUG_MSG: Debug mode disabled");
         } else {
           Serial.println("DEBUG_MSG: Debug mode enabled");
         }
@@ -361,39 +341,24 @@ void handleIambicPaddleModeA() {
     keyWasDown = true;
     lastSignalTime = millis(); // Update last signal time
     
-    // First send Morse output - completely separated
+    // Send Morse output directly without blank lines
     if (dotPressed) {
-      Serial.println(); // Blank line for separation
-      Serial.println("."); // Clean Morse signal
-      Serial.println(); // Blank line for separation
+      Serial.print(".");
     }
     
     if (dashPressed) {
-      Serial.println(); // Blank line for separation
-      Serial.println("-"); // Clean Morse signal
-      Serial.println(); // Blank line for separation
+      Serial.print("-");
     }
     
-    // Then send debug separately
-    Serial.println("DEBUG_MSG: DOT/DASH PRESSED - DIRECT OUTPUT");
+    // Only send debug message if DEBUG_MODE is enabled
+    if (DEBUG_MODE) {
+      Serial.println("DEBUG_MSG: DOT/DASH PRESSED");
+    }
   }
-  // If both paddles are released, immediately turn off LED
+  // If both paddles are released, handle LED
   else if (!dotPressed && !dashPressed && keyWasDown) {
     keyWasDown = false;
-    
-    if (DEBUG_MODE) {
-      Serial.println("DEBUG: Both paddles released");
-    }
-    
     // LED will turn off automatically after pulse duration
-    if (DEBUG_MODE) {
-      Serial.print("DEBUG: Elements still in progress - currentElement: ");
-      Serial.print(currentIambicElement);
-      Serial.print(", dotMemory: ");
-      Serial.print(dotMemory ? "true" : "false");
-      Serial.print(", dashMemory: ");
-      Serial.println(dashMemory ? "true" : "false");
-    }
   }
     
     // If we're not currently sending an element
