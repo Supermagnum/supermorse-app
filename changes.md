@@ -6,6 +6,140 @@ This document details the implementation changes made to improve authentication 
 
 ## July 27, 2025
 
+## 40. Extended Native Module Packaging Fix to Windows and macOS
+
+### Problem Addressed
+
+After fixing the segmentation fault issue with AppImage packaging on Linux, similar issues could potentially affect Windows and macOS builds as well. The native modules (serialport, node-mumble, bcrypt) that caused the Linux crash require direct filesystem access regardless of platform, but only the Linux configuration had been updated to handle this properly.
+
+### Changes Made
+
+#### 40.1 Updated Windows Build Configuration
+
+Added the asarUnpack configuration to the Windows build settings in package.json:
+
+```json
+// Old implementation
+"win": {
+  "icon": "build/icons/icon.png"
+}
+
+// New implementation
+"win": {
+  "icon": "build/icons/icon.png",
+  "asarUnpack": [
+    "node_modules/serialport/**/*",
+    "node_modules/node-mumble/**/*",
+    "node_modules/bcrypt/**/*",
+    "node_modules/**/*.node"
+  ]
+}
+```
+
+#### 40.2 Updated macOS Build Configuration
+
+Added the asarUnpack configuration to the macOS build settings in package.json:
+
+```json
+// Old implementation
+"mac": {
+  "category": "public.app-category.education",
+  "icon": "build/icons/icon.png"
+}
+
+// New implementation
+"mac": {
+  "category": "public.app-category.education",
+  "icon": "build/icons/icon.png",
+  "asarUnpack": [
+    "node_modules/serialport/**/*",
+    "node_modules/node-mumble/**/*",
+    "node_modules/bcrypt/**/*",
+    "node_modules/**/*.node"
+  ]
+}
+```
+
+#### 40.3 Unified Native Module Handling Across Platforms
+
+Ensured that the same set of native modules are unpacked consistently across all platforms, providing a unified approach to native module handling.
+
+### Benefits
+
+- Prevented potential segmentation faults in Windows and macOS builds
+- Ensured consistent behavior of native modules across all platforms
+- Improved reliability of serialport, node-mumble, and bcrypt modules on all operating systems
+- Reduced potential crashes and error reports from Windows and macOS users
+- Created a standardized approach to native module handling across the entire application
+- Simplified maintenance by using the same unpacking configuration on all platforms
+
+## 39. Fixed AppImage Segmentation Fault
+
+### Problem Addressed
+
+After fixing the segmentation fault issue with AppImage packaging on Linux, similar issues could potentially affect Windows and macOS builds as well. The native modules (serialport, node-mumble, bcrypt) that caused the Linux crash require direct filesystem access regardless of platform, but only the Linux configuration had been updated to handle this properly.
+
+### Changes Made
+
+#### 40.1 Updated Windows Build Configuration
+
+Added the asarUnpack configuration to the Windows build settings in package.json:
+
+```json
+// Old implementation
+"win": {
+  "icon": "build/icons/icon.png"
+}
+
+// New implementation
+"win": {
+  "icon": "build/icons/icon.png",
+  "asarUnpack": [
+    "node_modules/serialport/**/*",
+    "node_modules/node-mumble/**/*",
+    "node_modules/bcrypt/**/*",
+    "node_modules/**/*.node"
+  ]
+}
+```
+
+#### 40.2 Updated macOS Build Configuration
+
+Added the asarUnpack configuration to the macOS build settings in package.json:
+
+```json
+// Old implementation
+"mac": {
+  "category": "public.app-category.education",
+  "icon": "build/icons/icon.png"
+}
+
+// New implementation
+"mac": {
+  "category": "public.app-category.education",
+  "icon": "build/icons/icon.png",
+  "asarUnpack": [
+    "node_modules/serialport/**/*",
+    "node_modules/node-mumble/**/*",
+    "node_modules/bcrypt/**/*",
+    "node_modules/**/*.node"
+  ]
+}
+```
+
+#### 40.3 Unified Native Module Handling Across Platforms
+
+Ensured that the same set of native modules are unpacked consistently across all platforms, providing a unified approach to native module handling.
+
+### Benefits
+
+- Prevented potential segmentation faults in Windows and macOS builds
+- Ensured consistent behavior of native modules across all platforms
+- Improved reliability of serialport, node-mumble, and bcrypt modules on all operating systems
+- Reduced potential crashes and error reports from Windows and macOS users
+- Created a standardized approach to native module handling across the entire application
+- Simplified maintenance by using the same unpacking configuration on all platforms
+
 ## 39. Fixed AppImage Segmentation Fault
 
 ### Problem Addressed

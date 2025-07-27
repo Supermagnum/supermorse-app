@@ -22,10 +22,22 @@
     },
     "mac": {
       "category": "public.app-category.education",
-      "icon": "build/icons/icon.png"
+      "icon": "build/icons/icon.png",
+      "asarUnpack": [
+        "node_modules/serialport/**/*",
+        "node_modules/node-mumble/**/*",
+        "node_modules/bcrypt/**/*",
+        "node_modules/**/*.node"
+      ]
     },
     "win": {
-      "icon": "build/icons/icon.png"
+      "icon": "build/icons/icon.png",
+      "asarUnpack": [
+        "node_modules/serialport/**/*",
+        "node_modules/node-mumble/**/*",
+        "node_modules/bcrypt/**/*",
+        "node_modules/**/*.node"
+      ]
     },
     "linux": {
       "icon": "build/icons/icon.png",
