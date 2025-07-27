@@ -11,6 +11,8 @@ dev-logs/
 
 # Build output
 dist/
+# Exclude specific build icons if needed
+# !build/icons/
 build/
 !build/icons/
 out/

@@ -130,16 +130,16 @@ fi
 
 # Copy application to Applications directory
 echo -e "\n${YELLOW}Installing application...${NC}"
-if [ -d "dist/mac" ]; then
+if [ -d "dist/MacOS/mac" ]; then
   # If we have a properly built macOS app, use it
   if [ -d "$INSTALL_DIR" ]; then
     echo -e "${YELLOW}Removing previous installation...${NC}"
     sudo rm -rf "$INSTALL_DIR"
   fi
   
-  sudo cp -R dist/mac/*.app "$INSTALL_DIR"
+  sudo cp -R dist/MacOS/mac/*.app "$INSTALL_DIR"
   echo -e "${GREEN}✓ Application installed to $INSTALL_DIR${NC}"
-  log "Application installed from dist/mac"
+  log "Application installed from dist/MacOS/mac"
 else
   # If no build was created, create a basic app structure
   echo -e "${YELLOW}No app build found, creating basic app structure...${NC}"

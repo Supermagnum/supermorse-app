@@ -7,7 +7,10 @@
     "start": "electron .",
     "dev": "electron . --dev",
     "test": "jest",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build:linux": "rm -rf dist/linux-unpacked && mkdir -p dist/Linux && electron-builder --linux --config.directories.output=dist/Linux",
+    "build:windows": "mkdir -p dist/Windows/win-unpacked && electron-builder --win --config.directories.output=dist/Windows",
+    "build:mac": "mkdir -p dist/MacOS/mac && electron-builder --mac --config.directories.output=dist/MacOS"
   },
   "build": {
     "appId": "com.supermorse.app",
@@ -24,7 +27,9 @@
     },
     "linux": {
       "icon": "build/icons/icon.png",
-      "category": "Education"
+      "category": "Education",
+      "artifactName": "${productName}-${version}.${ext}",
+      "target": "dir"
     }
   },
   "keywords": [

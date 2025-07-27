@@ -72,10 +72,19 @@ export class MorseTrainer {
      */
     async loadUserProgress(userId) {
         try {
-            // Load progress from the main process
-            const progress = await window.electronAPI.getProgress(userId);
+            // Add logging to show when user progress is being loaded
+            console.log(`Loading progress data for user ${userId}...`);
             
-            if (progress) {
+            // Load progress from the main process
+            const result = await window.electronAPI.getProgress(userId);
+            
+            // Check if we got a successful result with progress data
+            if (result && result.success && result.progress) {
+                console.log(`Progress data loaded successfully for user ${userId}`, result.progress);
+                
+                // Properly access the nested progress data
+                const progress = result.progress;
+                
                 this.learnedCharacters = progress.learnedCharacters || [];
                 this.currentCharacter = progress.currentCharacter || null;
                 this.mastery = progress.mastery || {};
@@ -85,8 +94,13 @@ export class MorseTrainer {
                 
                 // Update progress display
                 this.updateProgressDisplay();
+            } else if (result && !result.success) {
+                // Handle the case where the progress retrieval failed
+                console.error(`Failed to load progress: ${result.message}`);
+                this.initializeNewUser();
             } else {
                 // New user, start from scratch
+                console.log('No existing progress found, initializing new user');
                 this.initializeNewUser();
             }
             
