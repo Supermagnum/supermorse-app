@@ -448,6 +448,39 @@ class SuperMorseApp {
             }
         });
         
+        // Reset progress button
+        document.getElementById('resetProgressBtn').addEventListener('click', () => {
+            this.showModal(
+                'Reset Learning Progress', 
+                'Are you sure you want to reset your learning progress? This action cannot be undone.',
+                async () => {
+                    // User confirmed, proceed with reset
+                    if (this.currentUser) {
+                        try {
+                            const result = await this.settings.resetUserProgress(this.currentUser.id);
+                            if (result) {
+                                // Update the progress display
+                                if (this.trainer) {
+                                    this.trainer.updateProgressDisplay();
+                                }
+                                
+                                // Show success message
+                                this.showModal('Progress Reset', 'Your learning progress has been reset successfully.');
+                            } else {
+                                this.showModal('Error', 'Failed to reset progress. Please try again.');
+                            }
+                        } catch (error) {
+                            console.error('Error resetting progress:', error);
+                            this.showModal('Error', 'An error occurred while resetting progress: ' + error.message);
+                        }
+                    }
+                },
+                null,
+                'Reset',
+                'Cancel'
+            );
+        });
+        
         // Theme change
         document.getElementById('themeSelect').addEventListener('change', (e) => {
             const theme = e.target.value;

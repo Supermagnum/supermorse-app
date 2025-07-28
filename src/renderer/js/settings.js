@@ -26,6 +26,7 @@ export class SettingsManager {
             farnsworthEnabled: false, // Whether to use Farnsworth timing (characters faster than spacing)
             farnsworthRatio: 6.5, // Ratio between inter-character spacing and dit duration (standard is 3.0)
             usePatternRecognition: false, // Whether to use enhanced pattern recognition for Morse decoding
+            useReducedGroupSize: false, // Whether to use 4-character groups instead of 5
             regionalCharacterSet: 'none', // Regional character set (none, european, cyrillic, arabic)
             regionalTrainingMode: 'progressive' // How to learn regional characters (progressive, immersive)
         };
@@ -195,6 +196,12 @@ export class SettingsManager {
             patternRecognitionToggle.checked = this.settings.usePatternRecognition;
         }
         
+        // Set reduced group size toggle
+        const reducedGroupSizeToggle = document.getElementById('useReducedGroupSize');
+        if (reducedGroupSizeToggle) {
+            reducedGroupSizeToggle.checked = this.settings.useReducedGroupSize;
+        }
+        
         if (farnsworthRatio) {
             farnsworthRatio.value = this.settings.farnsworthRatio;
             document.getElementById('farnsworthRatioValue').textContent = this.settings.farnsworthRatio.toFixed(1);
@@ -291,6 +298,40 @@ export class SettingsManager {
      */
     getSetting(key) {
         return this.settings[key];
+    }
+    
+    /**
+     * Reset user's training progress
+     * @param {string} userId - The user ID
+     * @returns {Promise} - Resolves when progress is reset
+     */
+    async resetUserProgress(userId) {
+        try {
+            // Create a blank progress object
+            const blankProgress = {
+                userId,
+                learnedCharacters: [],
+                currentCharacter: 'K',
+                mastery: {
+                    'international': 0,
+                    'prosigns': 0,
+                    'special': 0
+                }
+            };
+            
+            // Use the existing API to save the blank progress
+            const result = await window.electronAPI.saveProgress(blankProgress);
+            
+            // If the app has a trainer instance, reinitialize it
+            if (this.app.trainer) {
+                await this.app.trainer.loadUserProgress(userId);
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('Error resetting user progress:', error);
+            return false;
+        }
     }
     
     /**

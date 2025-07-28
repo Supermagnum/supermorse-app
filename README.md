@@ -67,7 +67,9 @@ Get a visual overview of the SuperMorse application, with  all features unlocked
 - Configurable sinusoidal tone with adjustable frequency
 - Visual feedback during training:
   - Correct characters are shown in green, wrong characters in red
-  - Time delay before the complete 5-character sequence is removed from the screen
+  - Time delay before the complete character sequence is removed from the screen
+  - Configurable character group size (toggle between traditional 5-character groups or reduced 4-character groups)
+  - 5-character groups follow the historical standard used by the Enigma cipher machine during WWII
 - Farnsworth timing support for more effective learning:
   - Uses a ratio-based approach to create appropriate spacing between characters
   - Recommended minimum speed: 15 WPM (though 13 WPM minimum is enforced as this was the minumum speed Koch used )

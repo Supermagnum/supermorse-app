@@ -32,6 +32,8 @@
     },
     "win": {
       "icon": "build/icons/icon.png",
+      "artifactName": "${productName}-beta-${version}.${ext}",
+      "target": ["nsis"],
       "asarUnpack": [
         "node_modules/serialport/**/*",
         "node_modules/node-mumble/**/*",
@@ -42,8 +44,8 @@
     "linux": {
       "icon": "build/icons/icon.png",
       "category": "Education",
-      "artifactName": "${productName}-${version}.${ext}",
-      "target": ["dir", "AppImage"],
+      "artifactName": "${productName}-beta-${version}.${ext}",
+      "target": ["AppImage", "snap"],
       "asarUnpack": [
         "node_modules/serialport/**/*",
         "node_modules/node-mumble/**/*",

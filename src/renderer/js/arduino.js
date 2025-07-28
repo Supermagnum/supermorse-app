@@ -18,6 +18,7 @@ export class ArduinoInterface {
         this.morseBuffer = '';
         this.lastSignalTime = 0;
         this.pauseThreshold = 1000; // Default pause threshold in ms (1 second)
+        this.decodeTimer = null; // Timer for auto-decoding after pause
         
         // Set up event listeners
         this.setupEventListeners();
@@ -122,7 +123,13 @@ export class ArduinoInterface {
         // Ignore empty lines
         if (!line) return;
         
-        console.log('Arduino:', line);
+        // Log Arduino data as an expandable object with details
+        console.log('Arduino:', {
+            data: line,
+            timestamp: new Date().toISOString(),
+            type: this.determineDataType(line),
+            description: this.getDescriptionForData(line)
+        });
         
         // Handle paddle press/release events for sidetone generation
         if (line === 'left_paddle_pressed' || line === 'right_paddle_pressed') {
@@ -144,33 +151,89 @@ export class ArduinoInterface {
         // Handle mode response
         if (line.startsWith('MODE:')) {
             const mode = line.substring(5);
-            console.log('Arduino mode set to:', mode);
+            // Use object logging for mode as well
+            console.log('Arduino mode:', {
+                mode: mode,
+                timestamp: new Date().toISOString()
+            });
             return;
         }
         
-        // Handle decoded Morse characters
-        if (line.length === 1) {
-            // Single character decoded from Morse - only process in Training tab, not Listening tab
-            if (this.app.trainer && this.app.trainer.lessonActive && this.app.currentSection === 'training') {
-                this.app.trainer.handleUserInput(line);
-            }
-            return;
-        }
-        
-        // Process lines containing dots and dashes as Morse code input
-        if (line.includes('.') || line.includes('-')) {
-            // Only process if this appears to be Morse code (only dots, dashes, and spaces)
-            if (/^[.\- ]+$/.test(line)) {
-                // Process with enhanced pause detection
+    // Handle incoming Morse elements (dots and dashes)
+    if (line === '.' || line === '-' || line.includes('.') || line.includes('-')) {
+        // Only process if this appears to be Morse code (only dots, dashes, and spaces)
+        if (/^[.\- ]+$/.test(line)) {
+            // For single dots or dashes, add to buffer without immediate decoding
+            if (line === '.' || line === '-') {
+                this.morseBuffer += line;
+                console.log(`Added ${line} to Morse buffer: ${this.morseBuffer}`);
+                
+                // Reset last signal time to now to start the pause detection
+                this.lastSignalTime = Date.now();
+                
+                // Set up a timer to decode the buffer after a pause threshold
+                this.startDecodeTimer();
+            } else {
+                // For longer sequences, use enhanced pause detection
                 this.processMorseWithPauseDetection(line);
             }
-            return;
         }
+        return;
+    }
         
         // Handle other messages
         if (line === 'Morse Decoder Ready') {
             console.log('Arduino is ready');
             return;
+        }
+    }
+    
+    /**
+     * Determine the type of data received from Arduino
+     * @param {string} data - The data to analyze
+     * @returns {string} - The type of data
+     */
+    determineDataType(data) {
+        if (data === 'left_paddle_pressed' || data === 'right_paddle_pressed' ||
+            data === 'left_paddle_released' || data === 'right_paddle_released') {
+            return 'paddle_event';
+        } else if (data.startsWith('MODE:')) {
+            return 'mode_setting';
+        } else if (data === 'Morse Decoder Ready') {
+            return 'status_message';
+        } else if (data.length === 1) {
+            return 'decoded_character';
+        } else if (/^[.\- ]+$/.test(data)) {
+            return 'morse_code';
+        } else {
+            return 'other';
+        }
+    }
+    
+    /**
+     * Get a human-readable description for Arduino data
+     * @param {string} data - The data to describe
+     * @returns {string} - Description of the data
+     */
+    getDescriptionForData(data) {
+        if (data === 'left_paddle_pressed') {
+            return 'Left paddle has been pressed';
+        } else if (data === 'right_paddle_pressed') {
+            return 'Right paddle has been pressed';
+        } else if (data === 'left_paddle_released') {
+            return 'Left paddle has been released';
+        } else if (data === 'right_paddle_released') {
+            return 'Right paddle has been released';
+        } else if (data.startsWith('MODE:')) {
+            return `Arduino mode set to ${data.substring(5)}`;
+        } else if (data === 'Morse Decoder Ready') {
+            return 'Arduino device is ready for operation';
+        } else if (data.length === 1) {
+            return `Decoded Morse character: ${data}`;
+        } else if (/^[.\- ]+$/.test(data)) {
+            return `Morse code pattern: ${data}`;
+        } else {
+            return 'Other Arduino data';
         }
     }
     
@@ -432,6 +495,38 @@ export class ArduinoInterface {
     }
     
     /**
+     * Start a timer to automatically decode the Morse buffer after a pause
+     */
+    startDecodeTimer() {
+        // Clear any existing timer
+        if (this.decodeTimer) {
+            clearTimeout(this.decodeTimer);
+            this.decodeTimer = null;
+        }
+        
+        // Set a timer based on the pause threshold
+        this.decodeTimer = setTimeout(() => {
+            // Only proceed if we have content in the buffer
+            if (this.morseBuffer && this.morseBuffer.trim()) {
+                console.log(`Decode timer fired with buffer: ${this.morseBuffer}`);
+                
+                // Check if we should use pattern recognition
+                if (this.isPatternRecognitionEnabled()) {
+                    // Get known characters for validation
+                    const knownCharacters = this.getCurrentKnownCharacters();
+                    this.validateAndDecodeCharacter(this.morseBuffer, knownCharacters);
+                } else {
+                    // Use standard decoding
+                    this.decodeMorseCharacter(this.morseBuffer);
+                }
+                
+                // Clear the buffer after processing
+                this.morseBuffer = '';
+            }
+        }, this.pauseThreshold);
+    }
+    
+    /**
      * Decode a Morse code character and handle it
      * @param {string} morse - The Morse code to decode
      */
@@ -443,7 +538,17 @@ export class ArduinoInterface {
             console.log(`Decoded Morse "${morse}" to character "${char}"`);
             // Send the decoded character to the trainer only when in Training tab
             if (this.app.trainer && this.app.trainer.lessonActive && this.app.currentSection === 'training') {
-                this.app.trainer.handleUserInput(char);
+                // Store the original Morse pattern with the character for display
+                const inputData = {
+                    character: char,
+                    morsePattern: morse
+                };
+                
+                // Log the data being sent to the trainer
+                console.log('Sending to trainer:', inputData);
+                
+                // Send the character to the trainer
+                this.app.trainer.handleUserInput(char, morse);
             }
         } else {
             console.log(`Could not decode Morse pattern: "${morse}"`);

@@ -4,6 +4,87 @@
 
 This document details the implementation changes made to improve authentication security, HF propagation data retrieval, application functionality and Arduino board support in the SuperMorse application.
 
+## July 28, 2025
+
+## 41. Added Toggle for Reduced Character Group Size in Training
+
+### Problem Addressed
+
+The Morse code training module was using fixed 5-character groups for all training sessions. While this is the traditional format historically used by Morse operators (and famously by the Enigma cipher machine during WWII), some users, particularly beginners, found 5-character groups challenging. Additionally, the standard 5-character format was hardcoded in multiple places throughout the training module code, making it difficult to offer more flexibility.
+
+### Changes Made
+
+#### 41.1 Added Group Size Setting to SettingsManager
+
+Added a new toggle setting in settings.js to control the character group size:
+
+```javascript
+// Default settings object in SettingsManager constructor
+this.settings = {
+    // Existing settings...
+    useReducedGroupSize: false, // Whether to use 4-character groups instead of 5
+    // Other settings...
+};
+```
+
+#### 41.2 Added Toggle UI to Settings Form
+
+Added a toggle switch in the settings UI to allow users to select their preferred group size:
+
+```html
+<!-- Group Size Toggle -->
+<div class="form-group">
+    <label for="useReducedGroupSize">Use 4-Character Groups</label>
+    <div class="toggle-switch">
+        <input type="checkbox" id="useReducedGroupSize">
+        <span class="slider"></span>
+    </div>
+    <p class="hint">Toggle between traditional 5-character groups (used by Enigma) or reduced 4-character groups for easier learning</p>
+</div>
+```
+
+#### 41.3 Modified Training Module for Dynamic Group Size
+
+Updated the MorseTrainer class to support dynamic group sizes:
+
+```javascript
+constructor(app) {
+    // Existing initialization...
+    
+    // Training state
+    this.groupSize = 5; // Default group size, can be changed to 4 via settings
+    
+    // Other initialization...
+}
+
+// Initialize training state based on current progress
+initializeTrainingState() {
+    // Set group size based on settings
+    if (this.app.settings) {
+        this.groupSize = this.app.settings.getSetting('useReducedGroupSize') ? 4 : 5;
+        console.log(`Training with group size: ${this.groupSize}`);
+    }
+    
+    // Rest of initialization...
+}
+```
+
+Updated various methods to use the dynamic group size instead of hardcoded values:
+
+- Modified `generatePracticeGroups()` to create groups with the configured size
+- Updated `handleUserInput()` to check against the current group size
+- Adjusted `evaluateUserInput()` to work with variable group sizes
+
+### Benefits
+
+- Improved flexibility for users who find 5-character groups challenging
+- Better learning experience for beginners who can start with 4-character groups
+- Historical context preserved with default setting of 5-character groups (Enigma standard)
+- More customizable training experience
+- Consistent implementation across the entire training module
+- Clear documentation of the historical significance of 5-character groups
+- Ability to switch between formats based on user preference or skill level
+
 ## July 27, 2025
 
 ## 40. Extended Native Module Packaging Fix to Windows and macOS
