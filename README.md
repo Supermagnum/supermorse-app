@@ -1,6 +1,7 @@
 # SuperMorse App
 
-# ⛔Moved to https://gitlab.com/supermag-group/supermorse-app   because github could not handle the size of the beta release files⛔
+# ⛔Moved to https://gitlab.com/supermag-group/supermorse-app   because github could not handle the size of the beta release files. Will be readable in 48H
+⛔
 # All text below keept for historical references
 
 
