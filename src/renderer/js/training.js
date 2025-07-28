@@ -23,6 +23,7 @@ export class MorseTrainer {
         this.correctGroups = 0;
         this.totalGroups = 0;
         this.newCharIntroduction = false;
+        this.groupSize = 5; // Default group size, can be changed to 4 via settings
         
         // Timing
         this.sessionStartTime = null;
@@ -139,6 +140,12 @@ export class MorseTrainer {
     initializeTrainingState() {
         const alphabets = this.getAlphabets();
         
+        // Set group size based on settings
+        if (this.app.settings) {
+            this.groupSize = this.app.settings.getSetting('useReducedGroupSize') ? 4 : 5;
+            console.log(`Training with group size: ${this.groupSize}`);
+        }
+        
         // If we have a current character but no learned characters, we're at the beginning
         if (this.currentCharacter && this.learnedCharacters.length === 0) {
             // Starting with K and M as per requirements
@@ -149,7 +156,7 @@ export class MorseTrainer {
                 this.charactersInProgress = [this.currentCharacter];
                 this.currentCharacters = [this.currentCharacter];
             }
-        } 
+        }
         // If we have learned characters, use those plus the current character
         else if (this.learnedCharacters.length > 0) {
             this.charactersInProgress = [...this.learnedCharacters];
@@ -493,7 +500,7 @@ export class MorseTrainer {
         console.log(`Current characters: ${this.currentCharacters.join(', ')}`);
         console.log(`Learned characters: ${this.learnedCharacters.join(', ') || 'none'}`);
         
-        // Generate 10 groups of 5 characters each
+        // Generate 10 groups with dynamic group size (4 or 5 characters each)
         for (let i = 0; i < 10; i++) {
             let group = '';
             
@@ -502,7 +509,7 @@ export class MorseTrainer {
             if (this.newCharIntroduction) {
                 console.log(`New character introduction for ${this.currentCharacter}`);
                 // Add the new character in a random position
-                const position = Math.floor(Math.random() * 5);
+                const position = Math.floor(Math.random() * this.groupSize);
                 
                 // Make sure we have learned characters before using them
                 if (this.learnedCharacters.length === 0) {
@@ -510,7 +517,7 @@ export class MorseTrainer {
                     const fallbackChars = ['K', 'M'];
                     const fallbackCharsWithoutCurrent = fallbackChars.filter(c => c !== this.currentCharacter);
                     
-                    for (let j = 0; j < 5; j++) {
+            for (let j = 0; j < this.groupSize; j++) {
                         if (j === position) {
                             group += this.currentCharacter;
                         } else {
@@ -525,7 +532,7 @@ export class MorseTrainer {
                     }
                 } else {
                     // Use learned characters to fill the rest
-                    for (let j = 0; j < 5; j++) {
+            for (let j = 0; j < this.groupSize; j++) {
                         if (j === position) {
                             group += this.currentCharacter;
                         } else {
@@ -537,7 +544,7 @@ export class MorseTrainer {
             } 
             // Otherwise, use all current characters randomly
             else {
-                for (let j = 0; j < 5; j++) {
+        for (let j = 0; j < this.groupSize; j++) {
                     const randomIndex = Math.floor(Math.random() * this.currentCharacters.length);
                     group += this.currentCharacters[randomIndex];
                 }
@@ -582,25 +589,35 @@ export class MorseTrainer {
         let correct = 0;
         let displayHtml = '';
         
+        // Make sure we have userInputData to use
+        if (!this.userInputData) {
+            console.error("Missing userInputData in evaluateUserInput");
+            return;
+        }
+        
         for (let i = 0; i < this.currentSequence.length; i++) {
             const expectedChar = this.currentSequence[i];
-            const userChar = this.userInput[i] || '';
+            
+            // Get the entry from userInputData if available
+            const inputEntry = this.userInputData[i] || { 
+                char: this.userInput[i] || '', 
+                morse: this.getAlphabets().charToMorse(this.userInput[i] || '') 
+            };
             
             // Create a container for character and its label
             displayHtml += '<span class="char-container" style="display:inline-block; text-align:center; margin:0 10px;">';
             
             // Add character label above the Morse representation
-            displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${userChar.toUpperCase()}</span>`;
+            displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${inputEntry.char}</span>`;
             
-            // Get the Morse code pattern for this character
-            const morsePattern = this.getAlphabets().charToMorse(userChar.toUpperCase());
-            
+            // Use the original Morse pattern that was received
             // Add the Morse character with correct/incorrect styling
-            if (userChar.toUpperCase() === expectedChar.toUpperCase()) {
+            // Use inline style to ensure proper color display
+            if (inputEntry.char.toUpperCase() === expectedChar.toUpperCase()) {
                 correct++;
-                displayHtml += `<span class="correct">${morsePattern}</span>`;
+                displayHtml += `<span class="correct" style="color: var(--success-color); font-weight: bold;">${inputEntry.morse}</span>`;
             } else {
-                displayHtml += `<span class="incorrect">${morsePattern}</span>`;
+                displayHtml += `<span class="incorrect" style="color: var(--error-color); font-weight: bold;">${inputEntry.morse}</span>`;
             }
             
             displayHtml += '</span>'; // Close the character container
@@ -638,28 +655,41 @@ export class MorseTrainer {
     /**
      * Handle user input (from Arduino or keyboard)
      * @param {string} char - The character input
+     * @param {string} originalMorse - The original Morse pattern received (optional)
      */
-    handleUserInput(char) {
+    handleUserInput(char, originalMorse) {
         if (!this.lessonActive || this.newCharIntroduction) return;
         
-        // Add to user input if we don't have 5 characters yet
-        if (this.userInput.length < 5) {
-            this.userInput += char.toUpperCase();
+        // Add to user input if we don't have enough characters yet (based on group size)
+        if (this.userInput.length < this.groupSize) {
+            // Store both the character and the original Morse pattern if provided
+            const inputEntry = {
+                char: char.toUpperCase(),
+                morse: originalMorse || this.getAlphabets().charToMorse(char.toUpperCase())
+            };
+            
+            // Add to our tracked inputs
+            if (!this.userInputData) {
+                this.userInputData = [];
+            }
+            this.userInputData.push(inputEntry);
+            
+            // Update the character string
+            this.userInput += inputEntry.char;
             
             // Create HTML with character labels above the Morse representation
             let displayHtml = '';
-            for (let i = 0; i < this.userInput.length; i++) {
+            for (let i = 0; i < this.userInputData.length; i++) {
+                const entry = this.userInputData[i];
+                
                 // Create a container for character and its label
                 displayHtml += '<span class="char-container" style="display:inline-block; text-align:center; margin:0 10px;">';
                 
                 // Add character label above the Morse representation
-                displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${this.userInput[i]}</span>`;
+                displayHtml += `<span style="display:block; font-size:0.8em; margin-bottom:3px;">${entry.char}</span>`;
                 
-                // Get the Morse code pattern for this character
-                const morsePattern = this.getAlphabets().charToMorse(this.userInput[i]);
-                
-                // Add the Morse code pattern
-                displayHtml += `<span>${morsePattern}</span>`;
+                // Use the original Morse pattern that was received
+                displayHtml += `<span>${entry.morse}</span>`;
                 
                 displayHtml += '</span>'; // Close the character container
             }
@@ -668,8 +698,8 @@ export class MorseTrainer {
             document.getElementById('userInput').innerHTML = displayHtml;
             document.getElementById('userInputListening').innerHTML = displayHtml;
             
-            // If we have 5 characters, evaluate the input
-            if (this.userInput.length === 5) {
+            // If we have enough characters (based on group size), evaluate the input
+            if (this.userInput.length === this.groupSize) {
                 this.evaluateUserInput();
             }
         }

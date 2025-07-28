@@ -303,6 +303,11 @@
                                 </select>
                                 <p class="hint">Choose your preferred application theme</p>
                             </div>
+                            
+                            <div class="form-group">
+                                <label>Training Data</label>
+                                <button id="resetProgressBtn" class="btn btn-danger">Warning,- this wil reset your learning progress!</button>
+                            </div>
                         </div>
                         
                         <div class="settings-group">
@@ -393,6 +398,15 @@
                                     <span class="slider"></span>
                                 </div>
                                 <p class="hint">Farnsworth timing sends characters at a higher speed while maintaining slower spacing between them</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="useReducedGroupSize">Use 4-Character Groups</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="useReducedGroupSize">
+                                    <span class="slider"></span>
+                                </div>
+                                <p class="hint">Reduce training groups from 5 characters to 4 characters</p>
                             </div>
                             
                             <div class="form-group" id="farnsworthRatioGroup">
