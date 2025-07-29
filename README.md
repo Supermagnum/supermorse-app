@@ -1,11 +1,6 @@
 # SuperMorse App
 
-# ⛔Moved to https://gitlab.com/supermag-group/supermorse-app   because github could not handle the size of the beta release files. Will be readable in 48H
-⛔
-# All text below keept for historical references
-
-
-A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
+# A comprehensive Morse code tutor and HF communication application with Arduino integration and progressive unlocking of features.
 
 ## About SuperMorse
 
